@@ -5,23 +5,23 @@ import { BrandMark } from "./brand-mark";
 const pillars = [
   {
     name: "Protect",
-    copy: "Protect what God has entrusted with clear next steps for risk, estate, document, and coverage readiness.",
+    copy: "Protect what God has entrusted. Build a strong foundation for your family and future.",
     accent: "gold",
   },
   {
     name: "Grow",
-    copy: "Grow your capacity to serve by seeing where business, practice, real estate, and investment complexity needs attention.",
+    copy: "Grow your capacity to serve. Optimize resources and pursue wise opportunities.",
     accent: "green",
   },
   {
     name: "Transfer",
-    copy: "Transfer values and resources to future generations with more clarity around succession, family, and legacy topics.",
-    accent: "navy",
+    copy: "Transfer values and resources to future generations. Pass on values with clarity.",
+    accent: "gold",
   },
   {
     name: "Impact",
-    copy: "Impact Kingdom and community by connecting generosity, service, and long-term purpose to your stewardship plan.",
-    accent: "green",
+    copy: "Impact Kingdom and community. Leave a legacy that matters.",
+    accent: "navy",
   },
 ];
 
@@ -44,10 +44,10 @@ const workflow = [
 ];
 
 const scores = [
-  { label: "Protect", value: 78 },
-  { label: "Grow", value: 64 },
-  { label: "Transfer", value: 55 },
-  { label: "Impact", value: 91 },
+  { label: "Protect", value: 78, status: "Good", accent: "green" },
+  { label: "Grow", value: 64, status: "Developing", accent: "green" },
+  { label: "Transfer", value: 55, status: "Developing", accent: "gold" },
+  { label: "Impact", value: 91, status: "Strong", accent: "navy" },
 ];
 
 const priorities = [
@@ -86,7 +86,10 @@ export default function Home() {
               <p className="eyebrow">
                 A Christian-first stewardship operating system
               </p>
-              <h1 id="hero-title">Steward What Matters Most.</h1>
+              <h1 id="hero-title">
+                Steward What
+                <span>Matters Most.</span>
+              </h1>
               <p className="hero-subheadline">
                 Understand, organize, and grow everything God has entrusted to you
                 from your finances and business to your family, legacy, and
@@ -150,16 +153,16 @@ export default function Home() {
                   </div>
                 </div>
 
+                <p className="preview-section-label">Stewardship Snapshot</p>
                 <div className="pillar-meter-grid" aria-label="Pillar scores">
                   {scores.map((score) => (
-                    <div className="pillar-meter" key={score.label}>
-                      <div>
-                        <span>{score.label}</span>
-                        <strong>{score.value}</strong>
-                      </div>
-                      <div className="meter-track" aria-hidden="true">
-                        <span style={{ width: `${score.value}%` }} />
-                      </div>
+                    <div
+                      className={`pillar-meter pillar-meter-${score.accent}`}
+                      key={score.label}
+                    >
+                      <span>{score.label}</span>
+                      <strong>{score.value}</strong>
+                      <small>{score.status}</small>
                     </div>
                   ))}
                 </div>
@@ -177,7 +180,11 @@ export default function Home() {
                   <div className="next-step">
                     <span>Next Recommended Step</span>
                     <strong>Complete Financial Analysis</strong>
-                    <p>Unlock deeper insights when you are ready.</p>
+                    <p>
+                      Unlock deeper insights about your finances, assets,
+                      business, and opportunities.
+                    </p>
+                    <span className="preview-continue">Continue</span>
                   </div>
                 </div>
               </div>
@@ -185,7 +192,11 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section" id="pillars" aria-labelledby="pillars-title">
+        <section
+          className="section pillars-section"
+          id="pillars"
+          aria-labelledby="pillars-title"
+        >
           <div className="page-shell">
             <div className="section-heading">
               <p className="eyebrow">Four pillars</p>
