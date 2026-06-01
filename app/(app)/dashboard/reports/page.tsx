@@ -5,11 +5,14 @@ export default function ReportsPage() {
       <h1 id="reports-title">Professional reports will generate here.</h1>
       <p>
         Reports are deliverables generated from dashboard data. PDF generation
-        is intentionally not part of Sprint 1.
+        is intentionally not built yet.
       </p>
       <section className="empty-state-card" aria-label="Reports placeholder">
-        <h2>No reports yet.</h2>
-        <p>Reports will unlock after future dashboard and analysis work.</p>
+        <h2>Reports are coming soon.</h2>
+        <p>
+          Reports will unlock after future dashboard, Financial Analysis, and
+          report-generation work.
+        </p>
       </section>
     </main>
   );

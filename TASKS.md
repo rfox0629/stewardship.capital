@@ -191,3 +191,50 @@ Do not build:
 - PDF generation
 - opportunity engine
 - professional marketplace
+
+## Sprint 7 - Assessment and Dashboard UX Polish
+
+### Assessment Polish
+- [x] Typeform-style centered question card
+- [x] Large readable question text
+- [x] Clear answer buttons
+- [x] Smooth progress indicator
+- [x] Sticky top status with brand, progress, and save state
+- [x] Back and Next controls polished
+- [x] Mobile-first spacing
+- [x] Completion screen with dashboard CTA
+- [x] Assessment v1 constraints preserved
+
+### Dashboard Polish
+- [x] Strong welcome card
+- [x] Stewardship Score emphasized
+- [x] Stage emphasized
+- [x] Profile Completion emphasized
+- [x] Protect / Grow / Transfer / Impact snapshot polished
+- [x] Top 3 priorities polished
+- [x] Complete Financial Analysis CTA polished
+- [x] Locked future modules polished
+- [x] Empty state with Start Assessment CTA
+- [x] No misleading mock data when no completed assessment exists
+
+### App Shell
+- [x] Sidebar active states
+- [x] Mobile nav active states
+- [x] No horizontal overflow at 320px
+- [x] Existing dashboard routes intact
+- [x] Placeholders clearly labeled
+
+### Code Quality
+- [x] Typecheck passes
+- [x] Lint passes
+- [x] Build passes
+- [x] Browser smoke complete
+
+Do not build:
+- New schema
+- Plaid
+- uploads
+- OCR
+- PDF generation
+- opportunity engine
+- professional marketplace

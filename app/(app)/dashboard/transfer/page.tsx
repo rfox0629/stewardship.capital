@@ -10,8 +10,11 @@ export default function TransferPage() {
         transfer, and family legacy topics.
       </p>
       <section className="empty-state-card" aria-label="Transfer placeholder">
-        <h2>No Transfer items yet.</h2>
-        <p>Legacy planning recommendations will be added after future data work.</p>
+        <h2>Transfer details are coming soon.</h2>
+        <p>
+          Legacy and values-transfer recommendations will deepen as the
+          dashboard and future analysis data mature.
+        </p>
       </section>
     </main>
   );

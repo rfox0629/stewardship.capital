@@ -8,8 +8,11 @@ export default function ProtectPage() {
         and document readiness topics.
       </p>
       <section className="empty-state-card" aria-label="Protect placeholder">
-        <h2>No Protect items yet.</h2>
-        <p>Assessment and Financial Analysis data are not connected in Sprint 1.</p>
+        <h2>Protect details are coming soon.</h2>
+        <p>
+          This tab will deepen after dashboard snapshots and Financial Analysis
+          are available for this account.
+        </p>
       </section>
     </main>
   );

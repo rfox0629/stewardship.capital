@@ -8,8 +8,11 @@ export default function ImpactPage() {
         community impact, and Kingdom priorities.
       </p>
       <section className="empty-state-card" aria-label="Impact placeholder">
-        <h2>No Impact items yet.</h2>
-        <p>Giving records and impact strategy are future Sprint work.</p>
+        <h2>Impact details are coming soon.</h2>
+        <p>
+          Giving records and impact strategy remain future work after the
+          core dashboard experience is stable.
+        </p>
       </section>
     </main>
   );

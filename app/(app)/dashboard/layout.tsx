@@ -1,15 +1,7 @@
 import Link from "next/link";
 
 import { signOut } from "../../auth/actions";
-
-const navigation = [
-  { label: "Overview", href: "/dashboard" },
-  { label: "Protect", href: "/dashboard/protect" },
-  { label: "Grow", href: "/dashboard/grow" },
-  { label: "Transfer", href: "/dashboard/transfer" },
-  { label: "Impact", href: "/dashboard/impact" },
-  { label: "Reports", href: "/dashboard/reports" },
-];
+import { DashboardNav } from "./dashboard-nav";
 
 export default function DashboardLayout({
   children,
@@ -25,15 +17,9 @@ export default function DashboardLayout({
           </span>
           <span>Stewardship Capital</span>
         </Link>
-        <nav className="app-nav">
-          {navigation.map((item) => (
-            <Link href={item.href} key={item.label}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <DashboardNav variant="sidebar" />
         <div className="app-sidebar-footer">
-          <p>Protected shell</p>
+          <p>Stewardship dashboard</p>
           <form action={signOut}>
             <button className="app-logout-button" type="submit">
               Log Out
@@ -56,13 +42,7 @@ export default function DashboardLayout({
             </button>
           </form>
         </header>
-        <nav className="mobile-tab-nav" aria-label="Dashboard sections">
-          {navigation.map((item) => (
-            <Link href={item.href} key={item.label}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <DashboardNav variant="mobile" />
         {children}
       </div>
     </div>

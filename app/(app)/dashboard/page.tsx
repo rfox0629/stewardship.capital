@@ -11,25 +11,32 @@ export default async function DashboardOverviewPage() {
   if (!dashboard) {
     return (
       <main className="dashboard-page" aria-labelledby="overview-title">
-        <p className="eyebrow">Overview</p>
-        <h1 id="overview-title">Create your stewardship dashboard.</h1>
-        <p>
-          Complete the fast diagnostic assessment to create your first
-          dashboard snapshot, scores, stage, and top priorities.
-        </p>
-
-        <section className="dashboard-next-step">
+        <section className="dashboard-empty-hero">
           <div>
-            <p className="eyebrow">Next recommended step</p>
-            <h2>Start Your Assessment</h2>
+            <p className="eyebrow">Overview</p>
+            <h1 id="overview-title">Create your stewardship dashboard.</h1>
             <p>
-              The first assessment stays light: no dollar amounts, no uploads,
-              and no account connections.
+              Complete the fast diagnostic assessment to create your first
+              dashboard snapshot, scores, stage, and top priorities. The first
+              step stays light: no dollar amounts, no uploads, and no account
+              connections.
             </p>
           </div>
           <Link className="button button-primary" href="/assessment">
             Start Your Assessment
           </Link>
+        </section>
+
+        <section className="dashboard-panel">
+          <div className="dashboard-panel-heading">
+            <p className="eyebrow">What unlocks next</p>
+            <h2>No completed assessment yet.</h2>
+          </div>
+          <p>
+            Your dashboard will show a Stewardship Score, stage, pillar
+            snapshot, top priorities, and the next recommended step after the
+            assessment is complete.
+          </p>
         </section>
       </main>
     );
@@ -43,23 +50,32 @@ export default async function DashboardOverviewPage() {
 
   return (
     <main className="dashboard-page" aria-labelledby="overview-title">
-      <p className="eyebrow">Overview</p>
-      <h1 id="overview-title">Welcome back, {dashboard.userName}.</h1>
-      <p>
-        This dashboard reflects your latest completed assessment snapshot.
-        Financial Analysis remains the next step for deeper opportunity
-        discovery.
-      </p>
+      <section className="dashboard-hero-card">
+        <div className="dashboard-hero-copy">
+          <p className="eyebrow">Overview</p>
+          <h1 id="overview-title">Welcome back, {dashboard.userName}.</h1>
+          <p>
+            Your latest assessment created this stewardship snapshot. Review
+            what needs attention first, then complete Financial Analysis when
+            you are ready for deeper planning context.
+          </p>
+        </div>
+        <div className="dashboard-hero-score">
+          <span>Stewardship Score</span>
+          <strong>{scores.stewardshipScore}</strong>
+          <p>{scores.stage.toUpperCase()} Stage</p>
+        </div>
+      </section>
 
       <section className="dashboard-score-grid" aria-label="Score summary">
-        <article className="dashboard-score-card dashboard-score-card-primary">
+        <article className="dashboard-score-card">
           <span>Stewardship Score</span>
           <strong>{scores.stewardshipScore}</strong>
           <p>{scores.confidenceLabels[0]}</p>
         </article>
-        <article className="dashboard-score-card">
+        <article className="dashboard-score-card dashboard-score-card-primary">
           <span>Stewardship Stage</span>
-          <strong>{scores.stage}</strong>
+          <strong>{scores.stage.toUpperCase()}</strong>
           <p>Stage language is diagnostic and encouraging.</p>
         </article>
         <article className="dashboard-score-card">
@@ -117,13 +133,16 @@ export default async function DashboardOverviewPage() {
         </div>
       </section>
 
-      <section className="dashboard-next-step">
+      <section className="dashboard-next-step dashboard-next-step-prominent">
         <div>
           <p className="eyebrow">Next recommended step</p>
           <h2>{dashboard.nextRecommendedStep.title}</h2>
           <p>{dashboard.nextRecommendedStep.copy}</p>
         </div>
-        <Link className="button button-primary" href={dashboard.nextRecommendedStep.href}>
+        <Link
+          className="button button-primary"
+          href={dashboard.nextRecommendedStep.href}
+        >
           Complete Financial Analysis
         </Link>
       </section>

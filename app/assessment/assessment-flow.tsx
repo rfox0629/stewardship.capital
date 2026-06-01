@@ -43,6 +43,7 @@ export function AssessmentFlow({ initialDraft }: AssessmentFlowProps) {
     initialDraft.mode === "supabase" ? "Saved just now" : "Draft ready",
   );
   const [resumeMessage, setResumeMessage] = useState(initialDraft.message ?? "");
+  const [isComplete, setIsComplete] = useState(false);
 
   const currentQuestion = assessmentQuestions[currentIndex];
   const selectedAnswer = answers[currentQuestion.id];
@@ -53,6 +54,9 @@ export function AssessmentFlow({ initialDraft }: AssessmentFlowProps) {
     [answers],
   );
   const progress = Math.round((answeredCount / assessmentQuestions.length) * 100);
+  const stepProgress = Math.round(
+    ((currentIndex + 1) / assessmentQuestions.length) * 100,
+  );
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -183,7 +187,8 @@ export function AssessmentFlow({ initialDraft }: AssessmentFlowProps) {
 
           if (result.mode === "supabase" && result.completed) {
             window.localStorage.removeItem(storageKey);
-            router.push("/dashboard");
+            setSaveLabel("Saved just now");
+            setIsComplete(true);
             return;
           }
         } catch {
@@ -192,7 +197,7 @@ export function AssessmentFlow({ initialDraft }: AssessmentFlowProps) {
       }
 
       setSaveLabel("Saved locally if offline or failed");
-      router.push("/dashboard");
+      setIsComplete(true);
       return;
     }
 
@@ -215,15 +220,64 @@ export function AssessmentFlow({ initialDraft }: AssessmentFlowProps) {
     );
   }
 
+  if (isComplete) {
+    return (
+      <section className="assessment-shell" aria-labelledby="assessment-title">
+        <div className="assessment-sticky">
+          <div className="assessment-status-brand">
+            <span className="brand-monogram" aria-hidden="true">
+              SC
+            </span>
+            <div>
+              <p className="assessment-save-label">Stewardship Capital</p>
+              <p className="assessment-save-copy">100% Complete</p>
+            </div>
+          </div>
+          <p className="assessment-save-state">{saveLabel}</p>
+        </div>
+
+        <div className="assessment-progress" aria-label="100% complete">
+          <span style={{ width: "100%" }} />
+        </div>
+
+        <div className="assessment-card assessment-complete-card">
+          <p className="eyebrow">Dashboard created</p>
+          <h1 id="assessment-title">Your stewardship dashboard is ready.</h1>
+          <p className="assessment-helper">
+            Review your score, stage, pillar snapshot, and first priorities.
+            Financial Analysis is the next step when you are ready for deeper
+            planning context.
+          </p>
+          <div className="assessment-complete-actions">
+            <button
+              className="button button-primary"
+              onClick={() => router.push("/dashboard")}
+              type="button"
+            >
+              View Dashboard
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="assessment-shell" aria-labelledby="assessment-title">
       <div className="assessment-sticky">
-        <div>
-          <p className="assessment-save-label">{saveLabel}</p>
+        <div className="assessment-status-brand">
+          <span className="brand-monogram" aria-hidden="true">
+            SC
+          </span>
+          <div>
+            <p className="assessment-save-label">Stewardship Capital</p>
+            <p className="assessment-save-copy">{progress}% Complete</p>
+          </div>
+        </div>
+        <div className="assessment-status-actions">
+          <p className="assessment-save-state">{saveLabel}</p>
           <p className="assessment-save-copy">
-            {persistenceMode === "supabase"
-              ? "Auto-save is on for your account"
-              : "Auto-save is on for this device"}
+            {persistenceMode === "supabase" ? "Account save" : "Local save"}
           </p>
         </div>
         <button
@@ -235,8 +289,8 @@ export function AssessmentFlow({ initialDraft }: AssessmentFlowProps) {
         </button>
       </div>
 
-      <div className="assessment-progress" aria-label={`${progress}% complete`}>
-        <span style={{ width: `${progress}%` }} />
+      <div className="assessment-progress" aria-label={`${stepProgress}% complete`}>
+        <span style={{ width: `${stepProgress}%` }} />
       </div>
 
       <div className="assessment-card">

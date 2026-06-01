@@ -1,17 +1,15 @@
 # Current Sprint
 
 Goal:
-Complete Sprint 6 by adding the Supabase MVP schema and moving assessment progress from local/mock state to persisted Supabase drafts when available.
+Complete Sprint 7 by polishing the assessment and dashboard MVP so the product feels premium, mobile-first, simple, and aligned with the Stewardship Capital brand.
 
 Success Criteria:
-- MVP Supabase migration exists for profiles, assessments, assessment responses, assessment scores, roadmap items, dashboard snapshots, and reports.
-- RLS is enabled and authenticated users can only access their own records.
-- `/assessment` creates or resumes an in-progress assessment for authenticated users.
-- Assessment answers, percent complete, and last active question persist to Supabase.
-- Local draft fallback remains for unauthenticated users or failed Supabase saves.
-- Completing the assessment persists scores, roadmap items, and dashboard snapshot.
-- `/dashboard` reads the latest persisted completed dashboard snapshot when available.
-- Dashboard shows a starter state with assessment CTA when no completed assessment exists.
+- `/assessment` has a centered Typeform-style question card.
+- Assessment status shows Stewardship Capital, percent complete, and save state.
+- Answer buttons, progress, Back/Next, and completion state feel clear and mobile-first.
+- `/dashboard` Overview has a stronger welcome card, score/stage/profile summary, pillar snapshot, priorities, CTA, and locked modules.
+- Dashboard empty state clearly points users to Start Assessment without misleading mock data.
+- Sidebar/mobile navigation has active states and no horizontal overflow at 320px.
 - Lint, typecheck, and build pass.
 
 Reference:
@@ -20,6 +18,7 @@ Reference:
 - docs/mockups/homepage-v1.png when available
 
 Do Not Build Yet:
+- New schema
 - PDF reports
 - Opportunity engine
 - Plaid integrations
