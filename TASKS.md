@@ -60,3 +60,30 @@ Do not build:
 - Supabase schema migrations
 - Assessment engine
 - Scoring engine
+
+## Sprint 3 - Assessment MVP Static Engine
+
+### Assessment
+- [x] Assessment route
+- [x] One-question-at-a-time UI
+- [x] 25 questions max
+- [x] No dollar amounts, uploads, or account connections
+- [x] Yes / No / Not Sure and multiple choice only
+- [x] Sticky auto-save indicator
+- [x] Progress percentage
+- [x] Back and Next buttons
+- [x] Resume later placeholder
+- [x] Local client-side draft state
+- [x] Completion navigates to dashboard
+
+### Code Quality
+- [x] Typecheck passes
+- [x] Lint passes
+- [x] Build passes
+
+Do not build:
+- Persisted assessment records
+- Scoring engine
+- Financial analysis
+- Opportunity engine
+- PDF generation

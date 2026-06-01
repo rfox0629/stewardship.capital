@@ -72,7 +72,7 @@ export async function signup(formData: FormData) {
     revalidatePath("/", "layout");
 
     if (data.session) {
-      redirect("/dashboard");
+      redirect("/assessment");
     }
   } catch (error) {
     redirectWithError(
