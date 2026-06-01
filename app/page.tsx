@@ -7,21 +7,25 @@ const pillars = [
     name: "Protect",
     copy: "Protect what God has entrusted. Build a strong foundation for your family and future.",
     accent: "gold",
+    icon: "protect",
   },
   {
     name: "Grow",
     copy: "Grow your capacity to serve. Optimize resources and pursue wise opportunities.",
     accent: "green",
+    icon: "grow",
   },
   {
     name: "Transfer",
     copy: "Transfer values and resources to future generations. Pass on values with clarity.",
     accent: "gold",
+    icon: "transfer",
   },
   {
     name: "Impact",
     copy: "Impact Kingdom and community. Leave a legacy that matters.",
     accent: "navy",
+    icon: "impact",
   },
 ];
 
@@ -88,7 +92,9 @@ export default function Home() {
               </p>
               <h1 id="hero-title">
                 Steward What
-                <span>Matters Most.</span>
+                <span>
+                  Matters Most<em className="hero-period">.</em>
+                </span>
               </h1>
               <p className="hero-subheadline">
                 Understand, organize, and grow everything God has entrusted to you
@@ -104,8 +110,8 @@ export default function Home() {
                 </a>
               </div>
               <div className="trust-bullets" aria-label="Assessment details">
-                <span>Takes about 5 minutes</span>
-                <span>Progress saves automatically</span>
+                <span data-icon="clock">Takes about 5 minutes</span>
+                <span data-icon="save">Progress saves automatically</span>
               </div>
             </div>
 
@@ -208,7 +214,10 @@ export default function Home() {
                   className={`pillar-card pillar-card-${pillar.accent}`}
                   key={pillar.name}
                 >
-                  <span aria-hidden="true" />
+                  <span
+                    className={`pillar-icon pillar-icon-${pillar.icon}`}
+                    aria-hidden="true"
+                  />
                   <h3>{pillar.name}</h3>
                   <p>{pillar.copy}</p>
                 </article>
@@ -257,6 +266,7 @@ export default function Home() {
               attention, what can grow, what should transfer, and what can create
               lasting impact.
             </p>
+            <div className="clarity-visual" aria-hidden="true" />
           </div>
         </section>
 
