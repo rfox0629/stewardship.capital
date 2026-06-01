@@ -214,6 +214,8 @@ h3 {
   font-weight: 760;
   line-height: 1;
   text-align: center;
+  cursor: pointer;
+  font-family: inherit;
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
@@ -624,6 +626,26 @@ h3 {
   width: 100%;
 }
 
+.auth-notice,
+.auth-error {
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  font-weight: 680;
+}
+
+.auth-notice {
+  border: 1px solid rgba(87, 120, 100, 0.24);
+  background: var(--green-soft);
+  color: #355340;
+}
+
+.auth-error {
+  border: 1px solid rgba(139, 75, 75, 0.24);
+  background: #f5e6e1;
+  color: #7f3124;
+}
+
 .auth-switch {
   text-align: center;
 }
@@ -666,7 +688,11 @@ h3 {
 }
 
 .app-login-link {
+  border: 0;
+  background: transparent;
   color: var(--navy);
+  cursor: pointer;
+  font: inherit;
   font-size: 0.88rem;
   font-weight: 760;
 }
@@ -866,11 +892,17 @@ h3 {
     font-size: 0.82rem;
   }
 
-  .app-sidebar-footer a {
-    color: #ffffff;
-    font-size: 0.9rem;
-    font-weight: 760;
-  }
+.app-logout-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 760;
+  text-align: left;
+}
 
   .app-topbar,
   .mobile-tab-nav {

@@ -1,6 +1,16 @@
 import Link from "next/link";
 
-export default function SignupPage() {
+import { signup } from "../auth/actions";
+
+type SignupPageProps = {
+  searchParams: Promise<{
+    error?: string;
+  }>;
+};
+
+export default async function SignupPage({ searchParams }: SignupPageProps) {
+  const params = await searchParams;
+
   return (
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="signup-title">
@@ -15,19 +25,21 @@ export default function SignupPage() {
           <p className="eyebrow">Start your assessment</p>
           <h1 id="signup-title">Create your stewardship workspace.</h1>
           <p>
-            This static signup shell prepares the account flow without
-            connecting a real auth provider yet.
+            Create an account with Supabase email auth. Assessment persistence
+            and profile details come in later sprints.
           </p>
         </div>
 
-        <form className="auth-form">
+        {params.error ? <p className="auth-error">{params.error}</p> : null}
+
+        <form className="auth-form" action={signup}>
           <label>
             Full name
-            <input type="text" name="name" autoComplete="name" />
+            <input type="text" name="name" autoComplete="name" required />
           </label>
           <label>
             Email
-            <input type="email" name="email" autoComplete="email" />
+            <input type="email" name="email" autoComplete="email" required />
           </label>
           <label>
             Password
@@ -35,13 +47,15 @@ export default function SignupPage() {
               type="password"
               name="password"
               autoComplete="new-password"
+              minLength={6}
+              required
             />
           </label>
-        </form>
 
-        <Link className="button button-primary auth-submit" href="/dashboard">
-          Continue to Dashboard Shell
-        </Link>
+          <button className="button button-primary auth-submit" type="submit">
+            Create Account
+          </button>
+        </form>
 
         <p className="auth-switch">
           Already have an account? <Link href="/login">Log in</Link>

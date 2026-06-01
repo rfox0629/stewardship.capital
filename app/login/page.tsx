@@ -1,6 +1,18 @@
 import Link from "next/link";
 
-export default function LoginPage() {
+import { login } from "../auth/actions";
+
+type LoginPageProps = {
+  searchParams: Promise<{
+    error?: string;
+    message?: string;
+    redirectTo?: string;
+  }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+
   return (
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="login-title">
@@ -15,15 +27,25 @@ export default function LoginPage() {
           <p className="eyebrow">Welcome back</p>
           <h1 id="login-title">Log in to your stewardship workspace.</h1>
           <p>
-            This is a static Sprint 1 shell. Authentication will be connected in
-            a later step.
+            Access your protected stewardship dashboard. Supabase credentials
+            must be configured before live sign-in will work.
           </p>
         </div>
 
-        <form className="auth-form">
+        {params.message ? (
+          <p className="auth-notice">{params.message}</p>
+        ) : null}
+        {params.error ? <p className="auth-error">{params.error}</p> : null}
+
+        <form className="auth-form" action={login}>
+          <input
+            type="hidden"
+            name="redirectTo"
+            value={params.redirectTo ?? "/dashboard"}
+          />
           <label>
             Email
-            <input type="email" name="email" autoComplete="email" />
+            <input type="email" name="email" autoComplete="email" required />
           </label>
           <label>
             Password
@@ -31,13 +53,14 @@ export default function LoginPage() {
               type="password"
               name="password"
               autoComplete="current-password"
+              required
             />
           </label>
-        </form>
 
-        <Link className="button button-primary auth-submit" href="/dashboard">
-          Continue to Dashboard Shell
-        </Link>
+          <button className="button button-primary auth-submit" type="submit">
+            Log In
+          </button>
+        </form>
 
         <p className="auth-switch">
           New to Stewardship Capital?{" "}

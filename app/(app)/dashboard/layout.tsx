@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { signOut } from "../../auth/actions";
+
 const navigation = [
   { label: "Overview", href: "/dashboard" },
   { label: "Protect", href: "/dashboard/protect" },
@@ -31,8 +33,12 @@ export default function DashboardLayout({
           ))}
         </nav>
         <div className="app-sidebar-footer">
-          <p>Static protected shell</p>
-          <Link href="/login">Log Out</Link>
+          <p>Protected shell</p>
+          <form action={signOut}>
+            <button className="app-logout-button" type="submit">
+              Log Out
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -44,9 +50,11 @@ export default function DashboardLayout({
             </span>
             <span>Stewardship Capital</span>
           </Link>
-          <Link className="app-login-link" href="/login">
-            Log Out
-          </Link>
+          <form action={signOut}>
+            <button className="app-login-link" type="submit">
+              Log Out
+            </button>
+          </form>
         </header>
         <nav className="mobile-tab-nav" aria-label="Dashboard sections">
           {navigation.map((item) => (

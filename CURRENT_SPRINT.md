@@ -1,14 +1,15 @@
 # Current Sprint
 
 Goal:
-Create the public website and authenticated shell experience.
+Complete Sprint 2 by wiring Supabase Auth helpers and protected dashboard route behavior without creating schema or storing secrets.
 
 Success Criteria:
-- Homepage matches approved mockup direction.
-- Login and signup pages exist.
-- Protected routes work.
-- Dashboard shell exists.
-- Mobile experience is excellent.
+- Supabase browser and server helpers exist.
+- Login and signup submit through Supabase email auth.
+- Dashboard routes redirect unauthenticated users to login.
+- Authenticated users are redirected away from login/signup to dashboard.
+- Logout action exists.
+- Missing profile schema is documented without creating migrations.
 - Lint and typecheck pass.
 
 Reference:
