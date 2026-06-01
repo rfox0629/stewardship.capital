@@ -1,28 +1,23 @@
 # Supabase Schema Needed v1
 
-Sprint 2 wires Supabase Auth helpers and protected route behavior, but it does not create database schema.
+Sprint 2 wired Supabase Auth helpers and protected route behavior without creating database schema.
 
-## Profiles Table
+Sprint 6 adds the MVP migration:
 
-Create this table before enabling profile persistence:
+`supabase/migrations/20260601000000_create_mvp_stewardship_schema.sql`
 
-```sql
-create table public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text,
-  email text,
-  profile_type text,
-  household_name text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-```
+## MVP Tables
 
-Recommended next steps when schema work is approved:
+- `profiles`
+- `assessments`
+- `assessment_responses`
+- `assessment_scores`
+- `roadmap_items`
+- `dashboard_snapshots`
+- `reports`
 
-- Enable row level security on `public.profiles`.
-- Add policies so users can select, insert, and update only their own profile row.
-- Add an auth trigger or server action pattern to create one profile row per new user.
-- Keep service-role keys server-only and never expose them to the browser.
+## Apply Notes
 
-No migration has been created yet.
+The local environment did not have the Supabase CLI installed when the migration was created. See `docs/supabase-migration-notes-v1.md` for apply instructions.
+
+Keep service-role keys server-only and never expose them to the browser.

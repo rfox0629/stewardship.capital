@@ -4,18 +4,45 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { assessmentQuestions } from "../../lib/assessment/questions";
-
-type Answers = Record<string, string>;
+import type {
+  AssessmentCompleteResponse,
+  AssessmentDraftState,
+  AssessmentPersistenceMode,
+  AssessmentSaveResponse,
+} from "../../lib/assessment/persistence-types";
+import type { AssessmentAnswers } from "../../lib/scoring/stewardship-scoring";
 
 const storageKey = "stewardship-capital-assessment-v1";
 
-export function AssessmentFlow() {
+type AssessmentFlowProps = {
+  initialDraft: AssessmentDraftState;
+};
+
+function saveLocalDraft(answers: AssessmentAnswers, currentIndex: number) {
+  window.localStorage.setItem(
+    storageKey,
+    JSON.stringify({
+      answers,
+      currentIndex,
+      updatedAt: new Date().toISOString(),
+    }),
+  );
+}
+
+export function AssessmentFlow({ initialDraft }: AssessmentFlowProps) {
   const router = useRouter();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Answers>({});
+  const [currentIndex, setCurrentIndex] = useState(initialDraft.currentIndex);
+  const [answers, setAnswers] = useState<AssessmentAnswers>(
+    initialDraft.answers,
+  );
+  const [assessmentId, setAssessmentId] = useState(initialDraft.assessmentId);
+  const [persistenceMode, setPersistenceMode] =
+    useState<AssessmentPersistenceMode>(initialDraft.mode);
   const [isReady, setIsReady] = useState(false);
-  const [saveLabel, setSaveLabel] = useState("Draft ready");
-  const [resumeMessage, setResumeMessage] = useState("");
+  const [saveLabel, setSaveLabel] = useState(
+    initialDraft.mode === "supabase" ? "Saved just now" : "Draft ready",
+  );
+  const [resumeMessage, setResumeMessage] = useState(initialDraft.message ?? "");
 
   const currentQuestion = assessmentQuestions[currentIndex];
   const selectedAnswer = answers[currentQuestion.id];
@@ -25,32 +52,32 @@ export function AssessmentFlow() {
         .length,
     [answers],
   );
-  const progress = Math.round(
-    ((currentIndex + 1) / assessmentQuestions.length) * 100,
-  );
+  const progress = Math.round((answeredCount / assessmentQuestions.length) * 100);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      const savedDraft = window.localStorage.getItem(storageKey);
+      if (initialDraft.mode === "local") {
+        const savedDraft = window.localStorage.getItem(storageKey);
 
-      if (savedDraft) {
-        try {
-          const draft = JSON.parse(savedDraft) as {
-            answers?: Answers;
-            currentIndex?: number;
-          };
+        if (savedDraft) {
+          try {
+            const draft = JSON.parse(savedDraft) as {
+              answers?: AssessmentAnswers;
+              currentIndex?: number;
+            };
 
-          setAnswers(draft.answers ?? {});
-          setCurrentIndex(
-            typeof draft.currentIndex === "number" &&
-              draft.currentIndex >= 0 &&
-              draft.currentIndex < assessmentQuestions.length
-              ? draft.currentIndex
-              : 0,
-          );
-          setSaveLabel("Draft restored");
-        } catch {
-          setSaveLabel("Draft ready");
+            setAnswers(draft.answers ?? {});
+            setCurrentIndex(
+              typeof draft.currentIndex === "number" &&
+                draft.currentIndex >= 0 &&
+                draft.currentIndex < assessmentQuestions.length
+                ? draft.currentIndex
+                : 0,
+            );
+            setSaveLabel("Draft restored");
+          } catch {
+            setSaveLabel("Draft ready");
+          }
         }
       }
 
@@ -58,27 +85,59 @@ export function AssessmentFlow() {
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [initialDraft.mode]);
 
   useEffect(() => {
     if (!isReady) {
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          answers,
-          currentIndex,
-          updatedAt: new Date().toISOString(),
-        }),
-      );
-      setSaveLabel("Saved just now");
-    }, 350);
+    const timeout = window.setTimeout(async () => {
+      saveLocalDraft(answers, currentIndex);
+
+      if (persistenceMode !== "supabase") {
+        setSaveLabel("Saved just now");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/assessment/draft", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assessmentId,
+            answers,
+            currentIndex,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to save assessment draft.");
+        }
+
+        const result = (await response.json()) as AssessmentSaveResponse;
+
+        if (result.mode === "supabase") {
+          setAssessmentId(result.assessmentId);
+          setSaveLabel("Saved just now");
+          return;
+        }
+
+        setPersistenceMode("local");
+        setSaveLabel("Saved locally if offline or failed");
+      } catch {
+        setSaveLabel("Reconnecting...");
+        window.setTimeout(() => {
+          setPersistenceMode("local");
+          setSaveLabel("Saved locally if offline or failed");
+        }, 650);
+      }
+    }, 450);
 
     return () => window.clearTimeout(timeout);
-  }, [answers, currentIndex, isReady]);
+  }, [answers, assessmentId, currentIndex, isReady, persistenceMode]);
 
   function selectAnswer(value: string) {
     setResumeMessage("");
@@ -95,18 +154,44 @@ export function AssessmentFlow() {
     setCurrentIndex((index) => Math.max(0, index - 1));
   }
 
-  function goNext() {
+  async function goNext() {
     setResumeMessage("");
     setSaveLabel("Saving...");
 
     if (currentIndex === assessmentQuestions.length - 1) {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          answers,
-          completedAt: new Date().toISOString(),
-        }),
-      );
+      saveLocalDraft(answers, currentIndex);
+
+      if (persistenceMode === "supabase") {
+        try {
+          const response = await fetch("/api/assessment/complete", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              assessmentId,
+              answers,
+              currentIndex,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Unable to complete assessment.");
+          }
+
+          const result = (await response.json()) as AssessmentCompleteResponse;
+
+          if (result.mode === "supabase" && result.completed) {
+            window.localStorage.removeItem(storageKey);
+            router.push("/dashboard");
+            return;
+          }
+        } catch {
+          setSaveLabel("Reconnecting...");
+        }
+      }
+
+      setSaveLabel("Saved locally if offline or failed");
       router.push("/dashboard");
       return;
     }
@@ -117,17 +202,16 @@ export function AssessmentFlow() {
   }
 
   function saveForLater() {
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        answers,
-        currentIndex,
-        updatedAt: new Date().toISOString(),
-      }),
+    saveLocalDraft(answers, currentIndex);
+    setSaveLabel(
+      persistenceMode === "supabase"
+        ? "Saved just now"
+        : "Saved locally if offline or failed",
     );
-    setSaveLabel("Saved for later");
     setResumeMessage(
-      "Your draft is saved on this device. Account-based resume will connect after the data layer is added.",
+      persistenceMode === "supabase"
+        ? "Your progress is saved to your account. Return to the assessment to resume here."
+        : "Your draft is saved on this device. Sign in and apply the schema migration to enable account-based resume.",
     );
   }
 
@@ -136,7 +220,11 @@ export function AssessmentFlow() {
       <div className="assessment-sticky">
         <div>
           <p className="assessment-save-label">{saveLabel}</p>
-          <p className="assessment-save-copy">Auto-save is on</p>
+          <p className="assessment-save-copy">
+            {persistenceMode === "supabase"
+              ? "Auto-save is on for your account"
+              : "Auto-save is on for this device"}
+          </p>
         </div>
         <button
           className="assessment-resume-button"

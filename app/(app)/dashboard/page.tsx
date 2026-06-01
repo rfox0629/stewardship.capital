@@ -1,18 +1,54 @@
 import Link from "next/link";
 
-import { mockDashboardSnapshot } from "../../../lib/dashboard/mock-dashboard";
+import { getLatestDashboardSnapshot } from "../../../lib/assessment/assessment-repository";
+import type { AssessmentPillar } from "../../../lib/assessment/questions";
 
-export default function DashboardOverviewPage() {
-  const { scores } = mockDashboardSnapshot;
-  const pillarEntries = Object.entries(scores.pillarScores);
+export const dynamic = "force-dynamic";
+
+export default async function DashboardOverviewPage() {
+  const dashboard = await getLatestDashboardSnapshot();
+
+  if (!dashboard) {
+    return (
+      <main className="dashboard-page" aria-labelledby="overview-title">
+        <p className="eyebrow">Overview</p>
+        <h1 id="overview-title">Create your stewardship dashboard.</h1>
+        <p>
+          Complete the fast diagnostic assessment to create your first
+          dashboard snapshot, scores, stage, and top priorities.
+        </p>
+
+        <section className="dashboard-next-step">
+          <div>
+            <p className="eyebrow">Next recommended step</p>
+            <h2>Start Your Assessment</h2>
+            <p>
+              The first assessment stays light: no dollar amounts, no uploads,
+              and no account connections.
+            </p>
+          </div>
+          <Link className="button button-primary" href="/assessment">
+            Start Your Assessment
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  const { scores } = dashboard;
+  const pillarEntries = Object.entries(scores.pillarScores) as [
+    AssessmentPillar,
+    number,
+  ][];
 
   return (
     <main className="dashboard-page" aria-labelledby="overview-title">
       <p className="eyebrow">Overview</p>
-      <h1 id="overview-title">Welcome back, {mockDashboardSnapshot.userName}.</h1>
+      <h1 id="overview-title">Welcome back, {dashboard.userName}.</h1>
       <p>
-        Your dashboard is using mock diagnostic data until assessment responses,
-        scores, and snapshots are persisted.
+        This dashboard reflects your latest completed assessment snapshot.
+        Financial Analysis remains the next step for deeper opportunity
+        discovery.
       </p>
 
       <section className="dashboard-score-grid" aria-label="Score summary">
@@ -28,8 +64,18 @@ export default function DashboardOverviewPage() {
         </article>
         <article className="dashboard-score-card">
           <span>Profile Completion</span>
-          <strong>{mockDashboardSnapshot.profileCompletion}%</strong>
+          <strong>{dashboard.profileCompletion}%</strong>
           <p>More detail unlocks after Financial Analysis.</p>
+        </article>
+        <article className="dashboard-score-card">
+          <span>Financial Readiness</span>
+          <strong>{scores.financialReadinessScore}</strong>
+          <p>Planning readiness based on the diagnostic.</p>
+        </article>
+        <article className="dashboard-score-card">
+          <span>Legacy Impact</span>
+          <strong>{scores.legacyImpactScore}</strong>
+          <p>Transfer, generosity, and long-term stewardship signals.</p>
         </article>
       </section>
 
@@ -74,13 +120,10 @@ export default function DashboardOverviewPage() {
       <section className="dashboard-next-step">
         <div>
           <p className="eyebrow">Next recommended step</p>
-          <h2>{mockDashboardSnapshot.nextRecommendedStep.title}</h2>
-          <p>{mockDashboardSnapshot.nextRecommendedStep.copy}</p>
+          <h2>{dashboard.nextRecommendedStep.title}</h2>
+          <p>{dashboard.nextRecommendedStep.copy}</p>
         </div>
-        <Link
-          className="button button-primary"
-          href={mockDashboardSnapshot.nextRecommendedStep.href}
-        >
+        <Link className="button button-primary" href={dashboard.nextRecommendedStep.href}>
           Complete Financial Analysis
         </Link>
       </section>
@@ -91,7 +134,7 @@ export default function DashboardOverviewPage() {
           <h2 id="locked-modules-title">More opens as your profile deepens.</h2>
         </div>
         <div className="locked-module-grid">
-          {mockDashboardSnapshot.lockedModules.map((module) => (
+          {dashboard.lockedModules.map((module) => (
             <article className="locked-module-card" key={module}>
               <span>Locked</span>
               <strong>{module}</strong>

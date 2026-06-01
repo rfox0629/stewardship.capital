@@ -21,7 +21,7 @@
 - [x] Login page
 - [x] Signup page
 - [x] Protected app routes
-- [ ] Session handling
+- [x] Session handling
 - [x] Logout
 
 ### App Shell
@@ -145,3 +145,49 @@ Do not build:
 - Persisted financial data
 - Opportunity engine
 - PDF generation
+
+## Sprint 6 - Supabase Schema + Persisted Assessment Drafts
+
+### Supabase Schema
+- [x] Migration structure added
+- [x] profiles table
+- [x] assessments table
+- [x] assessment_responses table
+- [x] assessment_scores table
+- [x] roadmap_items table
+- [x] dashboard_snapshots table
+- [x] reports table
+- [x] RLS enabled on user-owned tables
+- [x] Own-record select/insert/update/delete policies
+- [x] Helpful indexes
+- [x] Migration notes documented
+
+### Assessment Persistence
+- [x] Create or resume in-progress assessment for authenticated users
+- [x] Save answers to assessment_responses
+- [x] Update percent_complete
+- [x] Update last question index
+- [x] Visible save statuses
+- [x] Resume later returns to saved question
+- [x] Local fallback separated for unauthenticated or failed saves
+- [x] Completion persists scores
+- [x] Completion persists dashboard snapshot
+- [x] Completion persists roadmap items
+
+### Dashboard Persistence
+- [x] Dashboard reads latest persisted completed snapshot
+- [x] Starter state shown when no completed assessment exists
+- [x] Assessment CTA shown from starter state
+
+### Code Quality
+- [x] Typecheck passes
+- [x] Lint passes
+- [x] Build passes
+
+Do not build:
+- Plaid
+- uploads
+- OCR
+- PDF generation
+- opportunity engine
+- professional marketplace

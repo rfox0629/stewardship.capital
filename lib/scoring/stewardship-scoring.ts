@@ -26,7 +26,7 @@ export type StewardshipScoreResult = {
   confidenceLabels: string[];
 };
 
-type AssessmentAnswers = Record<string, string>;
+export type AssessmentAnswers = Record<string, string>;
 
 const pillars: AssessmentPillar[] = ["Protect", "Grow", "Transfer", "Impact"];
 

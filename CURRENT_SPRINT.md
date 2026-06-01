@@ -1,15 +1,17 @@
 # Current Sprint
 
 Goal:
-Complete Sprint 5 by adding the Financial Analysis placeholder without Plaid, uploads, OCR, or data extraction.
+Complete Sprint 6 by adding the Supabase MVP schema and moving assessment progress from local/mock state to persisted Supabase drafts when available.
 
 Success Criteria:
-- `/dashboard/grow` acts as the protected Financial Analysis entry point.
-- Placeholder progressive onboarding screen exists.
-- Connect Accounts is visible and marked Coming Soon.
-- Upload Documents is visible and marked Coming Soon.
-- Enter Manually is visible as placeholder-only.
-- No Plaid, uploads, document extraction, or persisted financial data are implemented.
+- MVP Supabase migration exists for profiles, assessments, assessment responses, assessment scores, roadmap items, dashboard snapshots, and reports.
+- RLS is enabled and authenticated users can only access their own records.
+- `/assessment` creates or resumes an in-progress assessment for authenticated users.
+- Assessment answers, percent complete, and last active question persist to Supabase.
+- Local draft fallback remains for unauthenticated users or failed Supabase saves.
+- Completing the assessment persists scores, roadmap items, and dashboard snapshot.
+- `/dashboard` reads the latest persisted completed dashboard snapshot when available.
+- Dashboard shows a starter state with assessment CTA when no completed assessment exists.
 - Lint, typecheck, and build pass.
 
 Reference:
@@ -18,14 +20,12 @@ Reference:
 - docs/mockups/homepage-v1.png when available
 
 Do Not Build Yet:
-- Supabase schema
-- Persisted assessment responses
-- Database-backed scoring
 - PDF reports
 - Opportunity engine
 - Plaid integrations
 - Document uploads
 - OCR or document extraction
+- Professional marketplace
 
 Stop and ask only if:
 - Product ambiguity exists

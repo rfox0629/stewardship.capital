@@ -1,8 +1,13 @@
 import Link from "next/link";
 
+import { getInitialAssessmentDraft } from "../../lib/assessment/assessment-repository";
 import { AssessmentFlow } from "./assessment-flow";
 
-export default function AssessmentPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AssessmentPage() {
+  const initialDraft = await getInitialAssessmentDraft();
+
   return (
     <main className="assessment-page">
       <header className="assessment-header">
@@ -15,7 +20,7 @@ export default function AssessmentPage() {
         <p>Fast diagnostic. No dollar amounts.</p>
       </header>
 
-      <AssessmentFlow />
+      <AssessmentFlow initialDraft={initialDraft} />
     </main>
   );
 }
