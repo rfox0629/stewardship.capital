@@ -1,52 +1,47 @@
 # Current Sprint
 
 Goal:
-Complete Sprint 8 by verifying real Supabase persistence for authenticated assessment drafts, assessment completion, and dashboard snapshots.
+Build the Financial Analysis Onboarding MVP as the next progressive onboarding layer after the dashboard.
 
-Success Criteria:
-- `.env.local` includes the public Supabase URL and publishable key.
-- The MVP migration is applied in the connected Supabase project.
-- Signup and login work with a test account.
-- Authenticated `/assessment` creates or resumes an in-progress assessment.
-- Answers persist to `assessment_responses`.
-- Assessment progress updates `percent_complete` and `last_question_index`.
-- Completion writes `assessment_scores`, `roadmap_items`, and `dashboard_snapshots`.
+Sprint 8 Verified Milestone:
+- Authenticated assessment creates or resumes an in-progress assessment.
+- Answers save to `assessment_responses`.
+- `percent_complete` persists.
+- `last_question_index` persists.
+- Resume later works.
+- Completion writes `assessment_scores`.
+- Completion writes `roadmap_items`.
+- Completion writes `dashboard_snapshots`.
 - `/dashboard` reads the persisted completed snapshot.
-- Logout works and unauthenticated `/dashboard` redirects to `/login`.
-- Resume returns users to saved assessment progress.
+- `npx tsc --noEmit`, `npm run lint`, and `npm run build` passed.
+
+Sprint 9 Success Criteria:
+- `/dashboard/grow` becomes a clear Financial Analysis onboarding page.
+- Cards exist for Connect Accounts, Upload Documents, and Enter Manually.
+- Connect Accounts is marked Coming Soon.
+- Upload Documents is marked Coming Soon.
+- Enter Manually is marked Start Here.
+- Manual entry placeholder sections exist for Household Snapshot, Income, Assets, Liabilities, Business, Giving, and Professional Team.
+- Dashboard Overview links users to `/dashboard/grow`.
+- All future functionality remains clearly marked as onboarding or placeholder unless persisted.
 - Lint, typecheck, and build pass.
-
-Current Status:
-- Public Supabase env vars are present.
-- Typecheck, lint, and build pass.
-- Dev server starts.
-- Unauthenticated `/dashboard` redirects to `/login`.
-- Auth redirect handling was fixed so expected redirects are not caught as errors.
-- Connected Supabase project does not currently show the MVP migration or public MVP tables.
-- New signup is currently blocked by Supabase email rate limiting.
-- `.env.example` is restored to placeholder values only.
-
-Manual Supabase SQL Editor Step:
-1. Open the Supabase dashboard for the connected project.
-2. Go to SQL Editor and create a new query.
-3. Paste the full contents of `supabase/migrations/20260601000000_create_mvp_stewardship_schema.sql`.
-4. Run the query once.
-5. Confirm these public tables exist: `profiles`, `assessments`, `assessment_responses`, `assessment_scores`, `roadmap_items`, `dashboard_snapshots`, and `reports`.
-6. Rerun Sprint 8 persistence QA after the email rate limit clears or an existing confirmed test account is available.
 
 Reference:
 - AGENTS.md
 - docs/*
+- docs/persistence-qa-v1.md
 - docs/mockups/homepage-v1.png when available
 
 Do Not Build Yet:
-- New product schema beyond the approved MVP migration
-- PDF reports
-- Opportunity engine
 - Plaid integrations
+- Account aggregation
 - Document uploads
 - OCR or document extraction
+- PDF generation
+- Opportunity engine
 - Professional marketplace
+- Real financial calculations
+- New Supabase tables unless required for the route/page shell
 
 Stop and ask only if:
 - Product ambiguity exists

@@ -245,8 +245,9 @@ Do not build:
 - [x] `.env.local` exists
 - [x] `NEXT_PUBLIC_SUPABASE_URL` present
 - [x] `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` present
-- [ ] MVP Supabase migration visible in connected project
-- [ ] MVP tables visible in connected project
+- [x] MVP schema applied in connected project
+- [x] MVP tables visible in connected project
+- [x] RLS enabled on MVP tables
 
 ### QA
 - [x] Typecheck passes
@@ -255,23 +256,33 @@ Do not build:
 - [x] Dev server starts
 - [x] Unauthenticated `/dashboard` redirects to `/login`
 - [x] Auth redirect handling fixed
-- [ ] New signup completed
-- [ ] Login completed
-- [ ] Authenticated assessment completed
-- [ ] `assessments` row verified
-- [ ] `assessment_responses` rows verified
-- [ ] `percent_complete` verified
-- [ ] `last_question_index` verified
-- [ ] `assessment_scores` row verified
-- [ ] `roadmap_items` rows verified
-- [ ] `dashboard_snapshots` row verified
-- [ ] Dashboard persisted snapshot verified
-- [ ] Logout verified
-- [ ] Resume verified
+- [x] Existing confirmed account used for QA
+- [x] Login completed
+- [x] Authenticated assessment completed
+- [x] `assessments` row verified
+- [x] `assessment_responses` rows verified
+- [x] `percent_complete` verified
+- [x] `last_question_index` verified
+- [x] `assessment_scores` row verified
+- [x] `roadmap_items` rows verified
+- [x] `dashboard_snapshots` row verified
+- [x] Dashboard persisted snapshot verified
+- [x] Resume verified
+
+### Verified Milestone
+- [x] Authenticated assessment creates or resumes an in-progress assessment
+- [x] Answers save to `assessment_responses`
+- [x] `percent_complete` persists
+- [x] `last_question_index` persists
+- [x] Resume later works
+- [x] Completion writes `assessment_scores`
+- [x] Completion writes `roadmap_items`
+- [x] Completion writes `dashboard_snapshots`
+- [x] Dashboard reads persisted snapshot
+- [x] Typecheck, lint, and build passed
 
 ### Blockers
-- Connected Supabase project currently has no visible MVP migration history or public MVP tables.
-- New signup is blocked by Supabase email rate limiting.
+- None for persisted assessment and dashboard snapshot flow.
 
 Do not build:
 - Plaid
@@ -280,3 +291,37 @@ Do not build:
 - PDF generation
 - opportunity engine
 - professional marketplace
+
+## Sprint 9 - Financial Analysis Onboarding MVP
+
+### Goal
+- [ ] Build the next progressive onboarding layer after the dashboard
+
+### Scope
+- [ ] Improve `/dashboard/grow` into a Financial Analysis onboarding page
+- [ ] Add Connect Accounts card marked Coming Soon
+- [ ] Add Upload Documents card marked Coming Soon
+- [ ] Add Enter Manually card marked Start Here
+- [ ] Add Household Snapshot manual entry placeholder section
+- [ ] Add Income manual entry placeholder section
+- [ ] Add Assets manual entry placeholder section
+- [ ] Add Liabilities manual entry placeholder section
+- [ ] Add Business manual entry placeholder section
+- [ ] Add Giving manual entry placeholder section
+- [ ] Add Professional Team manual entry placeholder section
+- [ ] Add dashboard Overview CTA to `/dashboard/grow`
+- [ ] Keep all future functionality clearly marked as onboarding or placeholder unless persisted
+
+### Code Quality
+- [ ] Typecheck passes
+- [ ] Lint passes
+- [ ] Build passes
+
+Do not build:
+- Plaid
+- uploads
+- OCR
+- PDF generation
+- opportunity engine
+- real financial calculations
+- new Supabase tables unless required for route/page shell

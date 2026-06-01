@@ -41,3 +41,7 @@ Do not put service role keys in browser-visible environment variables.
 - `assessment_responses.assessment_id` references `assessments(id)`.
 - Score, roadmap, dashboard, and report records are tied back to the owning user.
 - `authenticated` grants are included so the Data API can access the tables while RLS controls rows.
+
+## Persistence QA
+
+Sprint 8 real persistence QA passed on June 1, 2026. See `docs/persistence-qa-v1.md` for the verified milestone details.
