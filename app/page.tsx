@@ -250,6 +250,23 @@ export default function Home() {
         </section>
 
         <section
+          className="emotional-section"
+          aria-labelledby="emotional-title"
+        >
+          <div className="page-shell emotional-inner">
+            <h2 id="emotional-title">Every Family Deserves Clarity.</h2>
+            <div className="emotional-copy">
+              <p>Most families know what they earn and what they spend.</p>
+              <p>
+                Far fewer know what needs protection, what should grow, what
+                should transfer, and what can create lasting impact.
+              </p>
+              <p>Stewardship Capital helps bring everything together.</p>
+            </div>
+          </div>
+        </section>
+
+        <section
           className="clarity-section"
           id="clarity"
           aria-labelledby="clarity-title"
@@ -266,7 +283,6 @@ export default function Home() {
               attention, what can grow, what should transfer, and what can create
               lasting impact.
             </p>
-            <div className="clarity-visual" aria-hidden="true" />
           </div>
         </section>
 
