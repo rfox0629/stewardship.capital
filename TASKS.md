@@ -87,3 +87,34 @@ Do not build:
 - Financial analysis
 - Opportunity engine
 - PDF generation
+
+## Sprint 4 - Scoring + Dashboard MVP Mock Data
+
+### Scoring
+- [x] Basic scoring utilities
+- [x] Stewardship Score
+- [x] Financial Readiness Score
+- [x] Legacy Impact Score
+- [x] Stewardship Stage
+- [x] Top 3 priorities
+- [x] Mock data separated from future persisted data
+
+### Dashboard MVP
+- [x] Stewardship Score shown
+- [x] Stage shown
+- [x] Profile Completion % shown
+- [x] Protect / Grow / Transfer / Impact snapshot
+- [x] Top 3 priorities shown
+- [x] Locked future modules shown
+- [x] CTA to Complete Financial Analysis
+
+### Code Quality
+- [x] Typecheck passes
+- [x] Lint passes
+- [x] Build passes
+
+Do not build:
+- Persisted dashboard records
+- Financial Analysis
+- Opportunity engine
+- PDF generation

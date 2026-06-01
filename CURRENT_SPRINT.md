@@ -1,17 +1,13 @@
 # Current Sprint
 
 Goal:
-Complete Sprint 3 by adding the static Assessment MVP engine without creating schema or persisted assessment records.
+Complete Sprint 4 by adding scoring utilities and the dashboard MVP using clearly separated mock data.
 
 Success Criteria:
-- `/assessment` route exists.
-- Assessment is one-question-at-a-time and mobile first.
-- Assessment has 25 questions max.
-- No dollar amounts, uploads, or account connections are requested.
-- Sticky auto-save indicator is visible at the top.
-- Progress, Back, Next, and Resume later placeholder UI exist.
-- Draft state is local only until real persistence is added.
-- Completion navigates to `/dashboard`.
+- Basic scoring utilities exist.
+- Dashboard Overview shows Stewardship Score, Financial Readiness Score, Legacy Impact Score, and Stewardship Stage.
+- Dashboard Overview shows Profile Completion %, Protect / Grow / Transfer / Impact snapshot, Top 3 priorities, locked future modules, and Complete Financial Analysis CTA.
+- Mock data is clearly separated from future persisted data.
 - Lint, typecheck, and build pass.
 
 Reference:
@@ -22,7 +18,7 @@ Reference:
 Do Not Build Yet:
 - Supabase schema
 - Persisted assessment responses
-- Scoring
+- Database-backed scoring
 - PDF reports
 - Opportunity engine
 - Plaid integrations
