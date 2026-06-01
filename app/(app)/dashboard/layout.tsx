@@ -11,7 +11,7 @@ export default function DashboardLayout({
     <div className="app-shell">
       <aside className="app-sidebar" aria-label="Dashboard navigation">
         <div className="app-sidebar-brand">
-          <BrandMark className="app-brand" href="/" inverted />
+          <BrandMark className="app-brand" href="/" />
           <p>Stewardship Operating System</p>
         </div>
         <DashboardNav variant="sidebar" />
