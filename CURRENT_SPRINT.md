@@ -24,6 +24,15 @@ Current Status:
 - Auth redirect handling was fixed so expected redirects are not caught as errors.
 - Connected Supabase project does not currently show the MVP migration or public MVP tables.
 - New signup is currently blocked by Supabase email rate limiting.
+- `.env.example` is restored to placeholder values only.
+
+Manual Supabase SQL Editor Step:
+1. Open the Supabase dashboard for the connected project.
+2. Go to SQL Editor and create a new query.
+3. Paste the full contents of `supabase/migrations/20260601000000_create_mvp_stewardship_schema.sql`.
+4. Run the query once.
+5. Confirm these public tables exist: `profiles`, `assessments`, `assessment_responses`, `assessment_scores`, `roadmap_items`, `dashboard_snapshots`, and `reports`.
+6. Rerun Sprint 8 persistence QA after the email rate limit clears or an existing confirmed test account is available.
 
 Reference:
 - AGENTS.md
