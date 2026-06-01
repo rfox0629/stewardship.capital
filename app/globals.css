@@ -1054,6 +1054,61 @@ h3 {
   font-size: 1rem;
 }
 
+.analysis-intro-card,
+.analysis-option-card {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  background: var(--surface);
+}
+
+.analysis-intro-card {
+  border-color: rgba(87, 120, 100, 0.24);
+  background:
+    linear-gradient(145deg, rgba(220, 231, 221, 0.56), rgba(255, 253, 248, 0.88)),
+    var(--surface);
+}
+
+.analysis-intro-card h2,
+.analysis-option-heading h2 {
+  font-size: 1.35rem;
+}
+
+.analysis-intro-card p:not(.eyebrow) {
+  margin-top: 10px;
+}
+
+.analysis-option-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.analysis-option-card {
+  align-content: space-between;
+}
+
+.analysis-option-card .button {
+  width: 100%;
+}
+
+.analysis-option-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.analysis-option-heading span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--gold-soft);
+  color: #7a5a12;
+  font-size: 0.72rem;
+  font-weight: 820;
+}
+
 .empty-state-card h2 {
   font-size: 1.35rem;
 }
@@ -1156,6 +1211,10 @@ h3 {
 
   .locked-module-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-option-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .assessment-card h1 {

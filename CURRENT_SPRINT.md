@@ -1,13 +1,15 @@
 # Current Sprint
 
 Goal:
-Complete Sprint 4 by adding scoring utilities and the dashboard MVP using clearly separated mock data.
+Complete Sprint 5 by adding the Financial Analysis placeholder without Plaid, uploads, OCR, or data extraction.
 
 Success Criteria:
-- Basic scoring utilities exist.
-- Dashboard Overview shows Stewardship Score, Financial Readiness Score, Legacy Impact Score, and Stewardship Stage.
-- Dashboard Overview shows Profile Completion %, Protect / Grow / Transfer / Impact snapshot, Top 3 priorities, locked future modules, and Complete Financial Analysis CTA.
-- Mock data is clearly separated from future persisted data.
+- `/dashboard/grow` acts as the protected Financial Analysis entry point.
+- Placeholder progressive onboarding screen exists.
+- Connect Accounts is visible and marked Coming Soon.
+- Upload Documents is visible and marked Coming Soon.
+- Enter Manually is visible as placeholder-only.
+- No Plaid, uploads, document extraction, or persisted financial data are implemented.
 - Lint, typecheck, and build pass.
 
 Reference:
@@ -23,6 +25,7 @@ Do Not Build Yet:
 - Opportunity engine
 - Plaid integrations
 - Document uploads
+- OCR or document extraction
 
 Stop and ask only if:
 - Product ambiguity exists

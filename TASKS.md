@@ -118,3 +118,30 @@ Do not build:
 - Financial Analysis
 - Opportunity engine
 - PDF generation
+
+## Sprint 5 - Financial Analysis Placeholder
+
+### Financial Analysis
+- [x] `/dashboard/grow` entry point
+- [x] Progressive onboarding placeholder
+- [x] Connect Accounts option
+- [x] Connect Accounts marked Coming Soon
+- [x] Upload Documents option
+- [x] Upload Documents marked Coming Soon
+- [x] Enter Manually placeholder
+- [x] No Plaid implementation
+- [x] No uploads implementation
+- [x] No document extraction implementation
+
+### Code Quality
+- [x] Typecheck passes
+- [x] Lint passes
+- [x] Build passes
+
+Do not build:
+- Plaid integrations
+- Document uploads
+- OCR or extraction
+- Persisted financial data
+- Opportunity engine
+- PDF generation
