@@ -59,11 +59,14 @@ export default async function DashboardOverviewPage() {
             what needs attention first, then complete Financial Analysis when
             you are ready for deeper planning context.
           </p>
+          <span className="dashboard-stage-pill">
+            {scores.stage.toUpperCase()} Stage
+          </span>
         </div>
         <div className="dashboard-hero-score">
           <span>Stewardship Score</span>
           <strong>{scores.stewardshipScore}</strong>
-          <p>{scores.stage.toUpperCase()} Stage</p>
+          <p>{scores.confidenceLabels[0]}</p>
         </div>
       </section>
 
@@ -76,11 +79,14 @@ export default async function DashboardOverviewPage() {
         <article className="dashboard-score-card dashboard-score-card-primary">
           <span>Stewardship Stage</span>
           <strong>{scores.stage.toUpperCase()}</strong>
-          <p>Stage language is diagnostic and encouraging.</p>
+          <p>A simple diagnostic stage for the next faithful step.</p>
         </article>
         <article className="dashboard-score-card">
           <span>Profile Completion</span>
           <strong>{dashboard.profileCompletion}%</strong>
+          <div className="meter-track" aria-hidden="true">
+            <span style={{ width: `${dashboard.profileCompletion}%` }} />
+          </div>
           <p>More detail unlocks after Financial Analysis.</p>
         </article>
         <article className="dashboard-score-card">
@@ -155,8 +161,9 @@ export default async function DashboardOverviewPage() {
         <div className="locked-module-grid">
           {dashboard.lockedModules.map((module) => (
             <article className="locked-module-card" key={module}>
-              <span>Locked</span>
+              <span>Future module</span>
               <strong>{module}</strong>
+              <p>Unlocks after the next build phase.</p>
             </article>
           ))}
         </div>

@@ -8,10 +8,11 @@ export default function ProtectPage() {
         and document readiness topics.
       </p>
       <section className="empty-state-card" aria-label="Protect placeholder">
+        <p className="eyebrow">Coming soon</p>
         <h2>Protect details are coming soon.</h2>
         <p>
-          This tab will deepen after dashboard snapshots and Financial Analysis
-          are available for this account.
+          This tab will deepen after the dashboard has more supporting analysis
+          for risk, estate, document, and coverage topics.
         </p>
       </section>
     </main>

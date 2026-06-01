@@ -8,6 +8,7 @@ export default function ReportsPage() {
         is intentionally not built yet.
       </p>
       <section className="empty-state-card" aria-label="Reports placeholder">
+        <p className="eyebrow">Coming soon</p>
         <h2>Reports are coming soon.</h2>
         <p>
           Reports will unlock after future dashboard, Financial Analysis, and

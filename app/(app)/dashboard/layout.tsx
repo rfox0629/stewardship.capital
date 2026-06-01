@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { BrandMark } from "../../brand-mark";
 import { signOut } from "../../auth/actions";
 import { DashboardNav } from "./dashboard-nav";
 
@@ -11,15 +10,13 @@ export default function DashboardLayout({
   return (
     <div className="app-shell">
       <aside className="app-sidebar" aria-label="Dashboard navigation">
-        <Link className="app-brand" href="/">
-          <span className="brand-monogram" aria-hidden="true">
-            SC
-          </span>
-          <span>Stewardship Capital</span>
-        </Link>
+        <div className="app-sidebar-brand">
+          <BrandMark className="app-brand" href="/" inverted />
+          <p>Stewardship Operating System</p>
+        </div>
         <DashboardNav variant="sidebar" />
         <div className="app-sidebar-footer">
-          <p>Stewardship dashboard</p>
+          <p>Protected stewardship workspace</p>
           <form action={signOut}>
             <button className="app-logout-button" type="submit">
               Log Out
@@ -30,12 +27,7 @@ export default function DashboardLayout({
 
       <div className="app-main">
         <header className="app-topbar">
-          <Link className="app-mobile-brand" href="/">
-            <span className="brand-monogram" aria-hidden="true">
-              SC
-            </span>
-            <span>Stewardship Capital</span>
-          </Link>
+          <BrandMark className="app-mobile-brand" href="/" />
           <form action={signOut}>
             <button className="app-login-link" type="submit">
               Log Out

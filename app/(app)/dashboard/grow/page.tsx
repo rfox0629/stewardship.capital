@@ -2,17 +2,17 @@ const analysisOptions = [
   {
     title: "Connect Accounts",
     status: "Coming Soon",
-    copy: "Future account connections may help organize balances and activity after the security and data model are ready.",
+    copy: "A future connection path for organizing balances and activity after the security and data model are ready.",
   },
   {
     title: "Upload Documents",
     status: "Coming Soon",
-    copy: "Future document uploads may support deeper review after storage, redaction, and extraction workflows are designed.",
+    copy: "A future upload path after storage, redaction, and document workflows are designed.",
   },
   {
     title: "Enter Manually",
-    status: "Placeholder",
-    copy: "Manual entry will become the first lightweight path for adding financial context without forcing a giant intake form.",
+    status: "Start Here Soon",
+    copy: "The first lightweight path for adding financial context without forcing a giant intake form.",
   },
 ];
 
@@ -22,8 +22,8 @@ export default function GrowPage() {
       <p className="eyebrow">Financial Analysis</p>
       <h1 id="grow-title">Complete Financial Analysis.</h1>
       <p>
-        This placeholder will become the progressive onboarding path for deeper
-        financial clarity after the initial stewardship dashboard is created.
+        This is the future progressive onboarding layer for deeper financial
+        clarity after the initial stewardship dashboard is created.
       </p>
 
       <section className="analysis-intro-card">
@@ -32,7 +32,7 @@ export default function GrowPage() {
           <h2>Start with the least-friction path.</h2>
           <p>
             Financial data collection is intentionally separate from the first
-            assessment. This screen previews the future options without
+            assessment. This screen previews the future paths without
             connecting accounts, accepting uploads, or extracting documents.
           </p>
         </div>
@@ -54,8 +54,8 @@ export default function GrowPage() {
               disabled
               type="button"
             >
-              {option.status === "Placeholder"
-                ? "Manual Entry Placeholder"
+              {option.title === "Enter Manually"
+                ? "Manual Entry Preview"
                 : "Coming Soon"}
             </button>
           </article>
@@ -69,7 +69,7 @@ export default function GrowPage() {
         </div>
         <p>
           Plaid, uploads, document extraction, opportunity scoring, and
-          professional reports remain intentionally locked until the supporting
+          professional reports remain locked until the supporting
           architecture is ready.
         </p>
       </section>

@@ -10,6 +10,7 @@ export default function TransferPage() {
         transfer, and family legacy topics.
       </p>
       <section className="empty-state-card" aria-label="Transfer placeholder">
+        <p className="eyebrow">Coming soon</p>
         <h2>Transfer details are coming soon.</h2>
         <p>
           Legacy and values-transfer recommendations will deepen as the
