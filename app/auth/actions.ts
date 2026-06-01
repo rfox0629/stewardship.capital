@@ -18,6 +18,7 @@ export async function login(formData: FormData) {
   const email = getString(formData, "email");
   const password = getString(formData, "password");
   const redirectTo = getString(formData, "redirectTo") || "/dashboard";
+  let loginError: string | null = null;
 
   if (!email || !password) {
     redirectWithError("/login", "Enter your email and password.");
@@ -31,13 +32,17 @@ export async function login(formData: FormData) {
     });
 
     if (error) {
-      redirectWithError("/login", error.message);
+      loginError = error.message;
     }
   } catch (error) {
     redirectWithError(
       "/login",
       error instanceof Error ? error.message : "Unable to log in.",
     );
+  }
+
+  if (loginError) {
+    redirectWithError("/login", loginError);
   }
 
   revalidatePath("/", "layout");
@@ -48,6 +53,8 @@ export async function signup(formData: FormData) {
   const fullName = getString(formData, "name");
   const email = getString(formData, "email");
   const password = getString(formData, "password");
+  let signupError: string | null = null;
+  let hasSession = false;
 
   if (!fullName || !email || !password) {
     redirectWithError("/signup", "Enter your name, email, and password.");
@@ -66,19 +73,25 @@ export async function signup(formData: FormData) {
     });
 
     if (error) {
-      redirectWithError("/signup", error.message);
+      signupError = error.message;
     }
 
-    revalidatePath("/", "layout");
-
-    if (data.session) {
-      redirect("/assessment");
-    }
+    hasSession = Boolean(data.session);
   } catch (error) {
     redirectWithError(
       "/signup",
       error instanceof Error ? error.message : "Unable to create account.",
     );
+  }
+
+  if (signupError) {
+    redirectWithError("/signup", signupError);
+  }
+
+  revalidatePath("/", "layout");
+
+  if (hasSession) {
+    redirect("/assessment");
   }
 
   redirect(

@@ -238,3 +238,45 @@ Do not build:
 - PDF generation
 - opportunity engine
 - professional marketplace
+
+## Sprint 8 - Real Supabase Persistence QA
+
+### Preconditions
+- [x] `.env.local` exists
+- [x] `NEXT_PUBLIC_SUPABASE_URL` present
+- [x] `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` present
+- [ ] MVP Supabase migration visible in connected project
+- [ ] MVP tables visible in connected project
+
+### QA
+- [x] Typecheck passes
+- [x] Lint passes
+- [x] Build passes
+- [x] Dev server starts
+- [x] Unauthenticated `/dashboard` redirects to `/login`
+- [x] Auth redirect handling fixed
+- [ ] New signup completed
+- [ ] Login completed
+- [ ] Authenticated assessment completed
+- [ ] `assessments` row verified
+- [ ] `assessment_responses` rows verified
+- [ ] `percent_complete` verified
+- [ ] `last_question_index` verified
+- [ ] `assessment_scores` row verified
+- [ ] `roadmap_items` rows verified
+- [ ] `dashboard_snapshots` row verified
+- [ ] Dashboard persisted snapshot verified
+- [ ] Logout verified
+- [ ] Resume verified
+
+### Blockers
+- Connected Supabase project currently has no visible MVP migration history or public MVP tables.
+- New signup is blocked by Supabase email rate limiting.
+
+Do not build:
+- Plaid
+- uploads
+- OCR
+- PDF generation
+- opportunity engine
+- professional marketplace

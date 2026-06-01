@@ -1,16 +1,29 @@
 # Current Sprint
 
 Goal:
-Complete Sprint 7 by polishing the assessment and dashboard MVP so the product feels premium, mobile-first, simple, and aligned with the Stewardship Capital brand.
+Complete Sprint 8 by verifying real Supabase persistence for authenticated assessment drafts, assessment completion, and dashboard snapshots.
 
 Success Criteria:
-- `/assessment` has a centered Typeform-style question card.
-- Assessment status shows Stewardship Capital, percent complete, and save state.
-- Answer buttons, progress, Back/Next, and completion state feel clear and mobile-first.
-- `/dashboard` Overview has a stronger welcome card, score/stage/profile summary, pillar snapshot, priorities, CTA, and locked modules.
-- Dashboard empty state clearly points users to Start Assessment without misleading mock data.
-- Sidebar/mobile navigation has active states and no horizontal overflow at 320px.
+- `.env.local` includes the public Supabase URL and publishable key.
+- The MVP migration is applied in the connected Supabase project.
+- Signup and login work with a test account.
+- Authenticated `/assessment` creates or resumes an in-progress assessment.
+- Answers persist to `assessment_responses`.
+- Assessment progress updates `percent_complete` and `last_question_index`.
+- Completion writes `assessment_scores`, `roadmap_items`, and `dashboard_snapshots`.
+- `/dashboard` reads the persisted completed snapshot.
+- Logout works and unauthenticated `/dashboard` redirects to `/login`.
+- Resume returns users to saved assessment progress.
 - Lint, typecheck, and build pass.
+
+Current Status:
+- Public Supabase env vars are present.
+- Typecheck, lint, and build pass.
+- Dev server starts.
+- Unauthenticated `/dashboard` redirects to `/login`.
+- Auth redirect handling was fixed so expected redirects are not caught as errors.
+- Connected Supabase project does not currently show the MVP migration or public MVP tables.
+- New signup is currently blocked by Supabase email rate limiting.
 
 Reference:
 - AGENTS.md
@@ -18,7 +31,7 @@ Reference:
 - docs/mockups/homepage-v1.png when available
 
 Do Not Build Yet:
-- New schema
+- New product schema beyond the approved MVP migration
 - PDF reports
 - Opportunity engine
 - Plaid integrations
