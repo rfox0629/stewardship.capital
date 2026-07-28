@@ -1,0 +1,32 @@
+# CODEOWNERS for rfox0629/stewardship.capital.
+# Current verified owner: founder account @rfox0629.
+
+* @rfox0629
+
+# GitHub metadata and CI
+/.github/CODEOWNERS @rfox0629
+/.github/workflows/ @rfox0629
+
+# Package, build, and deployment configuration
+/.env* @rfox0629
+/package.json @rfox0629
+/package-lock.json @rfox0629
+/eslint.config.mjs @rfox0629
+/next.config.mjs @rfox0629
+/postcss.config.mjs @rfox0629
+/tsconfig.json @rfox0629
+/skills-lock.json @rfox0629
+
+# Database, Supabase, auth, and middleware
+/supabase/ @rfox0629
+/lib/supabase/ @rfox0629
+/proxy.ts @rfox0629
+/app/auth/ @rfox0629
+/app/login/ @rfox0629
+/app/signup/ @rfox0629
+
+# Application boundary: Stewardship Capital
+/app/ @rfox0629
+/lib/assessment/ @rfox0629
+/lib/dashboard/ @rfox0629
+/lib/scoring/ @rfox0629
