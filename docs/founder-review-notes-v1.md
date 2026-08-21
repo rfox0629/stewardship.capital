@@ -2,7 +2,15 @@
 
 Covers USA-185 and USA-184.
 
-## How to open the preview
+## Preview link
+
+**https://stewardshipcapital-git-claud-3ead0e-ryan-foxs-projects-9a51a4d5.vercel.app**
+
+This is a Vercel preview of branch `claude/stewardship-capital-redesign-0a2632`. Vercel Authentication is enabled on the project, so the link is private and asks for a Vercel login. It is not publicly readable.
+
+Append any route below to that base URL.
+
+## Or run it locally
 
 From the repository root, on branch `claude/stewardship-capital-redesign-0a2632`:
 
@@ -76,7 +84,7 @@ Nothing on the new public site links to any of these. They are reachable only by
 - No persistence, no auth, no datastore. Seeded preview data only.
 - `EventScene` is drawn from theme colors and stands in for real Founders Weekend photography.
 - Seed people other than Brooke Fox and Ryan Fox are invented.
-- No Vercel deployment yet, so the preview is local. Say the word and it can be deployed for a shareable link.
+- Supabase environment variables are not set on the preview, so `/login`, `/signup`, and `/dashboard` degrade gracefully rather than authenticating. That surface is unchanged from before this work.
 
 ## Related documents
 
