@@ -2535,3 +2535,24 @@ h3 {
     font-size: 0.56rem;
   }
 }
+
+/* Preserved internal route notice. Shown on the previous public homepage,
+   which now lives at /internal/operating-system for founder review only. */
+.preserved-route-banner {
+  background: var(--navy);
+  color: #fbfaf6;
+  padding: 10px 0;
+}
+
+.preserved-route-banner p {
+  width: min(100% - 32px, 1180px);
+  margin: 0 auto;
+  color: rgba(251, 250, 246, 0.82);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.preserved-route-banner strong {
+  color: #efe2bd;
+  font-weight: 600;
+}

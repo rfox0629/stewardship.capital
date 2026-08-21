@@ -1,0 +1,42 @@
+/*
+ * Stewardship Capital design tokens.
+ * Prefixed sc- so they never collide with the legacy operating system
+ * stylesheet in app/globals.css.
+ */
+
+:root {
+  --sc-paper: #f7f4ee;
+  --sc-paper-deep: #efeae0;
+  --sc-surface: #fffdf9;
+  --sc-ink: #0c1c2c;
+  --sc-navy: #0a1f33;
+  --sc-navy-deep: #061422;
+  --sc-muted: #5d6a70;
+  --sc-muted-light: #94a3a8;
+
+  --sc-time: #3f6d8e;
+  --sc-talent: #2a6b53;
+  --sc-treasure: #b98a34;
+
+  --sc-time-soft: #dde7ef;
+  --sc-talent-soft: #dbe9e2;
+  --sc-treasure-soft: #f0e5cd;
+
+  --sc-line: #e2dcd0;
+  --sc-line-strong: #cfc6b5;
+  --sc-line-invert: rgba(247, 244, 238, 0.16);
+
+  --sc-shadow-soft: 0 18px 50px rgba(10, 31, 51, 0.07);
+  --sc-shadow-lift: 0 28px 80px rgba(10, 31, 51, 0.13);
+
+  --sc-radius: 4px;
+  --sc-radius-lg: 10px;
+
+  --sc-font-display-stack: var(--sc-font-display), "Iowan Old Style", Georgia,
+    "Times New Roman", serif;
+  --sc-font-text-stack: var(--sc-font-text), Inter, ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+
+  --sc-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --sc-shell: min(100% - 40px, 1200px);
+}
