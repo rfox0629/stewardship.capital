@@ -11,6 +11,13 @@
  * edition chrome, so the tools stay fast and readable.
  */
 
+/* The root layout no longer ships a global reset with a background, so the
+   operating system paints the document behind its own frame. */
+html:has(.eo-frame),
+html:has(.eo-frame) body {
+  background: #f3f4f5;
+}
+
 .eo-frame {
   --eo-bg: #f3f4f5;
   --eo-surface: #ffffff;

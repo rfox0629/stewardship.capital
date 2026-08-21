@@ -1,3 +1,6 @@
+> **Superseded.** This describes the warm paper and serif direction, which was
+> replaced in full by the graphite rebuild. See `design-system-v2.md`.
+
 # Stewardship Capital Visual Concept v1
 
 Deliverable 2 of USA-185.

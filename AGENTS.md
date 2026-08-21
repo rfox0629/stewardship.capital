@@ -219,27 +219,30 @@ Primary docs:
 - `docs/brand-homepage-direction-v1.md`
 - `docs/build-roadmap-v1.md`
 
-## Route Map After The August 2026 Redesign
+## Route Map After The Graphite Rebuild
 
-USA-185 and USA-184 changed what lives where. Read this before touching routes.
+Public Stewardship.Capital, rebuilt from zero. See `docs/design-system-v2.md`.
 
-Public Stewardship Capital:
-
-- `/` is the visual homepage. Source in `app/(site)/page.tsx`, styles in `app/styles/sc-site.css`, tokens in `app/styles/sc-tokens.css`. All classes are `sc-` prefixed.
-- `/events` is the Stewardship Events entry point.
+- `/` is the homepage: hero, three product panels, connect. Source in `app/(www)/`, styles in `app/styles/site.css`, tokens in `app/styles/tokens.css`.
+- `/work`, `/work/[slug]`, `/about`, `/connect`.
+- Adding a company means adding one object to `app/(www)/_lib/products.ts`. Do not hard code a product into a page.
+- `/events` redirects to `/work/spark`. Stewardship Events is now called Spark on public surfaces.
 
 Preserved, not public:
 
-- `/internal/operating-system` holds the previous homepage and Operating System entry point, verbatim, with a banner and `noindex`. It is not linked from public navigation. Do not delete it and do not link it publicly.
-- `/dashboard`, `/assessment`, `/login`, `/signup` are unchanged and are disallowed in `robots.txt`.
+- `/internal/operating-system` holds the original homepage. Do not delete it and do not link it publicly.
+- `/dashboard`, `/assessment`, `/login`, `/signup` are unchanged and disallowed in `robots.txt`.
 
 Stewardship Events operating system:
 
-- `app/events-os` is a self contained application. Nothing outside it may import from it, and it imports nothing from the Stewardship Capital site, `lib/`, or Supabase.
-- Every route is built through `app/events-os/_lib/paths.ts`. Never hard code an events route.
-- Every read goes through `app/events-os/_lib/store.ts`. Data is seeded in `_lib/platform-data.ts`.
-- The folder is designed to move to its own repository and domain. See `docs/stewardship-events-architecture-v1.md`.
+- `app/events-os` is self contained. Nothing outside it may import from it, and it imports nothing from the rest of the app.
+- Routes go through `app/events-os/_lib/paths.ts`. Reads go through `_lib/store.ts`.
+- It still says Stewardship Events internally. Renaming it to Spark is a separate task.
 
-Copy rule for every public surface: no em dashes.
+CSS ownership, which matters:
 
-The homepage direction recorded under "Brand And Homepage Direction" above describes the preserved page at `/internal/operating-system`, not the current public homepage. The current homepage concept is in `docs/stewardship-capital-visual-concept-v1.md`.
+- `app/styles/tokens.css` is the only stylesheet loaded at the root layout. It carries the design tokens and a nine line reset.
+- `app/globals.css` is the legacy platform stylesheet. It is imported only by the five legacy surfaces that need it. Never import it at the root layout again: it contains element selectors that override the new site.
+- Tailwind is present in package.json but unused.
+
+The design direction recorded under "Brand And Homepage Direction" above describes the preserved page at `/internal/operating-system`, not the current public site.
