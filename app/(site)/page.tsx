@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BraidDiagram } from "./_components/braid-diagram";
 import { MovementRail } from "./_components/movement-rail";
+import { SplashHero } from "./_components/splash-hero";
 import { StrandField } from "./_components/strand-field";
 
 const strands = [
@@ -28,15 +29,17 @@ const strands = [
 export default function HomePage() {
   return (
     <>
-      <section className="sc-hero" aria-labelledby="sc-hero-title">
+      <SplashHero />
+
+      <section className="sc-hero" id="statement" aria-labelledby="sc-hero-title">
         <div className="sc-shell sc-hero-inner">
           <p className="sc-eyebrow" data-sc-reveal>
-            Stewardship Capital
+            What we are
           </p>
-          <h1 id="sc-hero-title" data-sc-reveal style={{ transitionDelay: "90ms" }}>
+          <h2 id="sc-hero-title" data-sc-reveal style={{ transitionDelay: "90ms" }}>
             Everything entrusted.
             <span>Faithfully stewarded.</span>
-          </h1>
+          </h2>
           <p className="sc-hero-lede" data-sc-reveal style={{ transitionDelay: "180ms" }}>
             Time, talent, and treasure are one trust. We help people, families,
             organizations, and ventures bring vision into faithful execution.
@@ -45,8 +48,8 @@ export default function HomePage() {
             <Link className="sc-button sc-button-primary" href="#trust">
               See the system
             </Link>
-            <Link className="sc-button sc-button-ghost" href="#invitation">
-              Start a conversation
+            <Link className="sc-button sc-button-ghost" href="#expressions">
+              What we build
             </Link>
           </div>
         </div>

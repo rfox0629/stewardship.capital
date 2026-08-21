@@ -14,17 +14,33 @@ const links = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
-  const [lifted, setLifted] = useState(false);
+  /* On a page that opens with the splash, the header holds back until the
+     reader scrolls past it. */
+  const [overSplash, setOverSplash] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setLifted(window.scrollY > 24);
+    const splash = document.querySelector(".sc-splash");
+
+    const onScroll = () => {
+      setOverSplash(
+        Boolean(splash) && window.scrollY < window.innerHeight * 0.72,
+      );
+    };
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   return (
-    <header className="sc-header" data-lifted={lifted ? "true" : undefined}>
+    <header
+      className="sc-header"
+      data-splash={overSplash ? "true" : undefined}
+    >
       <div className="sc-header-inner">
         <ScMark href="/" />
 

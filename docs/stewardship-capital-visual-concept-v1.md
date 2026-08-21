@@ -29,7 +29,7 @@ Warm paper ground with a deep navy anchor and three strand colors, one per pilla
 
 | Token | Value | Role |
 | --- | --- | --- |
-| `--sc-paper` | `#f7f4ee` | page ground, warm white |
+| `--sc-paper` | `#f7f4ee` | page ground, warm white, below the splash |
 | `--sc-paper-deep` | `#efeae0` | alternating band |
 | `--sc-ink` | `#0c1c2c` | primary type |
 | `--sc-navy` | `#0a1f33` | deep sections, footer |
@@ -40,6 +40,8 @@ Warm paper ground with a deep navy anchor and three strand colors, one per pilla
 | `--sc-line` | `#e2dcd0` | hairlines |
 
 Three accents is the maximum. They are never used decoratively, only to identify a strand.
+
+The splash carries its own scene palette, a night to dawn sky running from `#070b20` through indigo and rose to a warm horizon, with the wordmark in `#f8f3e7`. It is the one place the page departs from paper, and it exists to give the name a full screen before any explanation begins.
 
 ## Typography
 
@@ -61,7 +63,8 @@ Everything is CSS driven and collapses to a static, fully legible page under `pr
 
 ## Page structure as built
 
-1. **Hero.** The strands form. One headline, one line of support, two restrained calls to action.
+0. **Splash.** Full viewport. The name at the largest size the screen allows, over a sunrise, with one way in: "Click here to learn more." Nothing else competes. This is the founder's requested treatment, and it changes the palette above the fold from warm paper to a night to dawn sky. The three strands appear as rays converging into the rising light, so the splash is still the same drawing as the rest of the page.
+1. **Statement.** The strands form. One headline, one line of support, two restrained calls to action.
 2. **The trust.** Time, Talent, Treasure as three interactive strand cards over the shared diagram.
 3. **Convergence.** The braid. One idea: these are one trust, not three accounts.
 4. **The movement.** Entrusted, Understood, Ordered, Multiplied, Given. A five stop rail with scroll tracking.
