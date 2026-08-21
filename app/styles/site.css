@@ -82,7 +82,7 @@ html:has(.www) body {
   height: 0.3em;
   transform: translateX(-50%);
   background: var(--signal);
-  box-shadow: 0 0 16px rgba(255, 77, 0, 0.6);
+  box-shadow: 0 0 9px rgba(255, 77, 0, 0.42);
 }
 
 /* ------------------------------------------------------------------ nav */
@@ -227,6 +227,22 @@ html:has(.www) body {
   width: 100%;
   height: 100%;
   z-index: 0;
+  mask-image: radial-gradient(
+    132% 126% at 52% 50%,
+    #000 52%,
+    rgba(0, 0, 0, 0.5) 79%,
+    transparent 100%
+  );
+  animation: field-in 1.8s var(--ease-out) both;
+}
+
+@keyframes field-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Keeps the type legible wherever the field lights up behind it. */
@@ -258,11 +274,47 @@ html:has(.www) body {
 }
 
 .hero-mark {
-  font-size: clamp(1.05rem, 1.9vw, 1.5rem);
+  font-size: clamp(1.35rem, 3.1vw, 2.35rem);
   color: var(--white);
-  letter-spacing: -0.01em;
-  margin-bottom: clamp(20px, 3vw, 34px) !important;
-  animation: rise 0.9s var(--ease-out) both;
+  letter-spacing: -0.028em;
+  margin-bottom: clamp(14px, 1.8vw, 22px) !important;
+}
+
+.mask {
+  overflow: hidden;
+  padding: 0.1em 0;
+  margin: -0.1em 0;
+}
+
+.mask > * {
+  animation: mask-rise 1.05s var(--ease-out) both;
+}
+
+.mask:nth-of-type(1) > * {
+  animation-delay: 0.16s;
+}
+
+.mask:nth-of-type(2) > * {
+  animation-delay: 0.27s;
+}
+
+.mask:nth-of-type(3) > * {
+  animation-delay: 0.46s;
+}
+
+.mask:nth-of-type(4) > * {
+  animation-delay: 0.58s;
+}
+
+@keyframes mask-rise {
+  from {
+    transform: translateY(105%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
 
 .hero h1 {
@@ -271,7 +323,6 @@ html:has(.www) body {
   font-variation-settings: "wdth" 106;
   letter-spacing: -0.052em;
   line-height: 0.88;
-  animation: rise 1s var(--ease-out) 0.08s both;
 }
 
 .hero-sub {
@@ -280,7 +331,6 @@ html:has(.www) body {
   font-size: clamp(1rem, 1.35vw, 1.22rem);
   line-height: 1.55;
   color: var(--dim);
-  animation: rise 1s var(--ease-out) 0.18s both;
 }
 
 .explore {
@@ -293,7 +343,6 @@ html:has(.www) body {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line-bright);
   transition: border-color 0.35s var(--ease), color 0.35s var(--ease);
-  animation: rise 1s var(--ease-out) 0.28s both;
 }
 
 .explore svg {
@@ -317,6 +366,54 @@ html:has(.www) body {
     transform: translateY(18px);
   }
   to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------- reveals */
+
+[data-reveal]:not(.panel-inner) {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.8s var(--ease-out),
+    transform 0.9s var(--ease-out);
+}
+
+[data-reveal]:not(.panel-inner)[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.panel-inner > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.75s var(--ease-out),
+    transform 0.85s var(--ease-out);
+}
+
+.panel-inner[data-visible="true"] > * {
+  opacity: 1;
+  transform: none;
+}
+
+.panel-inner[data-visible="true"] > *:nth-child(2) {
+  transition-delay: 0.09s;
+}
+
+.panel-inner[data-visible="true"] > *:nth-child(3) {
+  transition-delay: 0.17s;
+}
+
+.panel-inner[data-visible="true"] > *:nth-child(4) {
+  transition-delay: 0.25s;
+}
+
+@media (scripting: none) {
+  [data-reveal]:not(.panel-inner),
+  .panel-inner > * {
     opacity: 1;
     transform: none;
   }
@@ -367,6 +464,12 @@ html:has(.www) body {
   width: 100%;
   height: 100%;
   z-index: 0;
+  mask-image: radial-gradient(
+    128% 122% at 58% 50%,
+    #000 50%,
+    rgba(0, 0, 0, 0.5) 78%,
+    transparent 100%
+  );
 }
 
 .panel::after {
@@ -522,14 +625,9 @@ html:has(.www) body {
 /* --------------------------------------------------------------- footer */
 
 .foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px 24px;
-  padding: 26px clamp(18px, 3.4vw, 40px);
+  padding: 30px clamp(18px, 3.4vw, 40px);
   border-top: 1px solid var(--line);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   color: var(--dimmer);
 }
 
@@ -770,4 +868,5 @@ html:has(.www) body {
   display: inline-block;
   margin-top: clamp(32px, 4vw, 48px);
 }
+
 

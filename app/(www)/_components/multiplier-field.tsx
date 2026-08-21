@@ -14,7 +14,9 @@ type Node = {
   phase: number;
 };
 
-const SPACING = 46;
+/* Fewer, larger cells on small screens. The same density that reads as
+   fine structure on a desktop reads as noise on a phone. */
+const spacingFor = (width: number) => (width < 640 ? 64 : 46);
 const RADIUS = 215;
 const IDLE_MS = 2000;
 
@@ -48,6 +50,10 @@ export function MultiplierField() {
     let rows = 0;
     let nodes: Node[] = [];
     let edges: Array<[number, number]> = [];
+    /* Longer range connections that only appear where attention is strongest,
+       so the focus resolves into deliberate architecture rather than just a
+       brighter patch of the same grid. */
+    let chords: Array<[number, number]> = [];
     let frame = 0;
 
     /* Attention. Follows the pointer, and wanders on its own when idle. */
@@ -67,6 +73,7 @@ export function MultiplierField() {
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      const SPACING = spacingFor(width);
       cols = Math.ceil(width / SPACING) + 3;
       rows = Math.ceil(height / SPACING) + 3;
       nodes = [];
@@ -92,12 +99,16 @@ export function MultiplierField() {
       }
 
       edges = [];
+      chords = [];
       for (let r = 0; r < rows; r += 1) {
         for (let c = 0; c < cols; c += 1) {
           const i = r * cols + c;
           if (c + 1 < cols) edges.push([i, i + 1]);
           if (r + 1 < rows) edges.push([i, i + cols]);
           if (c + 1 < cols && r + 1 < rows) edges.push([i, i + cols + 1]);
+          if (c + 2 < cols) chords.push([i, i + 2]);
+          if (r + 2 < rows) chords.push([i, i + cols * 2]);
+          if (c + 2 < cols && r + 2 < rows) chords.push([i, i + cols * 2 + 2]);
         }
       }
 
@@ -131,7 +142,7 @@ export function MultiplierField() {
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         const target = dist < RADIUS ? Math.pow(1 - dist / RADIUS, 1.7) : 0;
         n.a += (target - n.a) * 0.11;
-        const pull = n.a * 11;
+        const pull = n.a * 14;
         n.x = n.bx + (dx / dist) * pull;
         n.y = n.by + (dy / dist) * pull;
       }
@@ -157,6 +168,19 @@ export function MultiplierField() {
         const e = Math.min(a.a, b.a);
         if (e < 0.05) continue;
         ctx.strokeStyle = `rgba(255, 77, 0, ${(e * 0.95).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      /* Pass three: architecture. Only where attention is strongest. */
+      for (let i = 0; i < chords.length; i += 1) {
+        const a = nodes[chords[i][0]];
+        const b = nodes[chords[i][1]];
+        const e = Math.min(a.a, b.a);
+        if (e < 0.46) continue;
+        ctx.strokeStyle = `rgba(255, 77, 0, ${((e - 0.46) * 0.9).toFixed(3)})`;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);

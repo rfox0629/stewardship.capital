@@ -1,3 +1,4 @@
+import { Reveal } from "./_components/reveal";
 import { SiteNav } from "./_components/site-nav";
 import "../styles/site.css";
 
@@ -14,9 +15,11 @@ export default function WwwLayout({
       <SiteNav />
       <main id="main">{children}</main>
       <footer className="foot">
-        <p>Stewardship.Capital</p>
-        <p>Build what matters.</p>
+        <span className="mark">
+          Stewardship<span className="mark-dot">.</span>Capital
+        </span>
       </footer>
+      <Reveal />
     </div>
   );
 }

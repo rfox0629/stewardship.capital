@@ -18,7 +18,9 @@ type Node = {
   phase: number;
 };
 
-const SPACING = 54;
+/* Fewer, larger cells on small screens. The same density that reads as
+   fine structure on a desktop reads as noise on a phone. */
+const spacingFor = (width: number) => (width < 640 ? 72 : 54);
 
 /**
  * Product panel visuals.
@@ -67,6 +69,7 @@ export function PanelField({ mode }: { mode: PanelMode }) {
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      const SPACING = spacingFor(width);
       cols = Math.ceil(width / SPACING) + 2;
       rows = Math.ceil(height / SPACING) + 2;
       nodes = [];

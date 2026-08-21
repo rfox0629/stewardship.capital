@@ -30,7 +30,7 @@ export const products: Product[] = [
     category: "Event operating system",
     status: "Founder preview",
     proposition:
-      "Ideas become a confirmed plan. Every schedule item, budget line, and task traces back to the idea that caused it.",
+      "Ideas become a confirmed plan, and every line of it traces back to the idea that caused it.",
     mode: "converge",
     body: [
       "Most event plans break for the same reason: good ideas and settled commitments end up in the same list, and nobody can tell which is which.",
@@ -46,8 +46,7 @@ export const products: Product[] = [
     name: "AutoPilot Strategies",
     category: "Company",
     status: "In development",
-    proposition: "One line about AutoPilot Strategies goes here.",
-    pending: true,
+    proposition: "Building businesses that don't depend on you.",
     mode: "path",
     body: [],
   },

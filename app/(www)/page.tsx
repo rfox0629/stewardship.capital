@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MultiplierField } from "./_components/multiplier-field";
 import { PanelField, type PanelMode } from "./_components/panel-field";
 import { Wordmark } from "./_components/wordmark";
+import { products } from "./_lib/products";
 
 type Panel = {
   index: string;
@@ -10,42 +11,30 @@ type Panel = {
   category: string;
   status: string;
   proposition: string;
-  pending?: boolean;
   mode: PanelMode;
-  href?: string;
-  cta?: string;
+  href: string;
+  cta: string;
 };
 
+/* The register drives the panels, so adding a company never means editing
+   this page. The last panel is capacity rather than a product. */
 const panels: Panel[] = [
-  {
-    index: "01",
-    name: "Spark",
-    category: "Event operating system",
-    status: "Founder preview",
-    proposition:
-      "Ideas become a confirmed plan. Every schedule item, budget line, and task traces back to the idea that caused it.",
-    mode: "converge",
-    href: "/work/spark",
-    cta: "Enter Spark",
-  },
-  {
-    index: "02",
-    name: "AutoPilot Strategies",
-    category: "Company",
-    status: "In development",
-    proposition: "One line about AutoPilot Strategies goes here.",
-    pending: true,
-    mode: "path",
-    href: "/work/autopilot-strategies",
-    cta: "Enter AutoPilot",
-  },
+  ...products.map((product) => ({
+    index: product.index,
+    name: product.name,
+    category: product.category,
+    status: product.status,
+    proposition: product.proposition,
+    mode: product.mode,
+    href: `/work/${product.slug}`,
+    cta: `Enter ${product.name.split(" ")[0]}`,
+  })),
   {
     index: "03",
     name: "The next one",
     category: "Capacity",
     status: "Open",
-    proposition:
-      "The architecture is built to hold what has not been started yet. Entrusted ideas, companies, and relationships go in. Working things come out.",
+    proposition: "Built to hold what has not started yet.",
     mode: "latent",
     href: "/connect",
     cta: "Start something",
@@ -58,27 +47,35 @@ export default function HomePage() {
       <section className="hero" aria-labelledby="hero-title">
         <MultiplierField />
         <div className="hero-inner">
-          <p className="hero-mark">
-            <Wordmark />
-          </p>
-          <h1 id="hero-title">Build what matters.</h1>
-          <p className="hero-sub">
-            We turn vision into systems, products, and experiences built to
-            move.
-          </p>
-          <Link className="explore" href="#building">
-            Explore
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path
-                d="M4 12h15M13 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
+          <div className="mask">
+            <p className="hero-mark">
+              <Wordmark />
+            </p>
+          </div>
+          <div className="mask">
+            <h1 id="hero-title">Build what matters.</h1>
+          </div>
+          <div className="mask">
+            <p className="hero-sub">
+              We turn vision into systems, products, and experiences built to
+              move.
+            </p>
+          </div>
+          <div className="mask">
+            <Link className="explore" href="#building">
+              Explore
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M4 12h15M13 6l6 6-6 6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -90,44 +87,42 @@ export default function HomePage() {
         {panels.map((panel) => (
           <article className="panel" key={panel.name}>
             <PanelField mode={panel.mode} />
-            <div className="panel-inner">
+            <div className="panel-inner" data-reveal>
               <div className="panel-meta">
                 <span className="panel-index">{panel.index}</span>
                 <span className="panel-category">{panel.category}</span>
-                <span className="chip" data-pending={panel.pending ? "true" : undefined}>
-                  {panel.status}
-                </span>
+                <span className="chip">{panel.status}</span>
               </div>
               <h2>{panel.name}</h2>
-              <p className="panel-prop" data-pending={panel.pending ? "true" : undefined}>
-                {panel.proposition}
-              </p>
-              {panel.href ? (
-                <Link className="panel-cta" href={panel.href}>
-                  {panel.cta}
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path
-                      d="M4 12h15M13 6l6 6-6 6"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </Link>
-              ) : null}
+              <p className="panel-prop">{panel.proposition}</p>
+              <Link className="panel-cta" href={panel.href}>
+                {panel.cta}
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M4 12h15M13 6l6 6-6 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
             </div>
           </article>
         ))}
       </section>
 
       <section className="connect" aria-labelledby="connect-title">
-        <h2 id="connect-title">
+        <h2 id="connect-title" data-reveal>
           Something entrusted to you,
           <span>waiting to be built?</span>
         </h2>
-        <a className="connect-link" href="mailto:hello@stewardship.capital">
+        <a
+          className="connect-link"
+          href="mailto:hello@stewardship.capital"
+          data-reveal
+        >
           hello@stewardship.capital
         </a>
       </section>
