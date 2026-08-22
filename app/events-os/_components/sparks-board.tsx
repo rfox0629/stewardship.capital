@@ -4,14 +4,21 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { Spark, SparkCategory, SparkStatus } from "../_lib/types";
-import { Pill } from "./ui";
+import { NodeState, type NodeStateKind } from "./node-state";
 
-const columns: Array<{ status: SparkStatus; label: string; hint: string }> = [
-  { status: "captured", label: "Captured", hint: "Written down, not yet discussed." },
-  { status: "discussing", label: "Discussing", hint: "On a meeting agenda." },
-  { status: "approved", label: "Approved", hint: "Built into the plan." },
-  { status: "parked", label: "Parked", hint: "Good, not this edition." },
-  { status: "declined", label: "Declined", hint: "Decided against, and why." },
+/* One point commits, connects, and becomes a run. The node teaches the
+   lifecycle by being the status, so no screen has to explain it. */
+const columns: Array<{
+  status: SparkStatus;
+  label: string;
+  hint: string;
+  node: NodeStateKind;
+}> = [
+  { status: "captured", label: "Captured", hint: "Written down, not yet discussed.", node: "latent" },
+  { status: "discussing", label: "Discussing", hint: "On a meeting agenda.", node: "open" },
+  { status: "approved", label: "Approved", hint: "Built into the plan.", node: "built" },
+  { status: "parked", label: "Parked", hint: "Good, not this edition.", node: "closed" },
+  { status: "declined", label: "Declined", hint: "Decided against, and why.", node: "closed" },
 ];
 
 const categories: SparkCategory[] = [
@@ -23,14 +30,14 @@ const categories: SparkCategory[] = [
   "Generosity",
 ];
 
-const toneFor = (status: SparkStatus) =>
-  status === "approved"
-    ? "good"
-    : status === "declined"
-      ? "stop"
-      : status === "discussing"
-        ? "warn"
-        : "neutral";
+export const nodeForSpark = (spark: Spark): NodeStateKind => {
+  if (spark.status === "approved") {
+    return spark.builds && spark.builds.length > 0 ? "built" : "settled";
+  }
+  if (spark.status === "discussing") return "open";
+  if (spark.status === "parked" || spark.status === "declined") return "closed";
+  return "latent";
+};
 
 type SparksBoardProps = {
   sparks: Spark[];
@@ -138,7 +145,10 @@ export function SparksBoard({ sparks, sparkBase }: SparksBoardProps) {
           return (
             <section className="eo-column" key={column.status}>
               <div className="eo-column-head">
-                <h2>{column.label}</h2>
+                <h2>
+                  <NodeState kind={column.node} label={column.label} />
+                  {column.label}
+                </h2>
                 <span className="eo-column-count">{items.length}</span>
               </div>
               <div className="eo-column-body">
@@ -149,8 +159,8 @@ export function SparksBoard({ sparks, sparkBase }: SparksBoardProps) {
                       <h3>{spark.title}</h3>
                       <p>{spark.detail}</p>
                       <div className="eo-spark-foot">
+                        <NodeState kind="latent" />
                         <span className="eo-spark-cat">{spark.category}</span>
-                        <Pill tone="accent">just added</Pill>
                       </div>
                     </div>
                   ) : (
@@ -158,11 +168,12 @@ export function SparksBoard({ sparks, sparkBase }: SparksBoardProps) {
                       <h3>{spark.title}</h3>
                       <p>{spark.detail}</p>
                       <div className="eo-spark-foot">
+                        <NodeState kind={nodeForSpark(spark)} />
                         <span className="eo-spark-cat">{spark.category}</span>
                         {spark.builds && spark.builds.length > 0 ? (
-                          <Pill tone={toneFor(spark.status)}>
-                            built {spark.builds.length}
-                          </Pill>
+                          <span className="eo-spark-built">
+                            {spark.builds.length} built
+                          </span>
                         ) : null}
                       </div>
                     </Link>

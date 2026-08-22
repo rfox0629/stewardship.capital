@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Panel, Pill, Stat, Workflow } from "@events/_components/ui";
+import { NodeState, type NodeStateKind } from "@events/_components/node-state";
+import { Panel, Stat, Workflow } from "@events/_components/ui";
 import { shortDate } from "@events/_lib/format";
 import { editionPath } from "@events/_lib/paths";
 import type { EditionRouteParams } from "@events/_lib/paths";
@@ -24,14 +25,13 @@ const label: Record<TaskStatus, string> = {
   done: "Done",
 };
 
-const tone = (status: TaskStatus) =>
-  status === "blocked"
-    ? "stop"
-    : status === "doing"
-      ? "warn"
-      : status === "done"
-        ? "good"
-        : "neutral";
+/* Hollow is open, filled is settled, orange is live. */
+const node: Record<TaskStatus, NodeStateKind> = {
+  blocked: "open",
+  doing: "open",
+  todo: "latent",
+  done: "settled",
+};
 
 type PageProps = { params: Promise<EditionRouteParams> };
 
@@ -100,7 +100,7 @@ export default async function TasksPage({ params }: PageProps) {
                         </p>
                       </div>
                       <div className="eo-row-side">
-                        <Pill tone={tone(status)}>{label[status]}</Pill>
+                        <NodeState kind={node[status]} label={label[status]} />
                       </div>
                     </li>
                   ))}

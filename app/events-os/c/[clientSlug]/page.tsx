@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 
+import { SparkBar } from "../../_components/spark-bar";
 import { Pill } from "../../_components/ui";
 import { money, shortDate } from "../../_lib/format";
 import { editionPath, plannerPath } from "../../_lib/paths";
@@ -29,7 +30,9 @@ export default async function ClientHomePage({ params }: PageProps) {
   const events = eventsForClient(client.id);
 
   return (
-    <main
+    <>
+      <SparkBar client={client} />
+      <main
       className="eo-page"
       style={
         {
@@ -99,6 +102,7 @@ export default async function ClientHomePage({ params }: PageProps) {
           );
         })}
       </div>
-    </main>
+      </main>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * Stewardship Events domain model.
+ * Spark domain model.
  *
  * Nothing in this file knows about Stewardship Capital, stewardship.capital,
  * Supabase, or the financial stewardship dashboard. The whole `app/events-os`

@@ -1,5 +1,5 @@
 /**
- * Every link in the Stewardship Events operating system is built here.
+ * Every link in Spark is built here.
  *
  * To move this application to its own domain, for example
  * app.stewardshipevents.com, set EVENTS_OS_BASE to "" and move the

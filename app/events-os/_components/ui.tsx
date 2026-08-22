@@ -77,7 +77,7 @@ export function Meter({
 export function Workflow({ here }: { here: string }) {
   const steps = ["Spark", "Discuss", "Approve", "Build", "Confirm", "Reflect"];
   return (
-    <div className="eo-flowline" aria-label="Stewardship Events workflow">
+    <div className="eo-flowline" aria-label="Spark workflow">
       {steps.map((step, index) => (
         <span key={step} data-here={step === here ? "true" : undefined}>
           {step}

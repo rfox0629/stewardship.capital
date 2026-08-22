@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { SparkBar } from "./_components/spark-bar";
 import { Pill } from "./_components/ui";
 import { shortDate } from "./_lib/format";
 import { clientPath, editionPath } from "./_lib/paths";
@@ -15,7 +16,7 @@ import {
 import { money } from "./_lib/format";
 import type { CSSProperties } from "react";
 
-export const metadata = { title: { absolute: "Planner | Stewardship Events" } };
+export const metadata = { title: { absolute: "Planner | Spark" } };
 
 const statusTone = (status: string) =>
   status === "complete" ? "good" : status === "confirmed" ? "accent" : "warn";
@@ -25,7 +26,9 @@ export default function PlannerHomePage() {
   const clients = allClients();
 
   return (
-    <main className="eo-page">
+    <>
+      <SparkBar />
+      <main className="eo-page">
       <div className="eo-shell">
         <div className="eo-page-head">
           <p className="eo-eyebrow">Planner</p>
@@ -133,6 +136,7 @@ export default function PlannerHomePage() {
           </ul>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

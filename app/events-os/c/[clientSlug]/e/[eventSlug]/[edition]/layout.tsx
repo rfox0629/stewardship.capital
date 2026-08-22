@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 
 import { EditionNav } from "@events/_components/edition-nav";
-import { clientPath, plannerPath } from "@events/_lib/paths";
+import { SparkBar } from "@events/_components/spark-bar";
+import { SparkMark } from "@events/_components/spark-mark";
 import type { EditionRouteParams } from "@events/_lib/paths";
 import { resolveEdition } from "@events/_lib/store";
 
@@ -25,27 +25,18 @@ export default async function EditionLayout({ children, params }: LayoutProps) {
       data-eo-event={event.slug}
       style={
         {
-          "--eo-accent": client.theme.accent,
-          "--eo-accent-soft": client.theme.accentSoft,
-          "--eo-on-accent": client.theme.onAccent,
-          "--eo-canopy": edition.theme.canopy,
-          "--eo-water": edition.theme.water,
-          "--eo-ember": edition.theme.ember,
-          "--eo-bark": edition.theme.bark,
-          "--eo-mist": edition.theme.mist,
+          /* Layer 2, the client. Organisation identity. */
+          "--client-accent": client.theme.accent,
+          /* Layer 3, the event. Emotional identity for this one gathering. */
+          "--event-accent": edition.theme.ember,
+          "--event-canopy": edition.theme.canopy,
+          "--event-water": edition.theme.water,
+          "--event-bark": edition.theme.bark,
+          "--event-mist": edition.theme.mist,
         } as CSSProperties
       }
     >
-      <div className="eo-crumbbar">
-        <div className="eo-crumbs">
-          <Link href={plannerPath()}>Planner</Link>
-          <span aria-hidden="true">/</span>
-          <Link href={clientPath(client.slug)}>{client.name}</Link>
-          <span aria-hidden="true">/</span>
-          <span className="eo-crumb-current">{edition.label}</span>
-        </div>
-      </div>
-
+      <SparkBar client={client} edition={edition} />
       <EditionNav
         clientSlug={client.slug}
         eventSlug={event.slug}
@@ -53,6 +44,14 @@ export default async function EditionLayout({ children, params }: LayoutProps) {
       />
 
       {children}
+
+      <footer className="sp-foot">
+        <div className="eo-shell">
+          <span className="sp-powered">
+            Powered by <SparkMark />
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }
