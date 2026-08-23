@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-import { BrandMark } from "./brand-mark";
+import { BrandMark } from "../../brand-mark";
+import "../../globals.css";
+
+export const metadata: Metadata = {
+  title: "Operating System preview",
+  robots: { index: false, follow: false, nocache: true },
+};
 
 const pillars = [
   {
@@ -60,12 +67,21 @@ const priorities = [
   "Emergency Reserves",
 ];
 
-export default function Home() {
+export default function PreservedOperatingSystemPage() {
   return (
     <>
+      <div className="preserved-route-banner" role="note">
+        <p>
+          <strong>Preserved internal route.</strong> This is the previous
+          Stewardship Capital homepage and Operating System entry point. It is
+          no longer the public homepage and is not linked from public
+          navigation.
+        </p>
+      </div>
+
       <header className="site-header" id="top">
         <nav className="page-shell nav-bar" aria-label="Main navigation">
-          <BrandMark className="brand" href="/" />
+          <BrandMark className="brand" href="/internal/operating-system" />
           <div className="nav-links">
             <a href="#pillars">Why Stewardship</a>
             <a href="#how-it-works">How It Works</a>

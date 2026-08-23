@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import "./globals.css";
+
+import { display, text } from "./fonts";
+import "./styles/tokens.css";
 
 export const metadata: Metadata = {
-  title: "Stewardship Capital",
+  title: {
+    default: "Stewardship.Capital",
+    template: "%s | Stewardship.Capital",
+  },
   description:
-    "A Christian stewardship operating system for families, business owners, and investors.",
+    "We turn vision into systems, products, and experiences built to move.",
 };
 
 export default function RootLayout({
@@ -13,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${display.variable} ${text.variable}`}>
       <body>{children}</body>
     </html>
   );

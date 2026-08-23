@@ -218,3 +218,31 @@ Primary docs:
 - `docs/data-architecture-v1.md`
 - `docs/brand-homepage-direction-v1.md`
 - `docs/build-roadmap-v1.md`
+
+## Route Map After The Graphite Rebuild
+
+Public Stewardship.Capital, rebuilt from zero. See `docs/design-system-v2.md`.
+
+- `/` is the homepage: hero, three product panels, connect. Source in `app/(www)/`, styles in `app/styles/site.css`, tokens in `app/styles/tokens.css`.
+- `/work`, `/work/[slug]`, `/about`, `/connect`.
+- Adding a company means adding one object to `app/(www)/_lib/products.ts`. Do not hard code a product into a page.
+- `/events` redirects to `/work/spark`. Stewardship Events is now called Spark on public surfaces.
+
+Preserved, not public:
+
+- `/internal/operating-system` holds the original homepage. Do not delete it and do not link it publicly.
+- `/dashboard`, `/assessment`, `/login`, `/signup` are unchanged and disallowed in `robots.txt`.
+
+Stewardship Events operating system:
+
+- `app/events-os` is self contained. Nothing outside it may import from it, and it imports nothing from the rest of the app.
+- Routes go through `app/events-os/_lib/paths.ts`. Reads go through `_lib/store.ts`.
+- It still says Stewardship Events internally. Renaming it to Spark is a separate task.
+
+CSS ownership, which matters:
+
+- `app/styles/tokens.css` is the only stylesheet loaded at the root layout. It carries the design tokens and a nine line reset.
+- `app/globals.css` is the legacy platform stylesheet. It is imported only by the five legacy surfaces that need it. Never import it at the root layout again: it contains element selectors that override the new site.
+- Tailwind is present in package.json but unused.
+
+The design direction recorded under "Brand And Homepage Direction" above describes the preserved page at `/internal/operating-system`, not the current public site.

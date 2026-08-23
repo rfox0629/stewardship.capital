@@ -1,0 +1,1510 @@
+/*
+ * Spark
+ *
+ * A product of Stewardship.Capital, carrying its design DNA rather than its
+ * homepage: Archivo, a graphite foundation, crisp white type, and one orange
+ * node that only ever marks activation.
+ *
+ * Three layers, in this order:
+ *
+ *   1  Spark core      --sp-*      never themed by anyone
+ *   2  Client theme    --client-*  organisation identity
+ *   3  Event theme     --event-*   emotional identity for one gathering
+ *
+ * The rule that keeps this from being a white label builder: the orange node
+ * belongs to Spark. Client and event colours dress identity surfaces, the
+ * workspace hero, the event name, the imagery. System colour, meaning status,
+ * activation, and approval, stays Spark orange in every workspace.
+ */
+
+/* ------------------------------------------------------- 1. Spark core */
+
+html:has(.eo-frame),
+html:has(.eo-frame) body {
+  background: #0a0b0d;
+}
+
+.eo-frame {
+  --sp-void: #0a0b0d;
+  --sp-base: #0d0f12;
+  --sp-raised: #121317;
+  --sp-raised-2: #171a21;
+  --sp-line: #1f2229;
+  --sp-line-bright: #2b2f39;
+
+  --sp-white: #fafafa;
+  --sp-dim: #8a8f98;
+  --sp-dimmer: #5c626c;
+
+  /* Never overridden. This is Spark. */
+  --sp-signal: #ff4d00;
+  --sp-signal-soft: rgba(255, 77, 0, 0.13);
+
+  /* Defaults, replaced by the client and event layers. */
+  --client-accent: var(--sp-white);
+  --event-accent: var(--sp-signal);
+
+  --sp-radius: 3px;
+  --sp-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --sp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --sp-shell: min(100% - 36px, 1400px);
+  --sp-bar: 60px;
+
+  min-height: 100vh;
+  background: var(--sp-void);
+  color: var(--sp-white);
+  font-family: var(--font-display), Archivo, "Helvetica Neue", Arial, sans-serif;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.eo-frame :where(p, h1, h2, h3, h4, ul, ol, dl, dd, figure) {
+  margin: 0;
+}
+
+.eo-frame :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.eo-frame :where(h1, h2, h3, h4) {
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  color: var(--sp-white);
+}
+
+.eo-frame p {
+  color: var(--sp-dim);
+  line-height: 1.55;
+}
+
+.eo-frame ::selection {
+  background: var(--sp-signal);
+  color: #fff;
+}
+
+.eo-frame :focus-visible {
+  outline: 2px solid var(--sp-signal);
+  outline-offset: 2px;
+}
+
+.eo-shell {
+  width: var(--sp-shell);
+  margin: 0 auto;
+}
+
+.sp-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------ the mark */
+
+.sp-mark {
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.sp-mark-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.4em;
+  color: transparent;
+}
+
+.sp-mark-dot::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.07em;
+  width: 0.3em;
+  height: 0.3em;
+  transform: translateX(-50%);
+  background: var(--sp-signal);
+  box-shadow: 0 0 9px rgba(255, 77, 0, 0.42);
+}
+
+/* ------------------------------------------------- the node primitive */
+
+.sp-node {
+  display: inline-flex;
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.sp-node svg {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+
+.sp-node-ring {
+  fill: none;
+  stroke: var(--sp-dimmer);
+  stroke-width: 1.5;
+}
+
+.sp-node-core {
+  fill: var(--sp-signal);
+}
+
+.sp-node-run {
+  stroke: var(--sp-signal);
+  stroke-width: 1.5;
+  opacity: 0.55;
+}
+
+.sp-node-slash {
+  stroke: var(--sp-dimmer);
+  stroke-width: 1.5;
+}
+
+/* Hollow is open, filled is settled. Orange is live. */
+.sp-node[data-kind="open"] .sp-node-ring {
+  stroke: var(--sp-signal);
+}
+
+.sp-node[data-kind="settled"] .sp-node-ring,
+.sp-node[data-kind="built"] .sp-node-ring {
+  stroke: var(--sp-signal);
+}
+
+.sp-node[data-kind="closed"] .sp-node-ring {
+  stroke: #33383f;
+}
+
+/* ------------------------------------------------------------- chrome */
+
+.eo-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--sp-bar);
+  display: flex;
+  align-items: center;
+  background: rgba(10, 11, 13, 0.82);
+  backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--sp-line);
+}
+
+.eo-topbar-inner {
+  width: var(--sp-shell);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.eo-product {
+  font-size: 1.02rem;
+  flex: none;
+}
+
+/* The breadcrumb is a control, not decoration. */
+.eo-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  font-size: 0.86rem;
+  color: var(--sp-dim);
+  padding: 6px 11px 6px 12px;
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  background: var(--sp-raised);
+}
+
+.eo-crumbs a {
+  transition: color 0.2s var(--sp-ease);
+}
+
+.eo-crumbs a:hover {
+  color: var(--sp-white);
+}
+
+.eo-crumbs span[aria-hidden] {
+  color: #343a43;
+}
+
+.eo-crumb-current {
+  color: var(--sp-white);
+  font-weight: 600;
+}
+
+.eo-crumb-client {
+  color: var(--client-accent);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+}
+
+.eo-topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: none;
+}
+
+.eo-preview-flag {
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sp-signal);
+  border: 1px solid rgba(255, 77, 0, 0.32);
+  background: var(--sp-signal-soft);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.sp-powered {
+  font-size: 0.72rem;
+  color: var(--sp-dimmer);
+  white-space: nowrap;
+}
+
+.sp-powered .sp-mark {
+  color: var(--sp-dim);
+  font-size: 0.78rem;
+}
+
+/* --------------------------------------------------------- section nav */
+
+.eo-nav {
+  position: sticky;
+  top: var(--sp-bar);
+  z-index: 30;
+  background: rgba(10, 11, 13, 0.82);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--sp-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.eo-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.eo-nav-inner {
+  width: var(--sp-shell);
+  margin: 0 auto;
+  display: flex;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.eo-nav a {
+  position: relative;
+  padding: 13px 13px 12px;
+  font-size: 0.84rem;
+  color: var(--sp-dim);
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s var(--sp-ease);
+}
+
+.eo-nav a:hover {
+  color: var(--sp-white);
+}
+
+.eo-nav a[data-active="true"] {
+  color: var(--sp-white);
+  font-weight: 600;
+  border-bottom-color: var(--sp-signal);
+}
+
+/* The crumb bar is gone. Two bars, not three. */
+.eo-crumbbar {
+  display: none;
+}
+
+/* -------------------------------------------------------------- pages */
+
+.eo-page {
+  padding: 34px 0 96px;
+}
+
+.eo-page-head {
+  margin-bottom: 26px;
+  max-width: 780px;
+}
+
+.eo-page-head h1 {
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.eo-page-head p {
+  margin-top: 12px !important;
+  max-width: 62ch;
+  font-size: 0.95rem;
+}
+
+.eo-eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sp-signal);
+  margin-bottom: 12px !important;
+}
+
+.eo-section-title {
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+  margin: 40px 0 14px;
+}
+
+.eo-back {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 0.82rem;
+  color: var(--sp-dim);
+  transition: color 0.2s var(--sp-ease);
+}
+
+.eo-back:hover {
+  color: var(--sp-signal);
+}
+
+/* ------------------------------------------------------------- panels */
+
+.eo-panel {
+  background: var(--sp-base);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  overflow: hidden;
+}
+
+.eo-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--sp-line);
+}
+
+.eo-panel-head h2 {
+  font-size: 0.82rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--sp-dim);
+  font-weight: 600;
+}
+
+.eo-panel-head a,
+.eo-panel-link {
+  font-size: 0.82rem;
+  color: var(--sp-dim);
+  white-space: nowrap;
+  transition: color 0.2s var(--sp-ease);
+}
+
+.eo-panel-head a:hover,
+.eo-panel-link:hover {
+  color: var(--sp-signal);
+}
+
+.eo-panel-body {
+  padding: 18px;
+}
+
+.eo-panel-body-flush {
+  padding: 0;
+}
+
+.eo-grid {
+  display: grid;
+  gap: 16px;
+}
+
+/* -------------------------------------------------------------- stats */
+
+.eo-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin-bottom: 26px;
+  background: var(--sp-line);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  overflow: hidden;
+}
+
+.eo-stat {
+  background: var(--sp-base);
+  padding: 16px 18px 18px;
+}
+
+.eo-stat dt {
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+}
+
+.eo-stat dd {
+  margin: 9px 0 0;
+  font-size: 1.62rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.eo-stat small {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.76rem;
+  color: var(--sp-dim);
+}
+
+/* --------------------------------------------------------------- tags */
+
+.eo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--sp-dim);
+  border: 1px solid var(--sp-line-bright);
+  white-space: nowrap;
+}
+
+.eo-pill[data-tone="good"] {
+  color: var(--sp-white);
+  border-color: var(--sp-line-bright);
+}
+
+.eo-pill[data-tone="warn"],
+.eo-pill[data-tone="stop"],
+.eo-pill[data-tone="accent"] {
+  color: var(--sp-signal);
+  border-color: rgba(255, 77, 0, 0.34);
+  background: var(--sp-signal-soft);
+}
+
+/* -------------------------------------------------------------- meter */
+
+.eo-meter {
+  height: 3px;
+  border-radius: 0;
+  background: #1b1e25;
+  overflow: hidden;
+  display: flex;
+}
+
+.eo-meter span {
+  display: block;
+  height: 100%;
+}
+
+.eo-meter-actual {
+  background: var(--sp-signal);
+}
+
+.eo-meter-committed {
+  background: rgba(255, 77, 0, 0.3);
+}
+
+/* --------------------------------------------------------------- rows */
+
+.eo-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.eo-rows > li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--sp-line);
+  transition: background 0.2s var(--sp-ease);
+}
+
+.eo-rows > li:last-child {
+  border-bottom: none;
+}
+
+.eo-rows > li:hover {
+  background: var(--sp-raised);
+}
+
+.eo-row-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.eo-row-title {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--sp-white);
+  letter-spacing: -0.012em;
+}
+
+.eo-row-meta {
+  margin-top: 5px !important;
+  font-size: 0.79rem;
+  color: var(--sp-dimmer) !important;
+}
+
+.eo-row-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.eo-row-amount {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------- attention */
+
+.eo-attention {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.eo-attention li {
+  display: flex;
+  gap: 13px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--sp-line);
+}
+
+.eo-attention li:last-child {
+  border-bottom: none;
+}
+
+.eo-attention-dot {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--sp-line-bright);
+}
+
+.eo-attention li[data-tone="urgent"] .eo-attention-dot {
+  border-color: var(--sp-signal);
+  box-shadow: inset 0 0 0 3px rgba(255, 77, 0, 0.18);
+}
+
+.eo-attention-label {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--sp-white);
+}
+
+.eo-attention-detail {
+  margin-top: 4px !important;
+  font-size: 0.81rem;
+}
+
+/* ------------------------------------------------------- sparks board */
+
+.eo-board {
+  display: grid;
+  gap: 1px;
+  background: var(--sp-line);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.eo-column {
+  background: var(--sp-base);
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.eo-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--sp-line);
+}
+
+.eo-column-head h2 {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sp-dim);
+}
+
+.eo-column-count {
+  font-size: 0.74rem;
+  color: var(--sp-dimmer);
+  font-variant-numeric: tabular-nums;
+}
+
+.eo-column-body {
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.eo-spark {
+  display: block;
+  background: var(--sp-raised);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  padding: 13px;
+  transition:
+    border-color 0.2s var(--sp-ease),
+    background 0.2s var(--sp-ease);
+}
+
+.eo-spark:hover {
+  border-color: var(--sp-line-bright);
+  background: var(--sp-raised-2);
+}
+
+.eo-spark h3 {
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+}
+
+.eo-spark p {
+  margin-top: 7px !important;
+  font-size: 0.79rem;
+  color: var(--sp-dimmer) !important;
+}
+
+.eo-spark-foot {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.eo-spark-cat {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+}
+
+/* ----------------------------------------------------------- quick add */
+
+.eo-quickadd {
+  background: var(--sp-base);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  padding: 18px;
+}
+
+.eo-quickadd form {
+  display: grid;
+  gap: 12px;
+}
+
+.eo-field label {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+  margin-bottom: 7px;
+}
+
+.eo-field input,
+.eo-field select,
+.eo-field textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--sp-white);
+  background: var(--sp-void);
+  border: 1px solid var(--sp-line-bright);
+  border-radius: var(--sp-radius);
+  padding: 10px 12px;
+  transition: border-color 0.2s var(--sp-ease);
+}
+
+.eo-field input::placeholder {
+  color: #4a505a;
+}
+
+.eo-field input:focus,
+.eo-field select:focus,
+.eo-field textarea:focus {
+  border-color: var(--sp-signal);
+  outline: none;
+}
+
+.eo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: var(--sp-radius);
+  border: 1px solid var(--sp-signal);
+  background: var(--sp-signal);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s var(--sp-ease);
+}
+
+.eo-button:hover {
+  background: #ff6a2b;
+}
+
+.eo-button-quiet {
+  background: transparent;
+  border-color: var(--sp-line-bright);
+  color: var(--sp-white);
+}
+
+.eo-note {
+  font-size: 0.78rem;
+  color: var(--sp-dimmer) !important;
+}
+
+/* ----------------------------------------------------------- schedule */
+
+.eo-day {
+  margin-bottom: 18px;
+}
+
+.eo-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--sp-line);
+  background: var(--sp-raised);
+}
+
+.eo-day-head h2 {
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+
+/* The event owns the day marker. Emotional identity, not system state. */
+.eo-day-head h2::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: var(--event-accent);
+}
+
+.eo-day-head p {
+  font-size: 0.79rem;
+}
+
+.eo-slot {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px 18px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--sp-line);
+  transition: background 0.2s var(--sp-ease);
+}
+
+.eo-slot:hover {
+  background: var(--sp-raised);
+}
+
+.eo-slot:last-child {
+  border-bottom: none;
+}
+
+.eo-slot-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.79rem;
+  color: var(--sp-dimmer);
+  white-space: nowrap;
+}
+
+.eo-slot-title {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--sp-white);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  letter-spacing: -0.012em;
+}
+
+.eo-slot-meta {
+  font-size: 0.79rem;
+  color: var(--sp-dimmer) !important;
+}
+
+/* Draft is absence of commitment, so it reads as dimmer, not as decoration. */
+.eo-slot[data-status="draft"] .eo-slot-title {
+  color: var(--sp-dim);
+}
+
+.eo-slot[data-status="draft"] {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 9px,
+    rgba(255, 255, 255, 0.014) 9px,
+    rgba(255, 255, 255, 0.014) 18px
+  );
+}
+
+.eo-track-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  flex: none;
+}
+
+.eo-track-Program { background: #6f7cff; }
+.eo-track-Meals { background: #c98a3c; }
+.eo-track-Experience { background: #35b088; }
+.eo-track-Logistics { background: #6b7280; }
+.eo-track-Hospitality { background: #a56bc4; }
+
+.eo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.eo-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--sp-dim);
+}
+
+/* ------------------------------------------------- 3. the event layer */
+
+.eo-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  margin-bottom: 26px;
+  background: var(--sp-base);
+  display: flex;
+  flex-direction: column;
+}
+
+.eo-hero-art {
+  position: relative;
+  height: 172px;
+  flex: none;
+}
+
+.eo-hero-art svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.eo-hero-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 11, 13, 0.32) 0%,
+    rgba(10, 11, 13, 0) 42%,
+    rgba(10, 11, 13, 0.86) 100%
+  );
+}
+
+.eo-hero-inner {
+  position: relative;
+  padding: 24px 22px 26px;
+  max-width: 720px;
+}
+
+.eo-hero .eo-eyebrow {
+  color: var(--event-accent);
+}
+
+.eo-hero h1 {
+  color: var(--sp-white);
+  font-size: clamp(1.8rem, 4.6vw, 2.9rem);
+  line-height: 1.02;
+  letter-spacing: -0.042em;
+}
+
+.eo-hero p {
+  color: var(--sp-dim) !important;
+  margin-top: 12px !important;
+  font-size: 0.95rem;
+}
+
+.eo-hero-facts {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--sp-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 22px;
+  font-size: 0.81rem;
+  color: var(--sp-dim);
+}
+
+.eo-hero-facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.eo-hero-facts span::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  background: var(--event-accent);
+}
+
+.eo-hero-photo-note {
+  position: relative;
+  margin-top: 16px;
+  font-size: 0.72rem !important;
+  color: var(--sp-dimmer) !important;
+}
+
+/* --------------------------------------------------- planner and client */
+
+.eo-planner-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.eo-edition-card {
+  display: block;
+  background: var(--sp-base);
+  border: 1px solid var(--sp-line);
+  border-left: 2px solid var(--client-accent);
+  border-radius: var(--sp-radius);
+  padding: 20px;
+  transition:
+    background 0.2s var(--sp-ease),
+    border-color 0.2s var(--sp-ease);
+}
+
+.eo-edition-card:hover {
+  background: var(--sp-raised);
+  border-top-color: var(--sp-line-bright);
+  border-right-color: var(--sp-line-bright);
+  border-bottom-color: var(--sp-line-bright);
+}
+
+.eo-edition-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.eo-client-name {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--client-accent);
+  font-weight: 600;
+}
+
+.eo-edition-card h2 {
+  font-size: 1.18rem;
+  letter-spacing: -0.03em;
+}
+
+.eo-edition-facts {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--sp-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+  font-size: 0.79rem;
+  color: var(--sp-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.eo-client-hero {
+  background: var(--sp-base);
+  border: 1px solid var(--sp-line);
+  border-top: 2px solid var(--client-accent);
+  border-radius: var(--sp-radius);
+  padding: 28px 24px;
+  margin-bottom: 26px;
+}
+
+.eo-client-hero .eo-eyebrow {
+  color: var(--client-accent);
+}
+
+.eo-client-hero h1 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  letter-spacing: -0.038em;
+}
+
+.eo-client-hero p {
+  margin-top: 12px !important;
+  max-width: 58ch;
+}
+
+/* --------------------------------------------------- spark conversion */
+
+.eo-convert {
+  display: grid;
+  gap: 1px;
+  background: var(--sp-line);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  overflow: hidden;
+}
+
+.eo-convert-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 15px 16px;
+  border: none;
+  border-radius: 0;
+  background: var(--sp-base);
+}
+
+.eo-convert-kind {
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+  font-weight: 600;
+  flex: none;
+  width: 104px;
+  padding-top: 3px;
+}
+
+/* Idea, Decision, Plan, Experience. The lifecycle, stated once. */
+.eo-flowline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+  padding: 13px 16px;
+  background: var(--sp-base);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+}
+
+.eo-flowline span {
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+}
+
+.eo-flowline span[data-here="true"] {
+  color: var(--sp-signal);
+  font-weight: 600;
+}
+
+.eo-flowline i {
+  font-style: normal;
+  color: #33383f;
+  margin: 0 2px;
+}
+
+/* ------------------------------------------------------------- review */
+
+.eo-review-section {
+  padding: 18px;
+  border-bottom: 1px solid var(--sp-line);
+}
+
+.eo-review-section:last-child {
+  border-bottom: none;
+}
+
+.eo-review-section h3 {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sp-dim);
+  margin-bottom: 12px;
+}
+
+.eo-review-section ul {
+  margin: 0;
+  padding-left: 17px;
+}
+
+.eo-review-section li {
+  font-size: 0.88rem;
+  color: var(--sp-dim);
+  line-height: 1.6;
+  margin-bottom: 7px;
+}
+
+.eo-carry {
+  display: grid;
+  gap: 1px;
+  background: var(--sp-line);
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  overflow: hidden;
+}
+
+.eo-carry-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 13px 15px;
+  border: none;
+  border-radius: 0;
+  background: var(--sp-base);
+  font-size: 0.88rem;
+  color: var(--sp-white);
+}
+
+.eo-carry-item span {
+  flex: none;
+  color: var(--sp-signal);
+}
+
+.eo-empty {
+  padding: 26px 18px;
+  font-size: 0.86rem;
+  color: var(--sp-dimmer);
+  text-align: center;
+}
+
+/* --------------------------------------------------------- breakpoints */
+
+@media (min-width: 700px) {
+  .eo-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .eo-slot {
+    grid-template-columns: 116px 1fr auto;
+    align-items: baseline;
+  }
+
+  .eo-slot-meta {
+    text-align: right;
+  }
+
+  .eo-planner-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .eo-grid-2 {
+    grid-template-columns: 1.4fr 1fr;
+  }
+
+  .eo-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .eo-board {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .eo-board[data-columns="3"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .eo-hero-art {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+
+  .eo-hero-art::after {
+    background: linear-gradient(
+      100deg,
+      rgba(10, 11, 13, 0.94) 0%,
+      rgba(10, 11, 13, 0.74) 42%,
+      rgba(10, 11, 13, 0.1) 78%,
+      rgba(10, 11, 13, 0) 100%
+    );
+  }
+
+  .eo-hero-inner {
+    padding: 44px 34px 40px;
+    min-height: 292px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .eo-planner-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* --------------------------------------------------- the quiet credit */
+
+.sp-foot {
+  border-top: 1px solid var(--sp-line);
+  padding: 22px 0 30px;
+}
+
+.eo-preview-short {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .eo-preview-long {
+    display: none;
+  }
+
+  .eo-preview-short {
+    display: inline;
+  }
+
+  .eo-crumbs {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .eo-crumb-current,
+  .eo-crumbs span[aria-hidden] {
+    display: none;
+  }
+}
+
+.eo-column-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.eo-spark-built {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sp-signal);
+  margin-left: auto;
+}
+
+/* The event scene keeps its own identity but sits inside a graphite product,
+   so it is pulled down rather than competing with the interface. */
+.eo-hero-art svg {
+  filter: saturate(0.88) brightness(0.84);
+}
+
+/* ================================================================= lenses */
+
+/*
+ * Who is looking.
+ *
+ * Spark owns the chrome, so the lens control is Spark grey and sits with the
+ * rest of the product furniture rather than taking the accent. Signal orange
+ * marks activation, and choosing a lens is not an activation.
+ */
+
+.sp-lens {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.2s var(--sp-ease);
+}
+
+.sp-lens[data-pending="true"] {
+  opacity: 0.5;
+}
+
+.sp-lens-label {
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+  white-space: nowrap;
+}
+
+.sp-lens-set {
+  display: flex;
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  background: var(--sp-base);
+  overflow: hidden;
+}
+
+.sp-lens-set button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--sp-dim);
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.18s var(--sp-ease),
+    background 0.18s var(--sp-ease);
+}
+
+.sp-lens-set button + button {
+  border-left: 1px solid var(--sp-line);
+}
+
+.sp-lens-set button:hover {
+  color: var(--sp-white);
+}
+
+.sp-lens-set button[data-active="true"] {
+  color: var(--sp-white);
+  background: var(--sp-raised-2);
+}
+
+/* The preview strip under the nav. Holds the lens control and one line saying
+   plainly who this view belongs to. In the shipped product neither exists,
+   because who you are is settled at sign in. */
+.sp-lens-note {
+  border-bottom: 1px solid var(--sp-line);
+  background: var(--sp-base);
+}
+
+.sp-lens-note .eo-shell {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 9px 0;
+}
+
+.sp-lens-note p {
+  font-size: 0.74rem;
+  color: var(--sp-dim);
+  margin: 0;
+}
+
+/* ------------------------------------------------- the boundary, visible */
+
+.sp-restricted {
+  max-width: 46rem;
+  padding: 76px 0 90px;
+}
+
+.sp-restricted h1 {
+  font-size: clamp(1.7rem, 3.4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  margin: 12px 0 18px;
+  color: var(--sp-white);
+}
+
+.sp-restricted p {
+  color: var(--sp-dim);
+  line-height: 1.6;
+  max-width: 40rem;
+}
+
+.sp-restricted .eo-note {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sp-line);
+  max-width: 40rem;
+}
+
+/* ------------------------------------------ the emotional layer, dialled */
+
+/*
+ * A planner is at work, so the workspace stays cool and fast. A client or a
+ * guest is being welcomed to a weekend, so the event layer is allowed further
+ * up the page. The components are identical. Only the scrim moves.
+ */
+[data-sp-lens="client"] .eo-hero-art svg,
+[data-sp-lens="stakeholder"] .eo-hero-art svg {
+  filter: saturate(1.02) brightness(0.98);
+}
+
+/* A guest's first screen is a welcome, so the event layer gets more room.
+   Only where there is room to give: on a phone the hero is already the whole
+   viewport and stretching it just pushes the schedule below two folds. */
+@media (min-width: 900px) {
+  [data-sp-lens="stakeholder"] .eo-hero {
+    min-height: 58vh;
+  }
+}
+
+.eo-hero-client {
+  color: var(--client-accent);
+}
+
+[data-sp-lens="client"] .sp-powered,
+[data-sp-lens="stakeholder"] .sp-powered {
+  color: var(--sp-dim);
+}
+
+/* A decision or an idea in a client row leads with the node, so the lifecycle
+   reads without anyone being taught it. */
+.eo-row-lead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.eo-rows-foot {
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--sp-line);
+}
+
+.eo-guest-foot {
+  margin-top: 22px;
+  padding-bottom: 10px;
+}
+
+@media (max-width: 620px) {
+  .sp-lens-label {
+    display: none;
+  }
+
+  .sp-lens-set button {
+    padding: 5px 9px;
+  }
+
+  .sp-lens-note .eo-shell {
+    gap: 10px;
+  }
+}
