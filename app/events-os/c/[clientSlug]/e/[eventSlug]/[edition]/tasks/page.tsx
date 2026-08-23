@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { NodeState, type NodeStateKind } from "@events/_components/node-state";
 import { Panel, Stat, Workflow } from "@events/_components/ui";
 import { shortDate } from "@events/_lib/format";
+import { Restricted } from "@events/_components/restricted";
 import { editionPath } from "@events/_lib/paths";
 import type { EditionRouteParams } from "@events/_lib/paths";
 import {
@@ -12,6 +13,8 @@ import {
   taskCounts,
   tasksFor,
 } from "@events/_lib/store";
+import { canView } from "@events/_lib/viewer";
+import { readViewer } from "@events/_lib/viewer-server";
 import type { TaskStatus } from "@events/_lib/types";
 
 export const metadata = { title: "Tasks" };
@@ -41,6 +44,16 @@ export default async function TasksPage({ params }: PageProps) {
   if (!resolved) notFound();
 
   const { client, event, edition } = resolved;
+  const viewer = await readViewer();
+  if (!canView(viewer, "tasks")) {
+    return (
+      <Restricted
+        role={viewer}
+        section="tasks"
+        home={editionPath(client.slug, event.slug, edition.slug)}
+      />
+    );
+  }
   const tasks = tasksFor(edition.id);
   const counts = taskCounts(edition.id);
   const base = (segment: string) =>

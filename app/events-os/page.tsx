@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { LensStrip } from "./_components/lens-strip";
+import { PlannerOnly } from "./_components/planner-only";
 import { SparkBar } from "./_components/spark-bar";
 import { Pill } from "./_components/ui";
 import { shortDate } from "./_lib/format";
@@ -14,6 +16,7 @@ import {
   taskCounts,
 } from "./_lib/store";
 import { money } from "./_lib/format";
+import { readViewer } from "./_lib/viewer-server";
 import type { CSSProperties } from "react";
 
 export const metadata = { title: { absolute: "Planner | Spark" } };
@@ -21,13 +24,25 @@ export const metadata = { title: { absolute: "Planner | Spark" } };
 const statusTone = (status: string) =>
   status === "complete" ? "good" : status === "confirmed" ? "accent" : "warn";
 
-export default function PlannerHomePage() {
+export default async function PlannerHomePage() {
+  const viewer = await readViewer();
   const rows = plannerRows();
   const clients = allClients();
 
+  if (viewer !== "planner") {
+    return (
+      <>
+        <SparkBar viewer={viewer} />
+        <LensStrip viewer={viewer} />
+        <PlannerOnly role={viewer} />
+      </>
+    );
+  }
+
   return (
     <>
-      <SparkBar />
+      <SparkBar viewer={viewer} />
+      <LensStrip viewer={viewer} />
       <main className="eo-page">
       <div className="eo-shell">
         <div className="eo-page-head">

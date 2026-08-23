@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { Panel, Pill, Stat, Workflow } from "@events/_components/ui";
 import { money } from "@events/_lib/format";
+import { Restricted } from "@events/_components/restricted";
 import { editionPath } from "@events/_lib/paths";
 import type { EditionRouteParams } from "@events/_lib/paths";
 import {
@@ -11,6 +12,8 @@ import {
   resolveEdition,
   reviewFor,
 } from "@events/_lib/store";
+import { canView } from "@events/_lib/viewer";
+import { readViewer } from "@events/_lib/viewer-server";
 
 export const metadata = { title: "Impact review" };
 
@@ -22,6 +25,16 @@ export default async function ReviewPage({ params }: PageProps) {
   if (!resolved) notFound();
 
   const { client, event, edition } = resolved;
+  const viewer = await readViewer();
+  if (!canView(viewer, "review")) {
+    return (
+      <Restricted
+        role={viewer}
+        section="review"
+        home={editionPath(client.slug, event.slug, edition.slug)}
+      />
+    );
+  }
   const review = reviewFor(edition.id);
   const previous = edition.reusedFromEditionId
     ? editionById(edition.reusedFromEditionId)

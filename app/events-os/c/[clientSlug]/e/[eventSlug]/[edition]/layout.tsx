@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 
 import { EditionNav } from "@events/_components/edition-nav";
+import { LensStrip } from "@events/_components/lens-strip";
 import { SparkBar } from "@events/_components/spark-bar";
 import { SparkMark } from "@events/_components/spark-mark";
 import type { EditionRouteParams } from "@events/_lib/paths";
 import { resolveEdition } from "@events/_lib/store";
+import { readViewer } from "@events/_lib/viewer-server";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -18,11 +20,15 @@ export default async function EditionLayout({ children, params }: LayoutProps) {
   if (!resolved) notFound();
 
   const { client, event, edition } = resolved;
+  const viewer = await readViewer();
 
   return (
     <div
       data-eo-client={client.slug}
       data-eo-event={event.slug}
+      /* The lens is on the wrapper so the emotional layer can warm for a
+         client or a guest without any screen knowing who is looking. */
+      data-sp-lens={viewer}
       style={
         {
           /* Layer 2, the client. Organisation identity. */
@@ -36,12 +42,15 @@ export default async function EditionLayout({ children, params }: LayoutProps) {
         } as CSSProperties
       }
     >
-      <SparkBar client={client} edition={edition} />
+      <SparkBar client={client} edition={edition} viewer={viewer} />
       <EditionNav
         clientSlug={client.slug}
         eventSlug={event.slug}
         editionSlug={edition.slug}
+        viewer={viewer}
       />
+
+      <LensStrip viewer={viewer} />
 
       {children}
 

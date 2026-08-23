@@ -10,10 +10,10 @@ import type { PlatformData } from "./types";
  */
 export const platformData: PlatformData = {
   people: [
-    { id: "p-brooke", name: "Brooke Fox", role: "Event coordinator", organization: "Shine" },
+    { id: "p-brooke", name: "Brooke Fox", role: "Event coordinator", organization: "SHINE" },
     { id: "p-ryan", name: "Ryan Fox", role: "Emcee", organization: "Stewardship Capital" },
-    { id: "p-megan", name: "Megan Ellis", role: "Operations lead", organization: "Shine" },
-    { id: "p-sam", name: "Sam Okafor", role: "Hospitality host", organization: "Shine" },
+    { id: "p-megan", name: "Megan Ellis", role: "Operations lead", organization: "SHINE" },
+    { id: "p-sam", name: "Sam Okafor", role: "Hospitality host", organization: "SHINE" },
     { id: "p-tori", name: "Tori Chen", role: "Design and print", organization: "Fox Print Studio" },
     { id: "p-dave", name: "Dave Lindquist", role: "Venue liaison", organization: "Northwoods Lodge" },
     { id: "p-lena", name: "Lena Ruiz", role: "Program lead", organization: "Redeemer Collective" },
@@ -23,7 +23,7 @@ export const platformData: PlatformData = {
     {
       id: "cl-shine",
       slug: "shine",
-      name: "Shine",
+      name: "SHINE",
       tagline: "A community of Christian founders learning to hold their companies with open hands.",
       theme: { accent: "#c2762c", accentSoft: "#f4e6d4", onAccent: "#ffffff" },
       people: [],
@@ -153,7 +153,7 @@ export const platformData: PlatformData = {
     { id: "sp-03", editionId: "ed-fw-2026", title: "Live acoustic set at the Saturday bonfire", detail: "Two hours, one guitar, nothing amplified past the tree line.", category: "Experience", status: "discussing", raisedBy: "Megan Ellis", raisedOn: "2026-08-06" },
     { id: "sp-04", editionId: "ed-fw-2026", title: "Founders wall with a one sentence legacy card", detail: "Every guest writes one sentence about what they want to steward well. The cards go on the wall and go home with them.", category: "Generosity", status: "approved", raisedBy: "Ryan Fox", raisedOn: "2026-07-22", decision: "Approved. Forty five minutes on Saturday before dinner.", decidedOn: "2026-08-04", builds: [ { kind: "schedule", refId: "sc-24", label: "Founders wall and legacy cards" }, { kind: "budget", refId: "b-22", label: "Legacy cards and founders wall" }, { kind: "task", refId: "t-05", label: "Design the founders wall and legacy cards" }, { kind: "runOfShow", refId: "cue-09", label: "Ryan explains the founders wall" } ] },
     { id: "sp-05", editionId: "ed-fw-2026", title: "Kids craft table during Friday sessions", detail: "Would let more parents attend both morning sessions.", category: "Hospitality", status: "parked", raisedBy: "Brooke Fox", raisedOn: "2026-07-18", decision: "Parked for 2027. Childcare licensing is not solved for this venue.", decidedOn: "2026-07-31" },
-    { id: "sp-06", editionId: "ed-fw-2026", title: "Custom flannel blanket as the weekend gift", detail: "Shine label, given out Thursday so people actually use them at the fire.", category: "Generosity", status: "approved", raisedBy: "Tori Chen", raisedOn: "2026-07-15", decision: "Approved at sixty units. Order by the end of August to make the date.", decidedOn: "2026-08-18", builds: [ { kind: "budget", refId: "b-20", label: "Custom flannel blanket, sixty units" }, { kind: "task", refId: "t-07", label: "Place the flannel blanket order" }, { kind: "resource", refId: "r-05", label: "Custom flannel blankets" } ] },
+    { id: "sp-06", editionId: "ed-fw-2026", title: "Custom flannel blanket as the weekend gift", detail: "SHINE label, given out Thursday so people actually use them at the fire.", category: "Generosity", status: "approved", raisedBy: "Tori Chen", raisedOn: "2026-07-15", decision: "Approved at sixty units. Order by the end of August to make the date.", decidedOn: "2026-08-18", builds: [ { kind: "budget", refId: "b-20", label: "Custom flannel blanket, sixty units" }, { kind: "task", refId: "t-07", label: "Place the flannel blanket order" }, { kind: "resource", refId: "r-05", label: "Custom flannel blankets" } ] },
     { id: "sp-07", editionId: "ed-fw-2026", title: "Late night pie bar on Friday", detail: "Local pies out at nine thirty. Low effort, high memory.", category: "Hospitality", status: "discussing", raisedBy: "Sam Okafor", raisedOn: "2026-08-12" },
     { id: "sp-08", editionId: "ed-fw-2026", title: "Shuttle from Minneapolis for out of state founders", detail: "Nine guests are flying in. A shuttle removes nine rental cars.", category: "Logistics", status: "captured", raisedBy: "Megan Ellis", raisedOn: "2026-08-14" },
     { id: "sp-09", editionId: "ed-fw-2026", title: "Saturday morning polar plunge", detail: "It would be memorable.", category: "Experience", status: "declined", raisedBy: "Ryan Fox", raisedOn: "2026-07-30", decision: "Declined. Water temperature and liability.", decidedOn: "2026-08-04" },
@@ -165,7 +165,7 @@ export const platformData: PlatformData = {
 
     { id: "sp-lr-01", editionId: "ed-lr-2027", title: "Silent morning before the first session", detail: "No phones, no talking, from wake up until breakfast ends.", category: "Program", status: "discussing", raisedBy: "Lena Ruiz", raisedOn: "2026-08-10" },
     { id: "sp-lr-02", editionId: "ed-lr-2027", title: "Spouses invited to Saturday only", detail: "Keeps the retreat focused but opens the closing day.", category: "Hospitality", status: "captured", raisedBy: "Lena Ruiz", raisedOn: "2026-08-12" },
-    { id: "sp-lr-03", editionId: "ed-lr-2027", title: "Printed prayer guide for the year ahead", detail: "One per leader, dated for the twelve months after the retreat.", category: "Communications", status: "approved", raisedBy: "Lena Ruiz", raisedOn: "2026-08-01", decision: "Approved. Same printer as the Shine field guide.", decidedOn: "2026-08-15", builds: [{ kind: "budget", refId: "b-lr-05", label: "Printed prayer guide" }] },
+    { id: "sp-lr-03", editionId: "ed-lr-2027", title: "Printed prayer guide for the year ahead", detail: "One per leader, dated for the twelve months after the retreat.", category: "Communications", status: "approved", raisedBy: "Lena Ruiz", raisedOn: "2026-08-01", decision: "Approved. Same printer as the SHINE field guide.", decidedOn: "2026-08-15", builds: [{ kind: "budget", refId: "b-lr-05", label: "Printed prayer guide" }] },
   ],
 
   schedule: [

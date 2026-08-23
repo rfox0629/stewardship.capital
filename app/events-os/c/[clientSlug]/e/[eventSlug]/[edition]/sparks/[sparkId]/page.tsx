@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Restricted } from "@events/_components/restricted";
 import { Panel, Pill, Workflow } from "@events/_components/ui";
 import { shortDate } from "@events/_lib/format";
 import { editionPath } from "@events/_lib/paths";
@@ -12,6 +13,8 @@ import {
   sparkById,
 } from "@events/_lib/store";
 import type { SparkBuildKind, SparkStatus } from "@events/_lib/types";
+import { canView, sparkVisibleTo } from "@events/_lib/viewer";
+import { readViewer } from "@events/_lib/viewer-server";
 
 type PageProps = {
   params: Promise<EditionRouteParams & { sparkId: string }>;
@@ -68,6 +71,13 @@ export default async function SparkDetailPage({ params }: PageProps) {
   if (!spark || spark.editionId !== resolved.edition.id) notFound();
 
   const { client, event, edition } = resolved;
+  const viewer = await readViewer();
+  const home = editionPath(client.slug, event.slug, edition.slug);
+
+  if (!canView(viewer, "sparks") || !sparkVisibleTo(viewer, spark.status)) {
+    return <Restricted role={viewer} section="sparks" home={home} />;
+  }
+
   const base = (segment: string) =>
     editionPath(client.slug, event.slug, edition.slug, segment);
 

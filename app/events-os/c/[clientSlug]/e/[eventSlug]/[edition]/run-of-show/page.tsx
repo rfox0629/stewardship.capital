@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 
+import { Restricted } from "@events/_components/restricted";
 import { Panel, Workflow } from "@events/_components/ui";
 import { dayLabel } from "@events/_lib/format";
+import { editionPath } from "@events/_lib/paths";
 import type { EditionRouteParams } from "@events/_lib/paths";
 import {
   cuesFor,
@@ -9,6 +11,8 @@ import {
   resolveEdition,
   scheduleItemById,
 } from "@events/_lib/store";
+import { canView } from "@events/_lib/viewer";
+import { readViewer } from "@events/_lib/viewer-server";
 
 export const metadata = { title: "Run of show" };
 
@@ -19,7 +23,18 @@ export default async function RunOfShowPage({ params }: PageProps) {
   const resolved = resolveEdition(clientSlug, eventSlug, editionSlug);
   if (!resolved) notFound();
 
-  const { edition } = resolved;
+  const { client, event, edition } = resolved;
+  const viewer = await readViewer();
+  if (!canView(viewer, "run-of-show")) {
+    return (
+      <Restricted
+        role={viewer}
+        section="run-of-show"
+        home={editionPath(client.slug, event.slug, edition.slug)}
+      />
+    );
+  }
+
   const cues = cuesFor(edition.id);
 
   const byItem = new Map<string, typeof cues>();

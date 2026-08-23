@@ -4,21 +4,38 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { Spark, SparkCategory, SparkStatus } from "../_lib/types";
+import type { ViewerRole } from "../_lib/viewer";
 import { NodeState, type NodeStateKind } from "./node-state";
 
-/* One point commits, connects, and becomes a run. The node teaches the
-   lifecycle by being the status, so no screen has to explain it. */
-const columns: Array<{
+type Column = {
   status: SparkStatus;
   label: string;
   hint: string;
   node: NodeStateKind;
-}> = [
+};
+
+/* One point commits, connects, and becomes a run. The node teaches the
+   lifecycle by being the status, so no screen has to explain it. */
+const plannerColumns: Column[] = [
   { status: "captured", label: "Captured", hint: "Written down, not yet discussed.", node: "latent" },
   { status: "discussing", label: "Discussing", hint: "On a meeting agenda.", node: "open" },
   { status: "approved", label: "Approved", hint: "Built into the plan.", node: "built" },
   { status: "parked", label: "Parked", hint: "Good, not this edition.", node: "closed" },
   { status: "declined", label: "Declined", hint: "Decided against, and why.", node: "closed" },
+];
+
+/**
+ * What the client team sees.
+ *
+ * Three columns, not five. Parked and declined are where the planners' working
+ * reasoning lives, and a client who reads every rejection starts relitigating
+ * decisions rather than trusting them. What was decided still reaches them, in
+ * the weekly meeting, from a person.
+ */
+const clientColumns: Column[] = [
+  { status: "captured", label: "Submitted", hint: "With us. We review before the next meeting.", node: "latent" },
+  { status: "discussing", label: "Under discussion", hint: "On this week's agenda together.", node: "open" },
+  { status: "approved", label: "Settled", hint: "Approved and built into the plan.", node: "built" },
 ];
 
 const categories: SparkCategory[] = [
@@ -44,16 +61,24 @@ type SparksBoardProps = {
   /** Route prefix for a single spark. Functions cannot cross the server
       boundary, so the board builds hrefs from a plain string. */
   sparkBase: string;
+  viewer: ViewerRole;
 };
 
-export function SparksBoard({ sparks, sparkBase }: SparksBoardProps) {
+export function SparksBoard({ sparks, sparkBase, viewer }: SparksBoardProps) {
   const [added, setAdded] = useState<Spark[]>([]);
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
   const [category, setCategory] = useState<SparkCategory>("Experience");
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
-  const all = [...added, ...sparks];
+  const isPlanner = viewer === "planner";
+  const columns = isPlanner ? plannerColumns : clientColumns;
+  const visible = isPlanner
+    ? sparks
+    : sparks.filter((spark) =>
+        clientColumns.some((column) => column.status === spark.status),
+      );
+  const all = [...added, ...visible];
 
   const submit = (formEvent: React.FormEvent) => {
     formEvent.preventDefault();
@@ -119,7 +144,7 @@ export function SparksBoard({ sparks, sparkBase }: SparksBoardProps) {
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <button className="eo-button" type="submit">
-              Add to Captured
+              {isPlanner ? "Add to Captured" : "Send it to us"}
             </button>
             <p className="eo-note">
               Preview only. Nothing is saved, and nothing reaches the confirmed
@@ -128,18 +153,24 @@ export function SparksBoard({ sparks, sparkBase }: SparksBoardProps) {
           </div>
         </form>
         <p aria-live="polite" className="eo-note" style={{ marginTop: 10 }}>
-          {justAdded ? `Captured "${justAdded}". It is waiting for the next meeting.` : ""}
+          {justAdded
+            ? isPlanner
+              ? `Captured "${justAdded}". It is waiting for the next meeting.`
+              : `Thanks. "${justAdded}" is with Brooke and Ryan for the next meeting.`
+            : ""}
         </p>
       </div>
 
-      {sparks.length === 0 && added.length === 0 ? (
+      {visible.length === 0 && added.length === 0 ? (
         <p className="eo-note" style={{ marginBottom: 14 }}>
           No sparks recorded for this edition. Capture one above and it lands in
           Captured, where it waits for the next meeting.
         </p>
       ) : null}
 
-      <div className="eo-board">
+      {/* The client lens shows three columns, the planner five. The grid reads
+          the count rather than assuming, so neither leaves dead space. */}
+      <div className="eo-board" data-columns={columns.length}>
         {columns.map((column) => {
           const items = all.filter((spark) => spark.status === column.status);
           return (

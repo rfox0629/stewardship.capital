@@ -1245,6 +1245,10 @@ html:has(.eo-frame) body {
     grid-template-columns: repeat(5, 1fr);
   }
 
+  .eo-board[data-columns="3"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .eo-hero-art {
     position: absolute;
     inset: 0;
@@ -1323,4 +1327,184 @@ html:has(.eo-frame) body {
    so it is pulled down rather than competing with the interface. */
 .eo-hero-art svg {
   filter: saturate(0.88) brightness(0.84);
+}
+
+/* ================================================================= lenses */
+
+/*
+ * Who is looking.
+ *
+ * Spark owns the chrome, so the lens control is Spark grey and sits with the
+ * rest of the product furniture rather than taking the accent. Signal orange
+ * marks activation, and choosing a lens is not an activation.
+ */
+
+.sp-lens {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.2s var(--sp-ease);
+}
+
+.sp-lens[data-pending="true"] {
+  opacity: 0.5;
+}
+
+.sp-lens-label {
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer);
+  white-space: nowrap;
+}
+
+.sp-lens-set {
+  display: flex;
+  border: 1px solid var(--sp-line);
+  border-radius: var(--sp-radius);
+  background: var(--sp-base);
+  overflow: hidden;
+}
+
+.sp-lens-set button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--sp-dim);
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.18s var(--sp-ease),
+    background 0.18s var(--sp-ease);
+}
+
+.sp-lens-set button + button {
+  border-left: 1px solid var(--sp-line);
+}
+
+.sp-lens-set button:hover {
+  color: var(--sp-white);
+}
+
+.sp-lens-set button[data-active="true"] {
+  color: var(--sp-white);
+  background: var(--sp-raised-2);
+}
+
+/* The preview strip under the nav. Holds the lens control and one line saying
+   plainly who this view belongs to. In the shipped product neither exists,
+   because who you are is settled at sign in. */
+.sp-lens-note {
+  border-bottom: 1px solid var(--sp-line);
+  background: var(--sp-base);
+}
+
+.sp-lens-note .eo-shell {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 9px 0;
+}
+
+.sp-lens-note p {
+  font-size: 0.74rem;
+  color: var(--sp-dim);
+  margin: 0;
+}
+
+/* ------------------------------------------------- the boundary, visible */
+
+.sp-restricted {
+  max-width: 46rem;
+  padding: 76px 0 90px;
+}
+
+.sp-restricted h1 {
+  font-size: clamp(1.7rem, 3.4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  margin: 12px 0 18px;
+  color: var(--sp-white);
+}
+
+.sp-restricted p {
+  color: var(--sp-dim);
+  line-height: 1.6;
+  max-width: 40rem;
+}
+
+.sp-restricted .eo-note {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sp-line);
+  max-width: 40rem;
+}
+
+/* ------------------------------------------ the emotional layer, dialled */
+
+/*
+ * A planner is at work, so the workspace stays cool and fast. A client or a
+ * guest is being welcomed to a weekend, so the event layer is allowed further
+ * up the page. The components are identical. Only the scrim moves.
+ */
+[data-sp-lens="client"] .eo-hero-art svg,
+[data-sp-lens="stakeholder"] .eo-hero-art svg {
+  filter: saturate(1.02) brightness(0.98);
+}
+
+/* A guest's first screen is a welcome, so the event layer gets more room.
+   Only where there is room to give: on a phone the hero is already the whole
+   viewport and stretching it just pushes the schedule below two folds. */
+@media (min-width: 900px) {
+  [data-sp-lens="stakeholder"] .eo-hero {
+    min-height: 58vh;
+  }
+}
+
+.eo-hero-client {
+  color: var(--client-accent);
+}
+
+[data-sp-lens="client"] .sp-powered,
+[data-sp-lens="stakeholder"] .sp-powered {
+  color: var(--sp-dim);
+}
+
+/* A decision or an idea in a client row leads with the node, so the lifecycle
+   reads without anyone being taught it. */
+.eo-row-lead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.eo-rows-foot {
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--sp-line);
+}
+
+.eo-guest-foot {
+  margin-top: 22px;
+  padding-bottom: 10px;
+}
+
+@media (max-width: 620px) {
+  .sp-lens-label {
+    display: none;
+  }
+
+  .sp-lens-set button {
+    padding: 5px 9px;
+  }
+
+  .sp-lens-note .eo-shell {
+    gap: 10px;
+  }
 }

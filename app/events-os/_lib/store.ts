@@ -1,4 +1,4 @@
-import { plural } from "./format";
+import { plural, shortDate } from "./format";
 import { platformData } from "./platform-data";
 import type {
   BudgetCategory,
@@ -260,9 +260,9 @@ export const attentionFor = (editionId: Id, hrefs: {
     items.push({
       id: "decisions",
       label: plural(openDecisions.length, "open decision"),
-      detail: `Earliest needed by ${openDecisions
-        .map((decision) => decision.needsBy)
-        .sort()[0]}.`,
+      detail: `Earliest needed by ${shortDate(
+        openDecisions.map((decision) => decision.needsBy).sort()[0],
+      )}.`,
       tone: "urgent",
       href: hrefs.meeting,
     });

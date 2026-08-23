@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { Panel, Pill, Workflow } from "@events/_components/ui";
 import { shortDate } from "@events/_lib/format";
+import { Restricted } from "@events/_components/restricted";
 import { editionPath } from "@events/_lib/paths";
 import type { EditionRouteParams } from "@events/_lib/paths";
 import {
@@ -12,6 +13,8 @@ import {
   resolveEdition,
   sparkById,
 } from "@events/_lib/store";
+import { canView } from "@events/_lib/viewer";
+import { readViewer } from "@events/_lib/viewer-server";
 
 export const metadata = { title: "This week" };
 
@@ -23,6 +26,16 @@ export default async function MeetingPage({ params }: PageProps) {
   if (!resolved) notFound();
 
   const { client, event, edition } = resolved;
+  const viewer = await readViewer();
+  if (!canView(viewer, "meeting")) {
+    return (
+      <Restricted
+        role={viewer}
+        section="meeting"
+        home={editionPath(client.slug, event.slug, edition.slug)}
+      />
+    );
+  }
   const base = (segment: string) =>
     editionPath(client.slug, event.slug, edition.slug, segment);
 

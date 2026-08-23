@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 
+import { LensStrip } from "../../_components/lens-strip";
+import { PlannerOnly } from "../../_components/planner-only";
 import { SparkBar } from "../../_components/spark-bar";
 import { Pill } from "../../_components/ui";
 import { money, shortDate } from "../../_lib/format";
@@ -13,6 +15,7 @@ import {
   eventsForClient,
   sparkCounts,
 } from "../../_lib/store";
+import { readViewer } from "../../_lib/viewer-server";
 
 type PageProps = { params: Promise<{ clientSlug: string }> };
 
@@ -28,10 +31,32 @@ export default async function ClientHomePage({ params }: PageProps) {
   if (!client) notFound();
 
   const events = eventsForClient(client.id);
+  const viewer = await readViewer();
+
+  if (viewer !== "planner") {
+    const first = events[0];
+    const firstEdition = first ? editionsForEvent(first.id)[0] : undefined;
+    return (
+      <>
+        <SparkBar client={client} viewer={viewer} />
+        <LensStrip viewer={viewer} />
+        <PlannerOnly
+          role={viewer}
+          backHref={
+            first && firstEdition
+              ? editionPath(client.slug, first.slug, firstEdition.slug)
+              : undefined
+          }
+          backLabel="Go to your event"
+        />
+      </>
+    );
+  }
 
   return (
     <>
-      <SparkBar client={client} />
+      <SparkBar client={client} viewer={viewer} />
+      <LensStrip viewer={viewer} />
       <main
       className="eo-page"
       style={

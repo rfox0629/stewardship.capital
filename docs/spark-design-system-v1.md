@@ -67,6 +67,18 @@ SHINE, Founders Weekend 2026. Copper client accent, lakefront event scene, ember
 
 The Platform, Client, Event, Edition architecture. The Spark, Discuss, Approve, Build, Confirm, Reflect workflow. The four question event home. The data model and the `_lib/store.ts` boundary. Those were product decisions, and a rebrand should not relitigate them.
 
+## Who is looking
+
+Three lenses, planner, client team, and guest, are now structural rather than a
+positioning statement. Nav, route guards, and the event home all read one access
+table, and refusal reads as a boundary rather than a fault. See
+`spark-access-model-v1.md`.
+
+The event home answers four questions in every lens, but not the same four. A
+planner is at work. A client is being asked to decide. A guest is being
+welcomed. The emotional layer warms accordingly, from the same components, off a
+single `data-sp-lens` attribute on the wrapper.
+
 ## Open
 
 - Event imagery is still generated from the edition theme. `EventScene` is a stand in for real photography, and the scrim is already tuned for it.

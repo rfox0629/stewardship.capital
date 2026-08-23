@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Panel, Pill } from "@events/_components/ui";
+import { Restricted } from "@events/_components/restricted";
 import { editionPath } from "@events/_lib/paths";
 import type { EditionRouteParams } from "@events/_lib/paths";
 import { personById, resolveEdition, resourcesFor } from "@events/_lib/store";
+import { canView } from "@events/_lib/viewer";
+import { readViewer } from "@events/_lib/viewer-server";
 
 export const metadata = { title: "Resources" };
 
@@ -19,6 +22,16 @@ export default async function ResourcesPage({ params }: PageProps) {
   if (!resolved) notFound();
 
   const { client, event, edition } = resolved;
+  const viewer = await readViewer();
+  if (!canView(viewer, "resources")) {
+    return (
+      <Restricted
+        role={viewer}
+        section="resources"
+        home={editionPath(client.slug, event.slug, edition.slug)}
+      />
+    );
+  }
   const base = (segment: string) =>
     editionPath(client.slug, event.slug, edition.slug, segment);
   const resources = resourcesFor(edition.id);
