@@ -139,7 +139,7 @@ The four findings from the independent architecture review are resolved:
 | F1 | The route triple was derived but nothing made it unique | `engagements_route_triple_idx`, a unique index on the derived triple, applied to production |
 | F2 | Legacy `/dashboard` admitted any Spark identity | Parked behind the explicit `platform_staff` grant in the proxy |
 | F3 | `/spark/signout` aliased GET to POST | Alias removed; signing out is a POST only |
-| F4 | The front door answered fast for unknown addresses and slow for known ones | The email sends after the response with `after()`, so every address answers in the same time |
+| F4 | The front door answered fast for unknown addresses and slow for known ones | The send is awaited so failures are honest, and every response is padded to the same floor, so a refusal and a slow SMTP handoff are indistinguishable from outside |
 
 What still gates the first invitation is the dashboard configuration above:
 signup off, the production site URL, the email template, rate limits, and SMTP.

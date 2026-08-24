@@ -342,7 +342,7 @@ html:has(.www) body {
 .entry-sub {
   margin-top: clamp(14px, 2vw, 20px) !important;
   font-size: 1rem;
-  color: var(--dim);
+  color: #c3c8d1;
 }
 
 .entry-form {
@@ -353,10 +353,10 @@ html:has(.www) body {
 
 .entry-label {
   display: block;
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--dimmer);
+  color: #a7aeba;
   margin-bottom: 9px;
 }
 
@@ -378,7 +378,7 @@ html:has(.www) body {
 }
 
 .entry-row input::placeholder {
-  color: #4a505a;
+  color: #6d747f;
 }
 
 .entry-row input:focus {
@@ -429,7 +429,7 @@ html:has(.www) body {
   margin-top: clamp(30px, 4vw, 42px);
   font-size: 0.94rem;
   line-height: 1.6;
-  color: var(--dim);
+  color: #c3c8d1;
   animation: mask-rise 0.7s var(--ease-out) both;
 }
 
@@ -486,14 +486,14 @@ html:has(.www) body {
 .entry-hint {
   margin-top: 12px !important;
   font-size: 0.8rem;
-  color: var(--dim);
+  color: #a7aeba;
 }
 
 .entry-note {
   margin-top: clamp(24px, 3vw, 32px) !important;
   font-size: 0.78rem;
   line-height: 1.6;
-  color: var(--dimmer);
+  color: #a7aeba;
   animation: mask-rise 1.05s var(--ease-out) 0.84s both;
 }
 

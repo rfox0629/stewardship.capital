@@ -2,7 +2,6 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
 
 import { landingFor, workspaceHome } from "../../lib/spark/authorize";
 import { choicesFrom, resolveAccess, workspaceById } from "../../lib/spark/access";
@@ -30,7 +29,9 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type RequestOutcome =
   | { status: "sent"; hint: string }
-  | { status: "invalid" };
+  | { status: "invalid" }
+  /** Spark itself could not send right now. Says nothing about the address. */
+  | { status: "unavailable" };
 
 export type VerifyOutcome =
   | { status: "invalid" }
@@ -41,37 +42,60 @@ export type VerifyOutcome =
 /**
  * Step one. Asks Supabase to post a code to an address.
  *
- * shouldCreateUser is false, so this can never be account creation: an address
- * nobody has invited gets no email and no account. The answer to the browser
- * is the same either way, which is what stops the form from being a way to
- * discover who has access.
+ * shouldCreateUser is false, so this can never be account creation, and an
+ * address Supabase does not know is answered exactly like one it does: the
+ * refusal it returns for an unknown address is treated as sent, because
+ * telling the truth there would make the form a directory of who has access.
+ *
+ * Infrastructure is different. A rate limit, a mail failure, or a missing
+ * configuration means nobody was going to receive anything, so pretending a
+ * code went out would strand the person on a code screen that can never
+ * succeed. Those answer unavailable, in the same words for every cause.
+ *
+ * Both paths take the same time. The call is awaited to learn which happened,
+ * and the response is padded to a floor so a quick refusal and a slow SMTP
+ * handoff are indistinguishable from outside.
  */
+const RESPONSE_FLOOR_MS = 1600;
+
+const pause = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+
 export async function requestAccess(email: string): Promise<RequestOutcome> {
   const address = email.trim().toLowerCase();
   if (!EMAIL.test(address)) return { status: "invalid" };
 
-  /* The send happens after the response, so a known address and an unknown
-     one answer in the same time. Awaiting it here would leak membership
-     through latency: the unknown address returns at once, the known one
-     waits on SMTP. */
-  const supabase = await createClient().catch(() => null);
-  if (supabase) {
-    after(async () => {
-      try {
-        await supabase.auth.signInWithOtp({
-          email: address,
-          options: { shouldCreateUser: false },
-        });
-      } catch {
-        /* A misconfigured deploy answers exactly like an unknown address. */
-      }
+  const started = Date.now();
+  let outcome: RequestOutcome = { status: "sent", hint: maskEmail(address) };
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: address,
+      options: { shouldCreateUser: false },
     });
+
+    if (error) {
+      /* The refusal for an address with no account. This is the ordinary
+         answer for a non member and must look exactly like success. */
+      const unknownAddress =
+        error.code === "otp_disabled" ||
+        error.code === "signup_disabled" ||
+        /signups? not allowed/i.test(error.message ?? "");
+
+      if (!unknownAddress) outcome = { status: "unavailable" };
+    }
+  } catch {
+    outcome = { status: "unavailable" };
   }
 
-  const store = await cookies();
-  store.set(OTP_EMAIL_COOKIE, address, transientCookie(OTP_MAX_AGE));
+  if (outcome.status === "sent") {
+    const store = await cookies();
+    store.set(OTP_EMAIL_COOKIE, address, transientCookie(OTP_MAX_AGE));
+  }
 
-  return { status: "sent", hint: maskEmail(address) };
+  await pause(RESPONSE_FLOOR_MS - (Date.now() - started));
+  return outcome;
 }
 
 /**
