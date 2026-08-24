@@ -30,14 +30,12 @@ export default function MorePage() {
           </div>
 
           <div className="mask">
-            <p className="entry-sub">Sign in to continue.</p>
+            <p className="entry-sub">
+              Capture freely. Discern carefully. Move intentionally.
+            </p>
           </div>
 
           <SparkEntry />
-
-          <p className="entry-note">
-            Founder preview. No account is required yet, and nothing is saved.
-          </p>
         </div>
       </section>
     </>

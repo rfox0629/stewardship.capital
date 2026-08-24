@@ -99,6 +99,7 @@ export const platformData: PlatformData = {
       venue: "Northwoods Lodge on Long Lake",
       budgetTotal: 60000,
       guestsExpected: 56,
+      campaign: "Enlarge the Tent",
       coordinatorId: "p-brooke",
       emceeId: "p-ryan",
       reusedFromEditionId: "ed-fw-2025",

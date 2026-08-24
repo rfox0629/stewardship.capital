@@ -72,6 +72,7 @@ export default async function EventHomePage({ params }: PageProps) {
           <div className="eo-hero-inner">
             <p className="eo-eyebrow" style={{ color: "rgba(251,248,241,0.6)" }}>
               {client.name}
+              {edition.campaign ? ` / ${edition.campaign}` : ""}
             </p>
             <h1 className="eo-serif">{edition.label}</h1>
             <p>{event.summary}</p>

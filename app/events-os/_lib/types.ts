@@ -67,6 +67,8 @@ export type Edition = {
   venue: string;
   budgetTotal: number;
   guestsExpected: number;
+  /** The event's own campaign name, owned by the client rather than by Spark. */
+  campaign?: string;
   coordinatorId: Id;
   emceeId: Id;
   theme: EventTheme;

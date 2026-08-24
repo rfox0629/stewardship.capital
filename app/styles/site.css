@@ -423,6 +423,65 @@ html:has(.www) body {
   transform: translateX(4px);
 }
 
+/* Refusal is quiet. No alarm, no colour, no hint about what would have
+   worked. */
+.entry-refused {
+  margin-top: clamp(30px, 4vw, 42px);
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: var(--dim);
+  animation: mask-rise 0.7s var(--ease-out) both;
+}
+
+/* A person's own workspaces, and only ever their own. */
+.entry-choose {
+  margin-top: clamp(30px, 4vw, 42px);
+  text-align: left;
+  animation: mask-rise 0.7s var(--ease-out) both;
+}
+
+.entry-choose ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.entry-choose button {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  font: inherit;
+  padding: 14px 16px;
+  border-radius: 3px;
+  border: 1px solid var(--line-bright);
+  background: var(--base);
+  color: var(--white);
+  cursor: pointer;
+  transition:
+    border-color 0.25s var(--ease),
+    background 0.25s var(--ease);
+}
+
+.entry-choose button:hover {
+  border-color: var(--signal);
+  background: var(--raised);
+}
+
+.entry-choose-client {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.entry-choose-label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
 .entry-note {
   margin-top: clamp(24px, 3vw, 32px) !important;
   font-size: 0.78rem;
