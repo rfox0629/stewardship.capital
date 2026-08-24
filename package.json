@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "spark:invite": "node scripts/mint-invitation.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

@@ -1,66 +1,63 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import {
-  invitationByToken,
-  workspaceById,
-  workspacePath,
-} from "../../../lib/spark/directory";
-import {
-  SESSION_COOKIE,
-  SESSION_MAX_AGE,
-  VIEWER_COOKIE,
-  sealSession,
-} from "../../../lib/spark/session";
+import { SparkConfigError, sessionSecret } from "../../../lib/spark/config";
+import { readInvitation } from "../../../lib/spark/invitations";
+import { consumedInvitations } from "../../../lib/spark/invitation-store";
+import { sendVerificationCode } from "../../../lib/spark/mailer";
+import { CHALLENGE_COOKIE, CHALLENGE_MAX_AGE } from "../../../lib/spark/session";
+import { issueChallenge, sealChallenge } from "../../../lib/spark/verification";
 
 /**
- * An invitation link.
+ * An invitation link begins the identity flow. It does not end it.
  *
- * Takes an invited person through authentication and directly into the
- * workspace they were invited to, rather than dropping them on a sign in
- * screen to work out where they belong.
+ * The token is never the session. Following the link posts a code to the
+ * address the invitation was issued to, and the person still has to prove they
+ * read it. Only then is an ordinary Spark session created and the invitation
+ * burned.
  *
- * Possession of the token is the only check today. Before this is worth
- * anything the tokens have to be unguessable, single use, and expiring, and
- * the redemption has to verify the address it was issued to.
- *
- * A bad token is not told it is bad. It goes to the front door like anything
- * else, so the route cannot be used to test which tokens exist.
+ * Every failure looks the same from outside: unknown, expired, already
+ * accepted, and undeliverable all land on the front door, so the route cannot
+ * be used to test which tokens exist.
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
-  const { token } = await params;
-  const invitation = invitationByToken(token);
-  const workspace = invitation
-    ? workspaceById(invitation.workspaceId)
-    : undefined;
+  const frontDoor = NextResponse.redirect(new URL("/more", request.url));
 
-  if (!invitation || !workspace) {
-    return NextResponse.redirect(new URL("/more", request.url));
+  let secret: string;
+  try {
+    secret = sessionSecret();
+  } catch (error) {
+    if (error instanceof SparkConfigError) return frontDoor;
+    throw error;
   }
 
-  const response = NextResponse.redirect(
-    new URL(workspacePath(workspace), request.url),
-  );
+  const { token } = await params;
+  const claims = await readInvitation(token, secret);
+  if (!claims) return frontDoor;
 
-  response.cookies.set(
-    SESSION_COOKIE,
-    await sealSession(invitation.email, invitation.workspaceId, invitation.role),
-    {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: SESSION_MAX_AGE,
-    },
-  );
+  if (await consumedInvitations.has(claims.jti)) return frontDoor;
 
-  response.cookies.set(VIEWER_COOKIE, invitation.role, {
-    path: "/",
-    sameSite: "lax",
-    maxAge: SESSION_MAX_AGE,
+  const { challenge, code } = await issueChallenge(claims.email, secret, {
+    jti: claims.jti,
+    workspaceId: claims.workspaceId,
+    role: claims.role,
   });
 
+  try {
+    await sendVerificationCode(claims.email, code);
+  } catch {
+    return frontDoor;
+  }
+
+  const response = NextResponse.redirect(new URL("/more", request.url));
+  response.cookies.set(CHALLENGE_COOKIE, await sealChallenge(challenge, secret), {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: CHALLENGE_MAX_AGE,
+  });
   return response;
 }

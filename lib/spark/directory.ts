@@ -1,4 +1,4 @@
-import type { Membership, SparkRole, Workspace } from "./types";
+import type { Membership, SparkRole, Workspace } from "./types.ts";
 
 /**
  * The invitation directory.
@@ -51,20 +51,6 @@ const MEMBERSHIPS: Record<string, Membership[]> = {
   ],
 };
 
-/** Outstanding invitations. Grant access before a membership exists. */
-const INVITATIONS: Array<{
-  token: string;
-  email: string;
-  workspaceId: string;
-  role: SparkRole;
-}> = [
-  {
-    token: "inv-shine-2026-a7f3",
-    email: "sam@shine.co",
-    workspaceId: "shine-founders-weekend-2026",
-    role: "client",
-  },
-];
 
 const normalise = (email: string) => email.trim().toLowerCase();
 
@@ -72,29 +58,12 @@ export const workspaceById = (id: string): Workspace | undefined =>
   WORKSPACES.find((workspace) => workspace.id === id);
 
 /**
- * Everything this address may reach, whether through an existing membership
- * or an outstanding invitation. An empty list means not invited.
+ * Everything this address already belongs to. An empty list means no standing
+ * access; an invitation is a separate, signed grant.
  */
-export const membershipsFor = (email: string): Membership[] => {
-  const key = normalise(email);
-  const existing = MEMBERSHIPS[key] ?? [];
-  const invited = INVITATIONS.filter(
-    (invitation) => normalise(invitation.email) === key,
-  ).map((invitation) => ({
-    workspaceId: invitation.workspaceId,
-    role: invitation.role,
-  }));
+export const membershipsFor = (email: string): Membership[] =>
+  MEMBERSHIPS[normalise(email)] ?? [];
 
-  const seen = new Set(existing.map((membership) => membership.workspaceId));
-  return [
-    ...existing,
-    ...invited.filter((membership) => !seen.has(membership.workspaceId)),
-  ];
-};
-
-/** Resolves an invitation link to the workspace it was issued for. */
-export const invitationByToken = (token: string) =>
-  INVITATIONS.find((invitation) => invitation.token === token);
 
 export const roleFor = (
   email: string,

@@ -482,6 +482,13 @@ html:has(.www) body {
   font-weight: 500;
 }
 
+/* Said once, under the field it applies to. */
+.entry-hint {
+  margin-top: 12px !important;
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+
 .entry-note {
   margin-top: clamp(24px, 3vw, 32px) !important;
   font-size: 0.78rem;

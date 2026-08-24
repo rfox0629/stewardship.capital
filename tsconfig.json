@@ -27,7 +27,8 @@
       "@events/*": [
         "app/events-os/*"
       ]
-    }
+    },
+    "allowImportingTsExtensions": true
   },
   "include": [
     "next-env.d.ts",

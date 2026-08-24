@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
+import { sessionSecret } from "../../../lib/spark/config";
+import { maskEmail } from "../../../lib/spark/mask";
+import { CHALLENGE_COOKIE } from "../../../lib/spark/session";
+import { readChallenge } from "../../../lib/spark/verification";
 import { MultiplierField } from "../_components/multiplier-field";
 import { SiteNav } from "../_components/site-nav";
 import { SparkEntry } from "../_components/spark-entry";
@@ -11,10 +16,29 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const dynamic = "force-dynamic";
+
 /**
  * Opening a private product, not reading about one.
+ *
+ * The step is decided on the server from the signed challenge, so arriving
+ * from an invitation link lands straight on the code, and the address it was
+ * sent to is never taken from the browser.
  */
-export default function MorePage() {
+export default async function MorePage() {
+  let stage: { name: "email" } | { name: "code"; hint: string } = { name: "email" };
+
+  try {
+    const store = await cookies();
+    const challenge = await readChallenge(
+      store.get(CHALLENGE_COOKIE)?.value,
+      sessionSecret(),
+    );
+    if (challenge) stage = { name: "code", hint: maskEmail(challenge.email) };
+  } catch {
+    /* A misconfigured deploy shows the front door rather than an error. */
+  }
+
   return (
     <>
       <SiteNav />
@@ -35,7 +59,7 @@ export default function MorePage() {
             </p>
           </div>
 
-          <SparkEntry />
+          <SparkEntry initialStage={stage} />
         </div>
       </section>
     </>
