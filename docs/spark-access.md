@@ -52,6 +52,24 @@ running application never uses it.
 There is no `SPARK_SESSION_SECRET` any more. Spark no longer signs anything of
 its own.
 
+### Configuring it in one run
+
+All five production settings are settable through the Management API:
+
+```
+npm run auth:configure
+```
+
+Needs `SUPABASE_ACCESS_TOKEN` in `.env.local`, a personal access token from
+supabase.com/dashboard/account/tokens. With only the token set it applies
+four of the five: signup off, site URL and redirect list, the magic link
+template with the code, and the verification and OTP request rate limits.
+Once the `SPARK_SMTP_*` values are also in `.env.local`, rerunning it
+configures the sender and raises the email rate limit. It reads every value
+back and refuses to report success unless what it wrote is what is there.
+
+The table below stays as the reference for what correct looks like.
+
 ### Supabase dashboard
 
 Correct application code proves nothing about the project it runs against.
