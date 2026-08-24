@@ -1,0 +1,736 @@
+/*
+ * The engagement surface.
+ *
+ * One stylesheet for every themed engagement. Nothing in here names a client:
+ * every color and face comes through the validated --ev-* variables the theme
+ * system sets, so SHINE is a configuration of this sheet rather than a fork
+ * of it.
+ *
+ * The register is editorial, not dashboard. Ruled lists instead of cards,
+ * one display face used sparingly at large sizes, generous whitespace, and
+ * almost no chrome. The power is typography, hierarchy, and restraint.
+ *
+ * Spark's own tokens (--sp-*, and the site tokens) are deliberately never
+ * referenced except in the Powered by Spark line, which is Spark's and keeps
+ * Spark's orange regardless of theme.
+ */
+
+.ev {
+  min-height: 100svh;
+  background: var(--ev-surface);
+  color: var(--ev-ink);
+  font-family: var(--ev-body), system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+}
+
+.ev a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ev-shell {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4.5vw, 48px);
+}
+
+/* The Stewardship.Capital wordmark, top left, exactly the site's own. Its dot
+   keeps the site accent; the surrounding chrome inherits event ink. */
+.ev .nav {
+  position: absolute;
+  background: none;
+}
+
+.ev .nav-brand {
+  color: rgba(250, 246, 241, 0.92);
+}
+
+/* ------------------------------------------------------------- masthead */
+
+.ev-masthead {
+  background: var(--ev-primary);
+  color: #faf6f1;
+  padding: calc(var(--nav-h, 64px) + clamp(20px, 4vw, 44px)) 0 0;
+  position: relative;
+}
+
+.ev-masthead-inner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3.5vw, 30px);
+  padding-bottom: clamp(26px, 4.5vw, 44px);
+}
+
+.ev-org-logo {
+  height: clamp(30px, 4.5vw, 38px);
+  width: auto;
+  align-self: flex-start;
+}
+
+.ev-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ev-eyebrow {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(250, 246, 241, 0.72);
+}
+
+.ev-title {
+  font-family: var(--ev-display), serif;
+  font-weight: 560;
+  font-size: clamp(2.5rem, 7.4vw, 4.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  max-width: 14ch;
+}
+
+.ev-campaign {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: clamp(0.8rem, 1.6vw, 0.92rem);
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: #e9b949;
+}
+
+.ev-meta {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  color: rgba(250, 246, 241, 0.85);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+/* --------------------------------------------------------------- nav */
+
+.ev-nav {
+  background: var(--ev-primary);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.ev-nav-inner {
+  display: flex;
+  gap: clamp(20px, 4vw, 36px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ev-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.ev-nav a {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(250, 246, 241, 0.68);
+  padding: 14px 0 12px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.ev-nav a:hover {
+  color: #faf6f1;
+}
+
+.ev-nav a[aria-current="page"] {
+  color: #faf6f1;
+  border-bottom-color: #e9b949;
+}
+
+/* -------------------------------------------------------------- page */
+
+.ev-main {
+  flex: 1;
+  padding: clamp(36px, 6vw, 64px) 0 clamp(48px, 7vw, 80px);
+}
+
+.ev-page-title {
+  font-family: var(--ev-display), serif;
+  font-weight: 560;
+  font-size: clamp(1.7rem, 3.6vw, 2.3rem);
+  line-height: 1.12;
+  color: var(--ev-primary);
+  margin-bottom: 10px;
+}
+
+.ev-lede {
+  max-width: 58ch;
+  color: var(--ev-ink);
+  opacity: 0.86;
+}
+
+.ev-section {
+  margin-top: clamp(36px, 6vw, 56px);
+}
+
+.ev-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid var(--ev-primary);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+}
+
+.ev-section-title {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ev-primary);
+}
+
+.ev-section-note {
+  font-size: 0.82rem;
+  color: var(--ev-secondary);
+}
+
+/* ------------------------------------------------------------ home */
+
+.ev-glance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0 28px;
+}
+
+.ev-glance > div {
+  padding: 16px 0 14px;
+  border-bottom: 1px solid rgba(58, 58, 59, 0.14);
+}
+
+.ev-glance dt {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ev-secondary);
+  margin-bottom: 4px;
+}
+
+.ev-glance dd {
+  font-family: var(--ev-display), serif;
+  font-size: 1.24rem;
+  color: var(--ev-primary);
+}
+
+.ev-flow {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 720px) {
+  .ev-flow {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+  }
+}
+
+.ev-flow a {
+  display: block;
+  padding: 18px 0 16px;
+  border-bottom: 1px solid rgba(58, 58, 59, 0.14);
+  transition: border-color 0.2s ease;
+}
+
+.ev-flow a:hover {
+  border-bottom-color: var(--ev-secondary);
+}
+
+.ev-flow-verb {
+  font-family: var(--ev-display), serif;
+  font-size: 1.35rem;
+  color: var(--ev-primary);
+  display: block;
+}
+
+.ev-flow-count {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ev-secondary);
+  display: block;
+  margin-top: 4px;
+}
+
+/* ----------------------------------------------------------- gallery */
+
+.ev-gallery {
+  display: grid;
+  gap: 10px;
+  padding-top: 16px;
+}
+
+@media (min-width: 720px) {
+  .ev-gallery {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.ev-gallery img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  display: block;
+}
+
+/* ------------------------------------------------------- ruled lists */
+
+.ev-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ev-rows > li {
+  padding: 16px 0 15px;
+  border-bottom: 1px solid rgba(58, 58, 59, 0.14);
+}
+
+.ev-row-kicker {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ev-secondary);
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.ev-row-title {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--ev-primary);
+  margin-top: 3px;
+}
+
+.ev-row-detail {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  max-width: 62ch;
+  margin-top: 2px;
+}
+
+.ev-row-decision {
+  font-size: 0.88rem;
+  margin-top: 6px;
+  padding-left: 14px;
+  border-left: 2px solid var(--ev-accent);
+  color: var(--ev-ink);
+  max-width: 60ch;
+}
+
+.ev-row-became {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ev-accent);
+  margin-top: 6px;
+}
+
+.ev-slot-spark {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ev-secondary);
+  margin-top: 2px;
+}
+
+.ev-muted {
+  opacity: 0.55;
+}
+
+.ev-muted .ev-row-decision {
+  border-left-color: rgba(58, 58, 59, 0.3);
+}
+
+/* ---------------------------------------------------------- schedule */
+
+.ev-day {
+  margin-top: clamp(32px, 5vw, 48px);
+}
+
+.ev-day-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  border-bottom: 2px solid var(--ev-primary);
+  padding-bottom: 8px;
+}
+
+.ev-day-name {
+  font-family: var(--ev-display), serif;
+  font-size: clamp(1.3rem, 2.6vw, 1.6rem);
+  color: var(--ev-primary);
+}
+
+.ev-day-date {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ev-secondary);
+}
+
+.ev-slot {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 8px 18px;
+  padding: 13px 0 12px;
+  border-bottom: 1px solid rgba(58, 58, 59, 0.12);
+}
+
+@media (max-width: 540px) {
+  .ev-slot {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+.ev-slot-time {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ev-secondary);
+  padding-top: 2px;
+  white-space: nowrap;
+}
+
+.ev-slot-title {
+  font-weight: 600;
+  color: var(--ev-primary);
+}
+
+.ev-slot-where {
+  font-size: 0.84rem;
+  opacity: 0.72;
+}
+
+.ev-slot-note {
+  font-size: 0.84rem;
+  opacity: 0.72;
+  margin-top: 2px;
+  max-width: 60ch;
+}
+
+.ev-draft {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ev-deep);
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 1px 6px;
+  margin-left: 10px;
+  vertical-align: 2px;
+}
+
+/* ------------------------------------------------------------- figures */
+
+/* Money and counts, right of a row on wide screens, wrapped beneath it on a
+   phone. Labels travel with their figures so there is never a header row to
+   cross reference, which is most of what keeps this from feeling like
+   accounting software. */
+.ev-figs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin-top: 4px;
+}
+
+.ev-fig {
+  font-size: 0.9rem;
+  color: var(--ev-ink);
+  white-space: nowrap;
+}
+
+.ev-fig b {
+  font-family: var(--ev-display), serif;
+  font-weight: 560;
+  font-size: 1.02rem;
+  color: var(--ev-primary);
+}
+
+.ev-fig-label {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ev-secondary);
+  margin-right: 6px;
+}
+
+@media (min-width: 860px) {
+  .ev-split {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+  }
+
+  .ev-split .ev-figs {
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+}
+
+/* --------------------------------------------------------------- pills */
+
+.ev-pill {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 1px 6px;
+  margin-left: 10px;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
+.ev-pill-good {
+  color: var(--ev-accent);
+}
+
+.ev-pill-warm {
+  color: var(--ev-secondary);
+}
+
+.ev-pill-deep {
+  color: var(--ev-deep);
+}
+
+/* --------------------------------------------------------- run of show */
+
+.ev-cue {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 4px 18px;
+  padding: 10px 0 9px;
+  border-bottom: 1px solid rgba(58, 58, 59, 0.1);
+}
+
+@media (max-width: 540px) {
+  .ev-cue {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+.ev-cue-at {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ev-secondary);
+  white-space: nowrap;
+  padding-top: 1px;
+}
+
+.ev-cue-who {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ev-accent);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- forms */
+
+.ev-capture {
+  background: var(--ev-surface-raised);
+  padding: clamp(20px, 3.5vw, 28px);
+  margin-top: 8px;
+}
+
+.ev-capture-title {
+  font-family: var(--ev-display), serif;
+  font-size: 1.2rem;
+  color: var(--ev-primary);
+  margin-bottom: 4px;
+}
+
+.ev-capture-sub {
+  font-size: 0.88rem;
+  opacity: 0.75;
+  margin-bottom: 16px;
+  max-width: 56ch;
+}
+
+.ev-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.ev-field label {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ev-secondary);
+}
+
+.ev-field input,
+.ev-field textarea,
+.ev-field select {
+  font: inherit;
+  color: var(--ev-ink);
+  background: var(--ev-surface);
+  border: 1px solid rgba(58, 58, 59, 0.25);
+  border-radius: 2px;
+  padding: 10px 12px;
+}
+
+.ev-field input:focus,
+.ev-field textarea:focus,
+.ev-field select:focus {
+  outline: 2px solid var(--ev-accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.ev-submit {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #faf6f1;
+  background: var(--ev-primary);
+  border: 0;
+  border-radius: 2px;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ev-submit:hover {
+  background: var(--ev-deep);
+}
+
+.ev-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Small, quiet planner controls on a row. Text, not buttons. */
+.ev-row-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.ev-row-actions button {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ev-accent);
+  cursor: pointer;
+}
+
+.ev-row-actions button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ev-row-actions button.ev-quiet {
+  color: var(--ev-secondary);
+}
+
+/* ------------------------------------------------------------ footer */
+
+.ev-footer {
+  border-top: 1px solid rgba(58, 58, 59, 0.14);
+  padding: 22px 0 30px;
+}
+
+.ev-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  font-size: 0.8rem;
+  color: var(--ev-secondary);
+}
+
+/* Spark's line, in Spark's voice. The node is Spark's orange and is not a
+   themable surface; that is the brand layering rule, kept structural by
+   using a literal here rather than any --ev variable. */
+.ev-powered {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+}
+
+.ev-powered .ev-node {
+  width: 7px;
+  height: 7px;
+  background: #ff4d00;
+  display: inline-block;
+}
+
+.ev-signout {
+  font: inherit;
+  font-size: 0.8rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ev-secondary);
+  cursor: pointer;
+}
+
+.ev-signout:hover {
+  color: var(--ev-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev * {
+    transition: none !important;
+  }
+}

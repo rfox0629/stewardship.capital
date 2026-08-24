@@ -9,7 +9,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  */
 
 export const BASE_URL = process.env.SPARK_BASE_URL ?? "http://127.0.0.1:3100";
-export const TEST_DOMAIN = "auth-check.invalid";
+
+/**
+ * Everything this run creates carries this stamp: organization slugs, email
+ * addresses, row titles. Teardown deletes only what carries it, and nothing
+ * the suite does can collide with, depend on, or address real client data.
+ */
+export const RUN = `ac${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+export const TEST_DOMAIN = `${RUN}.invalid`;
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";

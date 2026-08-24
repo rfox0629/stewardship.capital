@@ -161,13 +161,13 @@ test("every role reaches the schedule of its own workspace", () => {
 test("a guest is held to the schedule, and sent there rather than away", () => {
   const home = { allow: false as const, redirectTo: `${SHINE}/schedule` };
 
-  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/plan", "/meeting", "/review", "/run-of-show"]) {
+  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/decisions", "/run-of-show"]) {
     assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineGuest), home, section);
   }
 });
 
 test("a client reaches the working surfaces but not the run of show", () => {
-  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/plan", "/meeting", "/review", "/schedule"]) {
+  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/decisions", "/schedule"]) {
     assert.deepEqual(
       authorizeSparkPath(`${SHINE}${section}`, shineClient),
       { allow: true },
@@ -211,8 +211,10 @@ test("the route rules match the lines the database draws", () => {
      ever disagree, one of the two layers is lying about what is private. */
   assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineGuest).allow, false);
   assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineClient).allow, false);
-  assert.deepEqual(authorizeSparkPath(`${SHINE}/budget`, shineGuest).allow, false);
-  assert.deepEqual(authorizeSparkPath(`${SHINE}/budget`, shineClient).allow, true);
+  for (const section of ["/budget", "/tasks", "/resources", "/decisions"]) {
+    assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineGuest).allow, false, section);
+    assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineClient).allow, true, section);
+  }
   assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shineGuest).allow, true);
 });
 

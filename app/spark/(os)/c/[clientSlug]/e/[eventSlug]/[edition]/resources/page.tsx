@@ -1,81 +1,109 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import { Panel, Pill } from "@spark/_components/ui";
-import { editionPath } from "@spark/_lib/paths";
-import type { EditionRouteParams } from "@spark/_lib/paths";
-import { personById, resolveEdition, resourcesFor } from "@spark/_lib/store";
+import { resolveEngagement } from "@lib/spark/engagement";
 
 export const metadata = { title: "Resources" };
 
-type PageProps = { params: Promise<EditionRouteParams> };
+/**
+ * What the weekend actually requires: the people being hired and the things
+ * being gathered, each with where it stands. A resource that exists because
+ * of a spark says so.
+ */
 
-const tone = (status: string) =>
-  status === "confirmed" ? "good" : status === "holding" ? "warn" : "stop";
+type PageProps = {
+  params: Promise<{ clientSlug: string; eventSlug: string; edition: string }>;
+};
+
+type ResourceRow = {
+  id: string;
+  kind: string;
+  name: string;
+  detail: string | null;
+  quantity: string | null;
+  owner_name: string | null;
+  status: string;
+  spark: { title: string } | { title: string }[] | null;
+};
+
+const STATUS: Record<string, { label: string; tone: string }> = {
+  confirmed: { label: "Confirmed", tone: "ev-pill-good" },
+  holding: { label: "Holding", tone: "ev-pill-warm" },
+  needed: { label: "Needed", tone: "ev-pill-deep" },
+};
+
+const sparkTitle = (row: ResourceRow) =>
+  (Array.isArray(row.spark) ? row.spark[0] : row.spark)?.title;
 
 export default async function ResourcesPage({ params }: PageProps) {
-  const { clientSlug, eventSlug, edition: editionSlug } = await params;
-  const resolved = resolveEdition(clientSlug, eventSlug, editionSlug);
-  if (!resolved) notFound();
+  const { clientSlug, eventSlug, edition } = await params;
+  const context = await resolveEngagement(clientSlug, eventSlug, edition);
+  if (!context) notFound();
 
-  const { client, event, edition } = resolved;
-  const base = (segment: string) =>
-    editionPath(client.slug, event.slug, edition.slug, segment);
-  const resources = resourcesFor(edition.id);
-  const vendors = resources.filter((resource) => resource.kind === "vendor");
-  const supplies = resources.filter((resource) => resource.kind === "supply");
+  const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
+  if (context.role === "stakeholder") redirect(`${base}/schedule`);
 
-  const renderList = (items: typeof resources) => (
-    <ul className="eo-rows">
-      {items.map((resource) => (
-        <li key={resource.id}>
-          <div className="eo-row-main">
-            <div className="eo-row-title">{resource.name}</div>
-            <p className="eo-row-meta">
-              {resource.detail} {personById(resource.ownerId).name} owns it.
-              {resource.quantity ? ` ${resource.quantity}.` : ""}
-              {resource.sparkId ? (
-                <>
-                  {" "}
-                  <Link
-                    className="eo-panel-link"
-                    href={`${base("sparks")}/${resource.sparkId}`}
-                  >
-                    from a spark
-                  </Link>
-                </>
-              ) : null}
-            </p>
-          </div>
-          <div className="eo-row-side">
-            <Pill tone={tone(resource.status)}>{resource.status}</Pill>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
+  const { data } = await context.supabase
+    .from("resources")
+    .select("id, kind, name, detail, quantity, owner_name, status, spark:sparks(title)")
+    .eq("engagement_id", context.engagement.id)
+    .order("status", { ascending: true })
+    .order("name", { ascending: true });
+
+  const resources = (data ?? []) as ResourceRow[];
+  const groups = [
+    { key: "vendor", title: "Vendors", note: "The people being hired" },
+    { key: "supply", title: "Supplies", note: "The things being gathered" },
+  ]
+    .map((group) => ({
+      ...group,
+      rows: resources.filter((row) => row.kind === group.key),
+    }))
+    .filter((group) => group.rows.length > 0);
 
   return (
-    <main className="eo-page">
-      <div className="eo-shell">
-        <div className="eo-page-head">
-          <p className="eo-eyebrow">Resources</p>
-          <h1>Vendors and supplies, with an owner on each.</h1>
-          <p>
-            Anything marked needed is not secured. That is the only status that
-            should make anyone nervous.
-          </p>
-        </div>
+    <>
+      <h2 className="ev-page-title">Resources</h2>
+      <p className="ev-lede">
+        Who and what the weekend depends on, and where each one stands.
+      </p>
 
-        <div className="eo-grid eo-grid-2">
-          <Panel title="Vendors" flush>
-            {renderList(vendors)}
-          </Panel>
-          <Panel title="Supplies" flush>
-            {renderList(supplies)}
-          </Panel>
-        </div>
-      </div>
-    </main>
+      {groups.map((group) => (
+        <section key={group.key} className="ev-section" aria-label={group.title}>
+          <div className="ev-section-head">
+            <h3 className="ev-section-title">{group.title}</h3>
+            <span className="ev-section-note">{group.note}</span>
+          </div>
+          <ul className="ev-rows">
+            {group.rows.map((row) => {
+              const status = STATUS[row.status];
+              return (
+                <li key={row.id}>
+                  <p className="ev-row-kicker">
+                    {row.owner_name ? <span>{row.owner_name}</span> : null}
+                    {row.quantity ? <span>{row.quantity}</span> : null}
+                  </p>
+                  <p className="ev-row-title">
+                    {row.name}
+                    {status ? (
+                      <span className={`ev-pill ${status.tone}`}>
+                        {status.label}
+                      </span>
+                    ) : null}
+                  </p>
+                  {row.detail ? (
+                    <p className="ev-row-detail">{row.detail}</p>
+                  ) : null}
+                  {sparkTitle(row) ? (
+                    <p className="ev-row-became">
+                      From the spark: {sparkTitle(row)}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </>
   );
 }

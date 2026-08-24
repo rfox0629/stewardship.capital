@@ -58,9 +58,7 @@ const SECTIONS: Record<string, SparkRole[]> = {
   budget: WORKING,
   tasks: WORKING,
   resources: WORKING,
-  plan: WORKING,
-  meeting: WORKING,
-  review: WORKING,
+  decisions: WORKING,
   "run-of-show": PLANNER_ONLY,
 };
 

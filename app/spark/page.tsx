@@ -9,6 +9,7 @@ import { OTP_EMAIL_COOKIE } from "../../lib/spark/cookies";
 import { maskEmail } from "../../lib/spark/mask";
 import { createClient } from "../../lib/supabase/server";
 import { MultiplierField } from "../(www)/_components/multiplier-field";
+import { SiteNav } from "../(www)/_components/site-nav";
 import { SparkEntry } from "./_components/spark-entry";
 import { SparkWordmark } from "./_components/spark-wordmark";
 
@@ -58,6 +59,8 @@ export default async function SparkEntryPage() {
       <a className="skip" href="#main">
         Skip to content
       </a>
+
+      <SiteNav />
 
       <main id="main">
         <section className="entry" aria-labelledby="entry-heading">
