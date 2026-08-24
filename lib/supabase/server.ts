@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import { sparkCookieOptions } from "./cookie-options";
 import { requireSupabaseEnv } from "./env";
 
 export async function createClient() {
@@ -8,6 +9,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(env.url, env.publishableKey, {
+    cookieOptions: sparkCookieOptions,
     cookies: {
       getAll() {
         return cookieStore.getAll();

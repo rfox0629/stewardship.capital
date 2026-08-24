@@ -1,0 +1,106 @@
+# Spark access
+
+Supabase Auth answers *who are you*. Spark answers *what may you reach*. They
+are kept apart on purpose: an identity can outlive an engagement, and taking
+someone off an engagement must not require ending their identity.
+
+## The shape of it
+
+| Question | Answered by | Where |
+| --- | --- | --- |
+| Is this a verified person? | Supabase Auth | the session cookie, verified by PostgREST on every call |
+| What may they reach right now? | `public.my_access()` | read fresh on every protected request |
+| May this request proceed? | `authorizeSparkPath` | `proxy.ts`, before any screen renders |
+| May this row be read or written? | Row level security | the database, underneath everything |
+
+Nothing about engagement access is carried in the identity token. That is the
+whole reason revocation is immediate.
+
+## Routes
+
+| Route | Who |
+| --- | --- |
+| `/spark` | anyone. The front door, and where every refusal lands |
+| `/spark/i/<token>` | anyone holding a live invitation |
+| `/spark/auth/callback` | anyone completing verification from an emailed link |
+| `/spark/signout` | anyone |
+| `/spark/platform` | explicit platform staff only |
+| `/spark/c/<client>/…` | current members of that engagement, and staff |
+
+`/more` redirects to `/spark`. When Stewardship.Capital has more than one
+public product, `/more` becomes the directory of them and `/spark` does not
+move.
+
+## Configuration
+
+`.env.local`, and the same four in the Vercel project:
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY
+SPARK_DATABASE_URL
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` bypasses row level security. It is used in exactly
+one place in the request path, to find an invitation by token hash before
+anyone is signed in, and it is never used to decide access.
+
+`SPARK_DATABASE_URL` is only for the migration and verification scripts. The
+running application never uses it.
+
+There is no `SPARK_SESSION_SECRET` any more. Spark no longer signs anything of
+its own.
+
+### Supabase dashboard
+
+Two settings the code cannot set for itself.
+
+**The email template.** Authentication → Emails → Magic Link. Spark asks for a
+six digit code, so the template has to contain one. This works for both the
+typed code and the tapped link:
+
+```html
+<p>Your Spark code is <strong>{{ .Token }}</strong></p>
+<p>
+  Or <a href="{{ .SiteURL }}/spark/auth/callback?token_hash={{ .TokenHash }}&type=magiclink">open Spark directly</a>.
+</p>
+```
+
+**Rate limits.** Authentication → Rate Limits. Two defaults matter:
+
+- *Token verifications*, 30 per hour per IP. Everyone signing in from one
+  venue's wifi shares an IP, so a weekend where fifty guests arrive at once
+  will exceed this. Raise it before an event.
+- *Emails*, 2 per hour on the built in SMTP. Fine for a founder preview,
+  nowhere near enough for real use. Configure a real SMTP provider before
+  inviting anyone who matters.
+
+## Inviting someone
+
+```
+npm run spark:invite -- sam@shine.co shine founders-weekend-2026 client
+```
+
+Prints the link once. Only the hash is stored, so that output is the only copy
+that will ever exist; losing it means minting another, not looking it up.
+
+Roles are `planner`, `client`, `stakeholder`. A planner runs one engagement.
+Reaching across clients is `platform_staff`, granted deliberately in the
+database and never implied by a role.
+
+## Checking it still holds
+
+```
+npm test              # the pure authorization decision, no network
+npm run test:rls:prod # isolation, against the real schema
+npm run test:auth     # the whole flow, against the real app over HTTP
+```
+
+`test:auth` builds, starts the production server on its own port, creates
+throwaway identities, asserts, and removes everything it made.
+
+One rule those suites keep, learned the hard way: row level security filters
+`UPDATE` and `DELETE` silently rather than raising. A call that returns no
+error has not necessarily written anything. Every mutation assertion measures
+rows actually affected.

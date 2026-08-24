@@ -1,46 +1,33 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { sparkCookieOptions } from "./cookie-options";
 import { getSupabaseEnv } from "./env";
 
-const protectedPathPrefixes = ["/dashboard"];
-const authPathPrefixes = ["/login", "/signup"];
+/**
+ * The Supabase client for the proxy, bound to this request and its response.
+ *
+ * Creating it is also what keeps people signed in. Reading the session here
+ * rotates the refresh token and writes the refreshed pair back onto the
+ * response, so an ordinary visit renews the session and someone who uses Spark
+ * on their phone every few days is never asked to verify again.
+ *
+ * The response is held in a box because @supabase/ssr replaces it when it
+ * writes cookies, and the caller needs whichever one ended up carrying them.
+ */
+export type ProxyClient = {
+  supabase: ReturnType<typeof createServerClient> | null;
+  box: { response: NextResponse };
+};
 
-function isPathMatch(pathname: string, prefixes: string[]) {
-  return prefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
-
-function redirectToLogin(request: NextRequest, reason?: string) {
-  const redirectUrl = request.nextUrl.clone();
-
-  redirectUrl.pathname = "/login";
-  redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
-
-  if (reason) {
-    redirectUrl.searchParams.set("message", reason);
-  }
-
-  return NextResponse.redirect(redirectUrl);
-}
-
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
-  const pathname = request.nextUrl.pathname;
-  const isProtectedPath = isPathMatch(pathname, protectedPathPrefixes);
-  const isAuthPath = isPathMatch(pathname, authPathPrefixes);
+export function createProxyClient(request: NextRequest): ProxyClient {
+  const box = { response: NextResponse.next({ request }) };
   const env = getSupabaseEnv();
 
-  if (!env) {
-    if (isProtectedPath) {
-      return redirectToLogin(request, "Supabase credentials are not configured.");
-    }
-
-    return response;
-  }
+  if (!env) return { supabase: null, box };
 
   const supabase = createServerClient(env.url, env.publishableKey, {
+    cookieOptions: sparkCookieOptions,
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -50,29 +37,28 @@ export async function updateSession(request: NextRequest) {
           request.cookies.set(name, value);
         });
 
-        response = NextResponse.next({ request });
+        box.response = NextResponse.next({ request });
 
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
+          box.response.cookies.set(name, value, options);
         });
       },
     },
   });
 
-  const { data, error } = await supabase.auth.getClaims();
+  return { supabase, box };
+}
 
-  const isAuthenticated = Boolean(data?.claims && !error);
+/** Whether this request carries a currently valid Supabase identity. */
+export async function hasIdentity(
+  supabase: ReturnType<typeof createServerClient> | null,
+): Promise<boolean> {
+  if (!supabase) return false;
 
-  if (isProtectedPath && !isAuthenticated) {
-    return redirectToLogin(request);
+  try {
+    const { data, error } = await supabase.auth.getClaims();
+    return Boolean(data?.claims && !error);
+  } catch {
+    return false;
   }
-
-  if (isAuthPath && isAuthenticated) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  return response;
 }

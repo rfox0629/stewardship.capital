@@ -1,112 +1,88 @@
-import { randomToken, seal, unseal } from "./crypto.ts";
-import type { SparkRole } from "./types.ts";
+import { createAdminClient } from "../supabase/admin.ts";
+import { hashInvitationToken, looksLikeInvitationToken } from "./tokens.ts";
 
 /**
- * Invitations.
+ * Reading an invitation, before anyone is signed in.
  *
- * A token is a signed set of claims rather than a row identifier, so it cannot
- * be guessed or enumerated: forging one requires the signing secret, and the
- * random jti makes two invitations to the same address distinct.
+ * This answers one question only: is there a live invitation behind this
+ * token, and what address was it issued to. It does not grant anything, and
+ * the caller cannot act on the answer without then proving they read that
+ * address.
  *
- * The token is never the session. It only starts the identity flow. The person
- * still has to prove they read the address it was issued to, and the session
- * they end up with is an ordinary Spark session.
+ * Every failure is the same failure. Malformed, unknown, expired, revoked, and
+ * already accepted all return null, so the route cannot be used to learn which
+ * tokens once existed.
  */
 
-export type InvitationClaims = {
-  /** Unique id, used to burn the invitation once accepted. */
-  jti: string;
+export type LiveInvitation = {
   email: string;
-  workspaceId: string;
-  role: SparkRole;
-  exp: number;
+  engagementId: string;
+  tokenHash: string;
 };
 
-export const INVITATION_TTL_SECONDS = 14 * 24 * 60 * 60;
-
-const now = () => Math.floor(Date.now() / 1000);
-
-export const mintInvitation = async (
-  input: {
-    email: string;
-    workspaceId: string;
-    role: SparkRole;
-    ttlSeconds?: number;
-  },
-  secret: string,
-): Promise<{ token: string; claims: InvitationClaims }> => {
-  const claims: InvitationClaims = {
-    jti: randomToken(18),
-    email: input.email.trim().toLowerCase(),
-    workspaceId: input.workspaceId,
-    role: input.role,
-    exp: now() + (input.ttlSeconds ?? INVITATION_TTL_SECONDS),
-  };
-
-  return { token: await seal(claims, secret, "invitation"), claims };
-};
-
-export const readInvitation = async (
+export const findLiveInvitation = async (
   token: string | undefined,
-  secret: string,
-): Promise<InvitationClaims | null> => {
-  const claims = await unseal<InvitationClaims>(token, secret, "invitation");
-  if (!claims) return null;
-  if (
-    typeof claims.jti !== "string" ||
-    typeof claims.email !== "string" ||
-    typeof claims.workspaceId !== "string" ||
-    typeof claims.role !== "string"
-  ) {
+): Promise<LiveInvitation | null> => {
+  if (!looksLikeInvitationToken(token)) return null;
+
+  const tokenHash = await hashInvitationToken(token as string);
+
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("invitations")
+      .select("email, engagement_id, expires_at, accepted_at, revoked_at")
+      .eq("token_hash", tokenHash)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    if (data.accepted_at || data.revoked_at) return null;
+    if (new Date(data.expires_at).getTime() <= Date.now()) return null;
+
+    return {
+      email: String(data.email).toLowerCase(),
+      engagementId: String(data.engagement_id),
+      tokenHash,
+    };
+  } catch {
+    /* A missing service role must not become a way in, and must not become a
+       different looking failure either. */
     return null;
   }
-  if (typeof claims.exp !== "number" || claims.exp < now()) return null;
-  return claims;
 };
+
+export type AcceptResult = { ok: true; engagementId: string } | { ok: false };
 
 /**
- * Records which invitations have already been accepted.
+ * Accepts under the person's own session, never the service role.
  *
- * In memory here, which is enough to make acceptance single use within a
- * process and is what the tests exercise. A deployed Spark needs this to be a
- * table, because serverless instances do not share memory.
+ * The database checks that the signed in address matches the invited one, that
+ * the invitation is live, and that nobody has accepted it already, all in the
+ * single statement that consumes it. Doing that here instead would be a check
+ * followed by a write, which two simultaneous acceptances can both pass.
  */
-export interface ConsumedInvitations {
-  has(jti: string): Promise<boolean>;
-  add(jti: string, exp: number): Promise<void>;
-}
-
-export const memoryConsumedInvitations = (): ConsumedInvitations => {
-  const burned = new Map<string, number>();
-
-  return {
-    async has(jti) {
-      const exp = burned.get(jti);
-      if (exp === undefined) return false;
-      if (exp < now()) {
-        burned.delete(jti);
-        return false;
-      }
-      return true;
-    },
-    async add(jti, exp) {
-      burned.set(jti, exp);
-    },
-  };
-};
-
-export type AcceptOutcome =
-  | { ok: true; claims: InvitationClaims }
-  | { ok: false; reason: "invalid" | "already-used" };
-
-/** Burns the invitation. A second acceptance of the same token is refused. */
 export const acceptInvitation = async (
-  claims: InvitationClaims,
-  store: ConsumedInvitations,
-): Promise<AcceptOutcome> => {
-  if (await store.has(claims.jti)) {
-    return { ok: false, reason: "already-used" };
+  supabase: {
+    rpc: (
+      name: string,
+      args?: Record<string, unknown>,
+    ) => PromiseLike<{ data: unknown; error: unknown }>;
+  },
+  tokenHash: string,
+): Promise<AcceptResult> => {
+  try {
+    const { data, error } = await supabase.rpc("accept_invitation", {
+      p_token_hash: tokenHash,
+    });
+
+    if (error || !data || typeof data !== "object") return { ok: false };
+    const result = data as Record<string, unknown>;
+    if (result.ok !== true || typeof result.engagement_id !== "string") {
+      return { ok: false };
+    }
+
+    return { ok: true, engagementId: result.engagement_id };
+  } catch {
+    return { ok: false };
   }
-  await store.add(claims.jti, claims.exp);
-  return { ok: true, claims };
 };

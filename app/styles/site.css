@@ -497,6 +497,30 @@ html:has(.www) body {
   animation: mask-rise 1.05s var(--ease-out) 0.84s both;
 }
 
+/* A button that reads as prose, for the one action offered to someone Spark
+   has nothing to show. */
+.entry-plain {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--dim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.2s var(--ease-out);
+}
+
+.entry-plain:hover {
+  color: var(--ink);
+}
+
+.entry-plain:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 /* ----------------------------------------------------------- breakpoints */
 
 @media (min-width: 620px) {

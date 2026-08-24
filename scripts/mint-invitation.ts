@@ -1,48 +1,82 @@
-import { sessionSecret } from "../lib/spark/config.ts";
-import { workspaceById } from "../lib/spark/directory.ts";
-import { mintInvitation } from "../lib/spark/invitations.ts";
-import type { SparkRole } from "../lib/spark/types.ts";
+import { createClient } from "@supabase/supabase-js";
+
+import { hashInvitationToken, randomInvitationToken } from "../lib/spark/tokens.ts";
+import { SPARK_ROLES, type SparkRole } from "../lib/spark/types.ts";
 
 /**
  * Mints an invitation.
  *
- *   npm run spark:invite -- sam@shine.co shine-founders-weekend-2026 client
+ *   npm run spark:invite -- sam@shine.co shine founders-weekend-2026 client
  *
- * Signed with SPARK_SESSION_SECRET, so a token minted here is valid on any
- * instance that shares the secret. Print it, send it, and it stops working
- * once accepted or once it expires.
+ * The raw token is printed once, here, and never stored. What goes into the
+ * database is its hash, so this output is the only copy that will ever exist
+ * and losing it means minting a new one rather than looking the old one up.
  */
-const ROLES: SparkRole[] = ["planner", "client", "stakeholder"];
 
-const [email, workspaceId, role] = process.argv.slice(2);
+const [email, clientSlug, engagementSlug, role, days] = process.argv.slice(2);
 
-if (!email || !workspaceId || !role) {
-  console.error(
-    "usage: npm run spark:invite -- <email> <workspaceId> <planner|client|stakeholder>",
+const fail = (message: string): never => {
+  console.error(message);
+  process.exit(1);
+};
+
+if (!email || !clientSlug || !engagementSlug || !role) {
+  fail(
+    "usage: npm run spark:invite -- <email> <client-slug> <engagement-slug> <planner|client|stakeholder> [days]",
   );
-  process.exit(1);
 }
 
-if (!ROLES.includes(role as SparkRole)) {
-  console.error(`role must be one of: ${ROLES.join(", ")}`);
-  process.exit(1);
+if (!SPARK_ROLES.includes(role as SparkRole)) {
+  fail(`role must be one of: ${SPARK_ROLES.join(", ")}`);
 }
 
-const workspace = workspaceById(workspaceId);
-if (!workspace) {
-  console.error(`unknown workspace: ${workspaceId}`);
-  process.exit(1);
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !serviceRole) {
+  fail("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.");
 }
 
-const { token, claims } = await mintInvitation(
-  { email, workspaceId, role: role as SparkRole },
-  sessionSecret(),
-);
+const admin = createClient(url!, serviceRole!, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+const { data: organization } = await admin
+  .from("organizations")
+  .select("id, name")
+  .eq("slug", clientSlug)
+  .maybeSingle();
+
+if (!organization) fail(`unknown client: ${clientSlug}`);
+
+const { data: engagement } = await admin
+  .from("engagements")
+  .select("id, name")
+  .eq("organization_id", organization!.id)
+  .eq("slug", engagementSlug)
+  .maybeSingle();
+
+if (!engagement) fail(`unknown engagement: ${clientSlug}/${engagementSlug}`);
+
+const token = randomInvitationToken();
+const ttlDays = Number(days ?? 14);
+const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+
+const { error } = await admin.from("invitations").insert({
+  engagement_id: engagement!.id,
+  email: email.trim().toLowerCase(),
+  role,
+  token_hash: await hashInvitationToken(token),
+  expires_at: expiresAt.toISOString(),
+});
+
+if (error) fail(`could not create invitation: ${error.message}`);
 
 console.log("");
-console.log(`  ${workspace.client} / ${workspace.label}`);
-console.log(`  ${claims.email} as ${claims.role}`);
-console.log(`  expires ${new Date(claims.exp * 1000).toISOString()}`);
+console.log(`  ${organization!.name} / ${engagement!.name}`);
+console.log(`  ${email.trim().toLowerCase()} as ${role}`);
+console.log(`  expires ${expiresAt.toISOString()}`);
 console.log("");
-console.log(`  /i/${token}`);
+console.log(`  /spark/i/${token}`);
+console.log("");
+console.log("  Printed once. Only the hash is stored.");
 console.log("");

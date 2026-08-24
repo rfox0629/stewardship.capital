@@ -37,7 +37,7 @@ export default function HomePage() {
         </div>
 
         <div className="mask">
-          <Link className="more" href="/more">
+          <Link className="more" href="/spark">
             More
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path

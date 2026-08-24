@@ -9,11 +9,12 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"tests/**/*.test.ts\"",
-    "spark:invite": "node scripts/mint-invitation.ts",
+    "spark:invite": "node --env-file-if-exists=.env.local scripts/mint-invitation.ts",
     "test:rls": "./scripts/verify-rls.sh",
     "db:migrate": "./scripts/apply-migrations.sh",
     "db:verify": "./scripts/verify-production.sh",
-    "test:rls:prod": "./scripts/verify-rls-production.sh"
+    "test:rls:prod": "./scripts/verify-rls-production.sh",
+    "test:auth": "./scripts/verify-auth-production.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
