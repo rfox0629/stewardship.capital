@@ -1,37 +1,37 @@
 import Link from "next/link";
 
 import { MultiplierField } from "./_components/multiplier-field";
+import { Wordmark } from "./_components/wordmark";
 
 /**
- * A title screen, not a landing page.
- *
- * One statement, one line of support, one quiet scripture, one way forward.
+ * The approved hero composition, with the stewardship statement in it.
  * Nothing below the fold.
  */
 export default function HomePage() {
   return (
-    <section className="title" aria-labelledby="title-heading">
+    <section className="hero" aria-labelledby="hero-title">
       <MultiplierField />
 
-      <div className="title-inner">
+      <div className="hero-inner">
         <div className="mask">
-          <h1 id="title-heading">Time. Talent. Treasure.</h1>
-        </div>
-
-        <div className="mask">
-          <p className="title-sub">
-            Helping steward what God has entrusted to you.
+          <p className="hero-mark">
+            <Wordmark />
           </p>
         </div>
 
         <div className="mask">
-          <blockquote className="title-scripture">
-            <p>
-              &ldquo;So then every one of us shall give account of himself to
-              God.&rdquo;
-            </p>
-            <cite>Romans 14:12</cite>
-          </blockquote>
+          <h1 id="hero-title">Time. Talent. Treasure.</h1>
+        </div>
+
+        <div className="mask">
+          <p className="hero-sub">
+            Helping steward what God has entrusted to you, because everyone
+            will give an account of themself to God someday.
+          </p>
+        </div>
+
+        <div className="mask">
+          <p className="hero-ref">Romans 14:12</p>
         </div>
 
         <div className="mask">

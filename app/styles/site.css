@@ -1,9 +1,9 @@
 /*
  * Stewardship.Capital
  *
- * Two screens: a title screen and a way in. The visual language is unchanged
- * from the approved direction, a graphite foundation, crisp white type, a
- * subtle network field, and one orange node that never becomes a fill.
+ * The approved hero composition, unchanged: graphite field, subtle network
+ * texture, large left aligned type, one orange node. Two screens only, the
+ * homepage and the way into Spark.
  */
 
 html:has(.www),
@@ -104,7 +104,16 @@ html:has(.www) body {
   letter-spacing: -0.02em;
 }
 
-/* ---------------------------------------------------------------- field */
+/* ----------------------------------------------------------------- hero */
+
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  isolation: isolate;
+}
 
 .field {
   position: absolute;
@@ -113,9 +122,9 @@ html:has(.www) body {
   height: 100%;
   z-index: 0;
   mask-image: radial-gradient(
-    132% 126% at 50% 50%,
-    #000 50%,
-    rgba(0, 0, 0, 0.48) 78%,
+    132% 126% at 52% 50%,
+    #000 52%,
+    rgba(0, 0, 0, 0.5) 79%,
     transparent 100%
   );
   animation: field-in 1.8s var(--ease-out) both;
@@ -130,7 +139,40 @@ html:has(.www) body {
   }
 }
 
-/* ------------------------------------------------------------- reveals */
+/* Keeps the type legible wherever the field lights up behind it. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    108% 88% at 6% 52%,
+    rgba(10, 11, 13, 0.92) 0%,
+    rgba(10, 11, 13, 0.6) 30%,
+    rgba(10, 11, 13, 0) 62%
+  );
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  width: var(--shell);
+  margin: 0 auto;
+  padding: calc(var(--nav-h) + 24px) 0 40px;
+  pointer-events: none;
+}
+
+.hero-inner > * {
+  pointer-events: auto;
+}
+
+.hero-mark {
+  font-size: clamp(1.35rem, 3.1vw, 2.35rem);
+  color: var(--white);
+  letter-spacing: -0.028em;
+  margin-bottom: clamp(14px, 1.8vw, 22px) !important;
+}
 
 .mask {
   overflow: hidden;
@@ -147,11 +189,11 @@ html:has(.www) body {
 }
 
 .mask:nth-of-type(2) > * {
-  animation-delay: 0.3s;
+  animation-delay: 0.27s;
 }
 
 .mask:nth-of-type(3) > * {
-  animation-delay: 0.44s;
+  animation-delay: 0.46s;
 }
 
 .mask:nth-of-type(4) > * {
@@ -169,83 +211,27 @@ html:has(.www) body {
   }
 }
 
-/* --------------------------------------------------------- title screen */
-
-.title,
-.entry {
-  position: relative;
-  min-height: 100svh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: center;
-  justify-items: center;
-  overflow: hidden;
-  isolation: isolate;
-  padding: calc(var(--nav-h) + 28px) clamp(18px, 3.4vw, 40px) clamp(40px, 8vh, 80px);
-}
-
-/* Holds the field back from the type without hiding it. */
-.title::after,
-.entry::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: radial-gradient(
-    82% 68% at 50% 50%,
-    rgba(10, 11, 13, 0.9) 0%,
-    rgba(10, 11, 13, 0.62) 42%,
-    rgba(10, 11, 13, 0) 78%
-  );
-}
-
-.title-inner,
-.entry-inner {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 1180px;
-  text-align: center;
-}
-
-.title h1 {
-  font-size: clamp(2.3rem, 7.6vw, 6.6rem);
+.hero h1 {
+  font-size: clamp(3.1rem, 11.5vw, 9.5rem);
   font-weight: 700;
   font-variation-settings: "wdth" 106;
-  letter-spacing: -0.05em;
-  line-height: 0.98;
-  text-wrap: balance;
+  letter-spacing: -0.052em;
+  line-height: 0.88;
 }
 
-.title-sub {
+.hero-sub {
   margin-top: clamp(22px, 3vw, 34px) !important;
-  font-size: clamp(1rem, 1.6vw, 1.32rem);
-  line-height: 1.5;
-  color: var(--white);
-  text-wrap: balance;
-}
-
-.title-scripture {
-  margin-top: clamp(34px, 5vw, 56px) !important;
-  padding-top: clamp(26px, 3.6vw, 38px);
-  border-top: 1px solid var(--line);
-  max-width: 62ch;
-  margin-inline: auto !important;
-}
-
-.title-scripture p {
-  font-size: clamp(0.92rem, 1.15vw, 1.04rem);
-  line-height: 1.62;
+  max-width: 42ch;
+  font-size: clamp(1rem, 1.35vw, 1.22rem);
+  line-height: 1.55;
   color: var(--dim);
-  text-wrap: balance;
 }
 
-.title-scripture cite {
-  display: block;
-  margin-top: 12px;
-  font-style: normal;
-  font-size: 0.7rem;
+
+/* The scripture reference, quieter than the line it belongs to. */
+.hero-ref {
+  margin-top: 16px !important;
+  font-size: 0.74rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--dim);
@@ -255,14 +241,12 @@ html:has(.www) body {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-top: clamp(36px, 5vw, 58px);
-  font-size: 1.02rem;
+  margin-top: clamp(34px, 4.5vw, 52px);
+  font-size: 1rem;
   letter-spacing: 0.01em;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line-bright);
-  transition:
-    border-color 0.35s var(--ease),
-    color 0.35s var(--ease);
+  transition: border-color 0.35s var(--ease), color 0.35s var(--ease);
 }
 
 .more svg {
@@ -280,10 +264,45 @@ html:has(.www) body {
   transform: translateX(6px);
 }
 
+
+.mask:nth-of-type(5) > * {
+  animation-delay: 0.7s;
+}
+
 /* ------------------------------------------------------ the way into Spark */
 
+.entry {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  padding: calc(var(--nav-h) + 28px) clamp(18px, 3.4vw, 40px) clamp(40px, 8vh, 80px);
+}
+
+.entry::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    82% 68% at 50% 50%,
+    rgba(10, 11, 13, 0.9) 0%,
+    rgba(10, 11, 13, 0.62) 42%,
+    rgba(10, 11, 13, 0) 78%
+  );
+}
+
 .entry-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
   max-width: 460px;
+  text-align: center;
 }
 
 .entry-mark {
