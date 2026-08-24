@@ -150,11 +150,70 @@ test("membership of one edition does not carry to another of the same event", ()
   );
 });
 
-test("every role reaches its own workspace, including guests", () => {
+test("every role reaches the schedule of its own workspace", () => {
   for (const who of [shineClient, shineGuest, shinePlanner]) {
-    assert.deepEqual(authorizeSparkPath(SHINE, who), { allow: true });
     assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, who), { allow: true });
   }
+});
+
+/* --------------------------------------------------- roles within a workspace */
+
+test("a guest is held to the schedule, and sent there rather than away", () => {
+  const home = { allow: false as const, redirectTo: `${SHINE}/schedule` };
+
+  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/plan", "/meeting", "/review", "/run-of-show"]) {
+    assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineGuest), home, section);
+  }
+});
+
+test("a client reaches the working surfaces but not the run of show", () => {
+  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/plan", "/meeting", "/review", "/schedule"]) {
+    assert.deepEqual(
+      authorizeSparkPath(`${SHINE}${section}`, shineClient),
+      { allow: true },
+      section,
+    );
+  }
+
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineClient), {
+    allow: false,
+    redirectTo: SHINE,
+  });
+});
+
+test("a planner reaches everything in their own engagement", () => {
+  for (const section of ["", "/budget", "/sparks", "/run-of-show", "/schedule", "/review"]) {
+    assert.deepEqual(
+      authorizeSparkPath(`${SHINE}${section}`, shinePlanner),
+      { allow: true },
+      section,
+    );
+  }
+});
+
+test("a section nobody has named yet is planner only, not public", () => {
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/invoices`, shinePlanner), {
+    allow: true,
+  });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/invoices`, shineClient), {
+    allow: false,
+    redirectTo: SHINE,
+  });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/invoices`, shineGuest), {
+    allow: false,
+    redirectTo: `${SHINE}/schedule`,
+  });
+});
+
+test("the route rules match the lines the database draws", () => {
+  /* run_of_show_cues is planner only in RLS; sparks, budget, tasks, resources
+     and decisions are planner and client; schedule is every member. If these
+     ever disagree, one of the two layers is lying about what is private. */
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineGuest).allow, false);
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineClient).allow, false);
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/budget`, shineGuest).allow, false);
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/budget`, shineClient).allow, true);
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shineGuest).allow, true);
 });
 
 /* ------------------------------------------------------- platform home */
@@ -195,6 +254,28 @@ test("a client's own index needs membership of that client", () => {
 
 test("one membership goes straight in", () => {
   assert.deepEqual(landingFor(shineClient), { kind: "workspace", href: SHINE });
+});
+
+test("a guest lands on the schedule, not on a page they would be refused", () => {
+  const landing = landingFor(shineGuest);
+  assert.deepEqual(landing, { kind: "workspace", href: `${SHINE}/schedule` });
+  /* The landing must itself be allowed, or arriving would bounce forever. */
+  assert.deepEqual(
+    authorizeSparkPath((landing as { href: string }).href, shineGuest),
+    { allow: true },
+  );
+});
+
+test("no role can be landed somewhere it would be turned away from", () => {
+  for (const who of [shineClient, shineGuest, shinePlanner, staff]) {
+    const landing = landingFor(who);
+    if (landing.kind !== "workspace" && landing.kind !== "platform") continue;
+    assert.deepEqual(
+      authorizeSparkPath(landing.href, who),
+      { allow: true },
+      landing.href,
+    );
+  }
 });
 
 test("several memberships offer a choice rather than picking one", () => {

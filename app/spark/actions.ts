@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { landingFor } from "../../lib/spark/authorize";
+import { landingFor, workspaceHome } from "../../lib/spark/authorize";
 import { choicesFrom, resolveAccess, workspaceById } from "../../lib/spark/access";
 import {
   INVITE_COOKIE,
@@ -13,7 +13,7 @@ import {
 } from "../../lib/spark/cookies";
 import { acceptInvitation } from "../../lib/spark/invitations";
 import { maskEmail } from "../../lib/spark/mask";
-import { SPARK_ENTRY, workspacePath } from "../../lib/spark/paths";
+import { SPARK_ENTRY } from "../../lib/spark/paths";
 import { createClient } from "../../lib/supabase/server";
 import type { Choice } from "../../lib/spark/access";
 
@@ -122,7 +122,7 @@ export async function chooseWorkspace(engagementId: string): Promise<void> {
   const workspace = workspaceById(access, engagementId);
   if (!workspace) redirect(SPARK_ENTRY);
 
-  redirect(workspacePath(workspace));
+  redirect(workspaceHome(workspace));
 }
 
 export async function signOutOfSpark(): Promise<void> {

@@ -9,8 +9,9 @@ import {
   OTP_MAX_AGE,
   transientCookie,
 } from "../../../../lib/spark/cookies";
+import { workspaceHome } from "../../../../lib/spark/authorize";
 import { acceptInvitation, findLiveInvitation } from "../../../../lib/spark/invitations";
-import { SPARK_ENTRY, workspacePath } from "../../../../lib/spark/paths";
+import { SPARK_ENTRY } from "../../../../lib/spark/paths";
 import { createClient } from "../../../../lib/supabase/server";
 
 /**
@@ -55,7 +56,7 @@ export async function GET(
       );
       if (!joined) return frontDoor;
 
-      return NextResponse.redirect(new URL(workspacePath(joined), request.url));
+      return NextResponse.redirect(new URL(workspaceHome(joined), request.url));
     }
 
     /* Signed in as somebody else. Hold the invitation rather than acting on

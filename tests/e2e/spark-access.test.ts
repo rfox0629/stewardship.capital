@@ -401,10 +401,31 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.equal((await visit(jar, SHINE_HOME)).location, ENTRY);
     });
 
-    await t.test("a guest reaches their own workspace", async () => {
+    await t.test("a guest reaches the schedule, and only the schedule", async () => {
       const jar = await adopt(w.guest.email);
-      assert.equal((await visit(jar, SHINE_HOME)).status, 200);
+
+      assert.equal((await visit(jar, `${SHINE_HOME}/schedule`)).status, 200);
       assert.equal((await visit(jar, PLATFORM)).location, ENTRY);
+
+      /* Inside their own workspace, held to their own part of it, and sent to
+         it rather than out of Spark. */
+      for (const section of ["", "/budget", "/sparks", "/run-of-show"]) {
+        const hit = await visit(jar, `${SHINE_HOME}${section}`);
+        assert.equal(hit.status, 307, section);
+        assert.equal(hit.location, `${SHINE_HOME}/schedule`, section);
+      }
+    });
+
+    await t.test("a client works the engagement but never sees the run of show", async () => {
+      const jar = await adopt(w.client.email);
+
+      for (const section of ["", "/budget", "/sparks", "/schedule", "/tasks"]) {
+        assert.equal((await visit(jar, `${SHINE_HOME}${section}`)).status, 200, section);
+      }
+
+      const cues = await visit(jar, `${SHINE_HOME}/run-of-show`);
+      assert.equal(cues.status, 307);
+      assert.equal(cues.location, SHINE_HOME);
     });
 
     /* -------------------------------------------------------- invitations */
@@ -603,7 +624,8 @@ test("Spark access model, end to end against production schema", async (t) => {
 
     await t.test("revoking membership locks someone out while their session is still valid", async () => {
       const jar = await adopt(w.guest.email);
-      assert.equal((await visit(jar, SHINE_HOME)).status, 200);
+      const home = `${SHINE_HOME}/schedule`;
+      assert.equal((await visit(jar, home)).status, 200);
 
       await admin
         .from("workspace_members")
@@ -613,7 +635,7 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       /* No sign out, no expiry, no waiting. The next request asks the
          database again and the answer has changed. */
-      const after = await visit(jar, SHINE_HOME);
+      const after = await visit(jar, home);
       assert.equal(after.status, 307);
       assert.equal(after.location, ENTRY);
 
@@ -627,7 +649,7 @@ test("Spark access model, end to end against production schema", async (t) => {
         user_id: w.guest.id,
         role: "stakeholder",
       });
-      assert.equal((await visit(jar, SHINE_HOME)).status, 200, "restoring it restores access");
+      assert.equal((await visit(jar, home)).status, 200, "restoring it restores access");
     });
 
     /* -------------------------------------- row level security, underneath */

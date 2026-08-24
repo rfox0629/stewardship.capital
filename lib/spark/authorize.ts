@@ -6,8 +6,10 @@ import {
   isOpenSparkPath,
   isSparkPath,
   pathBelongsToWorkspace,
+  sectionOf,
+  workspacePath,
 } from "./paths.ts";
-import type { SparkAccess } from "./types.ts";
+import type { SparkAccess, SparkRole, SparkWorkspace } from "./types.ts";
 
 /**
  * Request level authorization, as a pure decision.
@@ -30,6 +32,52 @@ export type AuthorizationDecision =
 export { isSparkPath };
 
 const ALLOW: AuthorizationDecision = { allow: true };
+
+const WORKING: SparkRole[] = ["planner", "client"];
+const EVERYONE: SparkRole[] = ["planner", "client", "stakeholder"];
+const PLANNER_ONLY: SparkRole[] = ["planner"];
+
+/**
+ * Which roles may reach which part of a workspace.
+ *
+ * Deliberately the same three lines the database draws. Row level security
+ * already refuses a stakeholder the budget and refuses a client the run of
+ * show, but a screen can render before it asks the database anything, so the
+ * route has to know the same rules rather than trusting the query underneath
+ * it to be the only way in.
+ *
+ * An unrecognised section is planner only. A section added later is then
+ * private by default rather than public by accident.
+ */
+const SECTIONS: Record<string, SparkRole[]> = {
+  /* The overview carries budget and spark counts, so it is working members. A
+     stakeholder's home is the schedule instead, see workspaceHome. */
+  "": WORKING,
+  schedule: EVERYONE,
+  sparks: WORKING,
+  budget: WORKING,
+  tasks: WORKING,
+  resources: WORKING,
+  plan: WORKING,
+  meeting: WORKING,
+  review: WORKING,
+  "run-of-show": PLANNER_ONLY,
+};
+
+const allowedRoles = (section: string): SparkRole[] =>
+  SECTIONS[section] ?? PLANNER_ONLY;
+
+/**
+ * Where a person's own workspace starts, for them.
+ *
+ * Guests and speakers begin at the schedule, because the overview is not
+ * theirs to see and landing somewhere you are refused is indistinguishable
+ * from being locked out.
+ */
+export const workspaceHome = (workspace: SparkWorkspace): string =>
+  workspace.role === "stakeholder"
+    ? `${workspacePath(workspace)}/schedule`
+    : workspacePath(workspace);
 
 /* Every refusal lands on the front door, which then routes the person to
    wherever they do belong. One destination means a refusal never becomes a
@@ -71,11 +119,22 @@ export const authorizeSparkPath = (
   /* Client separation has to hold at the route, not only in navigation, so
      this asks whether the path is inside a workspace the person is currently a
      member of rather than trusting the link they followed. */
-  return access.workspaces.some((workspace) =>
-    pathBelongsToWorkspace(pathname, workspace),
-  )
-    ? ALLOW
-    : REFUSE;
+  const workspace = access.workspaces.find((candidate) =>
+    pathBelongsToWorkspace(pathname, candidate),
+  );
+  if (!workspace) return REFUSE;
+
+  const section = sectionOf(pathname, workspace);
+  if (section === null) return REFUSE;
+
+  if (!allowedRoles(section).includes(workspace.role)) {
+    /* Inside their own workspace, just not this part of it. Sending them to
+       their own home rather than to the front door keeps a wrong link from
+       looking like being signed out. */
+    return { allow: false, redirectTo: workspaceHome(workspace) };
+  }
+
+  return ALLOW;
 };
 
 /**
@@ -95,11 +154,7 @@ export const landingFor = (access: SparkAccess | null): Landing => {
   if (!access) return { kind: "refused" };
   if (access.staff) return { kind: "platform", href: SPARK_PLATFORM };
   if (access.workspaces.length === 1) {
-    const [only] = access.workspaces;
-    return {
-      kind: "workspace",
-      href: `${SPARK_BASE}/c/${only.clientSlug}/e/${only.eventSlug}/${only.editionSlug}`,
-    };
+    return { kind: "workspace", href: workspaceHome(access.workspaces[0]) };
   }
   if (access.workspaces.length > 1) return { kind: "choose" };
   return { kind: "refused" };

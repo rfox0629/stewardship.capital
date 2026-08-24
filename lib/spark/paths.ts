@@ -33,6 +33,22 @@ export const workspacePath = (workspace: WorkspaceRef) =>
 
 export const clientPath = (clientSlug: string) => `${SPARK_BASE}/c/${clientSlug}`;
 
+/**
+ * The section of a workspace a path is asking for, or "" for the overview.
+ *
+ * Returns null when the path is not inside this workspace at all, so the
+ * caller cannot mistake "not yours" for "the overview".
+ */
+export const sectionOf = (
+  pathname: string,
+  workspace: WorkspaceRef,
+): string | null => {
+  const prefix = workspacePath(workspace);
+  if (pathname === prefix) return "";
+  if (!pathname.startsWith(`${prefix}/`)) return null;
+  return pathname.slice(prefix.length + 1).split("/")[0];
+};
+
 const within = (pathname: string, prefix: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
