@@ -108,12 +108,19 @@ export const authorizeSparkPath = (
   const client = clientSlugOf(pathname);
   if (!client) return REFUSE;
 
-  /* A client's own index lists that client's engagements. Belonging to any one
-     of them is enough to see it; belonging to none of them is not. */
+  /* A client's own index lists that client's engagements with their budget
+     rollups, so it is a working surface: the same line the workspace overview
+     draws. A stakeholder who belongs to one of the client's engagements is
+     sent to their own home in it, not out of Spark; anyone else is refused. */
   if (pathname === `${SPARK_BASE}/c/${client}`) {
-    return access.workspaces.some((workspace) => workspace.clientSlug === client)
-      ? ALLOW
-      : REFUSE;
+    const mine = access.workspaces.filter(
+      (workspace) => workspace.clientSlug === client,
+    );
+    if (mine.some((workspace) => WORKING.includes(workspace.role))) return ALLOW;
+    if (mine.length > 0) {
+      return { allow: false, redirectTo: workspaceHome(mine[0]) };
+    }
+    return REFUSE;
   }
 
   /* Client separation has to hold at the route, not only in navigation, so

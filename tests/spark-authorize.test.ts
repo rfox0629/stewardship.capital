@@ -243,11 +243,32 @@ test("a verified identity that belongs to nothing reaches nothing", () => {
   assert.deepEqual(authorizeSparkPath("/spark/c/shine", stranger), REFUSED);
 });
 
-test("a client's own index needs membership of that client", () => {
+test("a client's own index is a working surface, not a member surface", () => {
+  /* The index shows per engagement budget rollups and spark counts, so it
+     draws the same line the workspace overview does. B1 regression: this is
+     the rule a review found missing, and these assertions keep it found. */
   assert.deepEqual(authorizeSparkPath("/spark/c/shine", shineClient), {
     allow: true,
   });
+  assert.deepEqual(authorizeSparkPath("/spark/c/shine", shinePlanner), {
+    allow: true,
+  });
+  assert.deepEqual(authorizeSparkPath("/spark/c/shine", staff), { allow: true });
+
+  /* A stakeholder is a member of the client, and still must not see the
+     rollups. Sent to their own home in it, not out of Spark. */
+  assert.deepEqual(authorizeSparkPath("/spark/c/shine", shineGuest), {
+    allow: false,
+    redirectTo: `${SHINE}/schedule`,
+  });
+
   assert.deepEqual(authorizeSparkPath("/spark/c/shine", stranger), REFUSED);
+
+  /* And a working member of one client is still nobody at another. */
+  assert.deepEqual(
+    authorizeSparkPath("/spark/c/redeemer-collective", shineClient),
+    REFUSED,
+  );
 });
 
 /* ------------------------------------------------------------- landing */

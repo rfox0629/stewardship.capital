@@ -130,6 +130,24 @@ Before the first real invitation, verify the sending domain with SPF, DKIM and
 DMARC records at your DNS provider. An invitation that lands in spam is an
 invitation that did not arrive.
 
+## Required before the first real invitation
+
+Findings from the independent architecture review, accepted as pre-client
+work. They may proceed alongside the SHINE visual build, but no real
+invitation goes out until all four are done.
+
+| # | Finding | The fix |
+| --- | --- | --- |
+| F1 | The route triple (client, event, edition) is derived from `coalesce(series_slug, slug)` and `coalesce(edition_label, 'current')` but nothing makes it unique, so two engagement rows could answer to one URL | A uniqueness guarantee on the derived triple, as a migration, before a second engagement row exists per series |
+| F2 | Legacy `/dashboard` is gated on identity alone, so any Spark identity can enter the preserved financial platform | Its own authorization, or park the route |
+| F3 | `/spark/signout` aliases GET to POST, so a cross site top level link can sign someone out, which the POST design existed to prevent | Remove the alias |
+| F4 | `requestAccess` answers fast for unknown addresses and slow for known ones, because sending the email is awaited, so the front door leaks membership through timing | Do not await delivery, or normalise the response time |
+
+The B1 finding from the same review, a stakeholder reaching the client index
+and its budget rollups, was fixed before the foundation merged: the client
+index is a working surface, held to the same role line as the workspace
+overview, with regression tests at both the unit and HTTP level.
+
 ## Inviting someone
 
 ```

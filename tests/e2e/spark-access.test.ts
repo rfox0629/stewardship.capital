@@ -414,10 +414,19 @@ test("Spark access model, end to end against production schema", async (t) => {
         assert.equal(hit.status, 307, section);
         assert.equal(hit.location, `${SHINE_HOME}/schedule`, section);
       }
+
+      /* B1 regression: the client index carries budget rollups, and being a
+         member of the client is not enough to see them. */
+      const index = await visit(jar, "/spark/c/shine");
+      assert.equal(index.status, 307, "the client index is a working surface");
+      assert.equal(index.location, `${SHINE_HOME}/schedule`);
     });
 
     await t.test("a client works the engagement but never sees the run of show", async () => {
       const jar = await adopt(w.client.email);
+
+      /* The client index stays theirs: B1 must not overcorrect. */
+      assert.equal((await visit(jar, "/spark/c/shine")).status, 200);
 
       for (const section of ["", "/budget", "/sparks", "/schedule", "/tasks"]) {
         assert.equal((await visit(jar, `${SHINE_HOME}${section}`)).status, 200, section);
