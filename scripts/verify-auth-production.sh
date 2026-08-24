@@ -35,6 +35,11 @@ if lsof -ti ":$PORT" >/dev/null 2>&1; then
   exit 1
 fi
 
+echo "Fingerprinting the real SHINE engagement (read only)..."
+FP_BEFORE="$("$ROOT/scripts/shine-fingerprint.sh")"
+[ -n "$FP_BEFORE" ] || { echo "could not fingerprint SHINE"; exit 1; }
+echo "  $FP_BEFORE"
+
 echo "Building..."
 npm run build >/dev/null 2>&1 || { echo "build failed"; npm run build; exit 1; }
 
@@ -55,8 +60,21 @@ fi
 echo "  ready"
 echo
 
-node --env-file-if-exists=.env.local --test tests/e2e/spark-access.test.ts
-STATUS=$?
+STATUS=0
+node --env-file-if-exists=.env.local --test tests/e2e/spark-access.test.ts || STATUS=$?
+
+FP_AFTER="$("$ROOT/scripts/shine-fingerprint.sh")"
+if [ "$FP_AFTER" = "$FP_BEFORE" ]; then
+  echo
+  echo "SHINE fingerprint unchanged: $FP_AFTER"
+else
+  echo
+  echo "SHINE FINGERPRINT CHANGED"
+  echo "  before: $FP_BEFORE"
+  echo "  after:  $FP_AFTER"
+  echo "  Real client data was modified by this suite. Investigate before anything else."
+  STATUS=1
+fi
 
 echo
 echo "Server log, for anything the assertions did not catch:"

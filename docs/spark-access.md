@@ -144,12 +144,16 @@ The four findings from the independent architecture review are resolved:
 What still gates the first invitation is the dashboard configuration above:
 signup off, the production site URL, the email template, rate limits, and SMTP.
 
-One operational lesson, learned the expensive way: the production RLS suite
-once ran a planner mutation scoped to the whole engagement, which was harmless
+One permanent rule, learned the expensive way: the production RLS suite once
+ran a planner mutation scoped to the whole engagement, which was harmless
 while the engagement was empty and flattened fourteen real spark statuses the
-day it was not. Every assertion in that suite is now scoped to the rows the
-suite itself seeds. A test that touches production data must never address
-more than its own rows, even when it believes the table is empty.
+day it was not. SHINE Founders Weekend is real client data now. Automated
+tests never write into it, never seed rows into it, and never rely on any
+production table being empty: every production suite creates its own
+organizations stamped with a per run id, mutates only inside them, tears down
+by captured id, and proves the SHINE fingerprint
+(`scripts/shine-fingerprint.sh`) unchanged before it may pass. Isolation that
+cannot be established is a refusal to run, not a fallback.
 
 ## Inviting someone
 
