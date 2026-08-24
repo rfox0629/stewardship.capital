@@ -1,0 +1,310 @@
+/*
+ * The Stewardship.Capital staff surface.
+ *
+ * Spark's own graphite, not a client's theme: this page belongs to the
+ * platform, so it wears the platform's identity. Same editorial register as
+ * the rest of the system, ruled lists and restraint, on the dark ground.
+ */
+
+.pf {
+  min-height: 100svh;
+  background: var(--sp-void, #0a0b0d);
+  color: var(--sp-ink, #eceef2);
+  font-family: var(--font-display), system-ui, sans-serif;
+  padding-bottom: 80px;
+}
+
+.pf .nav-brand {
+  color: rgba(236, 238, 242, 0.92);
+}
+
+.pf-shell {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4.5vw, 44px);
+}
+
+.pf-head {
+  padding-top: calc(var(--nav-h, 64px) + clamp(28px, 5vw, 56px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.pf-title {
+  font-size: clamp(1.9rem, 4.2vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pf-lede {
+  margin-top: 10px;
+  max-width: 58ch;
+  color: var(--sp-dim, #9aa1ad);
+  line-height: 1.6;
+}
+
+.pf-section {
+  margin-top: clamp(40px, 6vw, 60px);
+}
+
+.pf-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--sp-line-bright, #2b2f39);
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+}
+
+.pf-section-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--sp-dim, #9aa1ad);
+}
+
+.pf-note {
+  font-size: 0.8rem;
+  color: var(--sp-dimmer, #5c626c);
+}
+
+/* ------------------------------------------------------------- clients */
+
+.pf-org {
+  padding: 18px 0 8px;
+  border-bottom: 1px solid var(--sp-line, #1f2229);
+}
+
+.pf-org-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.pf-org-slug {
+  font-size: 0.78rem;
+  color: var(--sp-dimmer, #5c626c);
+  margin-left: 10px;
+}
+
+.pf-engagement {
+  margin: 12px 0 14px;
+  border: 1px solid var(--sp-line, #1f2229);
+  border-radius: 4px;
+  background: var(--sp-base, #0d0f12);
+}
+
+.pf-engagement > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 13px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+
+.pf-engagement > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pf-engagement[open] > summary {
+  border-bottom: 1px solid var(--sp-line, #1f2229);
+}
+
+.pf-eng-name {
+  font-weight: 600;
+}
+
+.pf-eng-meta {
+  font-size: 0.8rem;
+  color: var(--sp-dim, #9aa1ad);
+}
+
+.pf-eng-open {
+  margin-left: auto;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  color: var(--sp-signal, #ff4d00);
+  white-space: nowrap;
+}
+
+.pf-eng-body {
+  padding: 6px 16px 16px;
+}
+
+.pf-sub {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer, #5c626c);
+  margin: 16px 0 4px;
+}
+
+/* ---------------------------------------------------------------- rows */
+
+.pf-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pf-rows > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sp-line, #1f2229);
+  font-size: 0.9rem;
+}
+
+.pf-rows > li:last-child {
+  border-bottom: none;
+}
+
+.pf-grow {
+  flex: 1;
+  min-width: 180px;
+  overflow-wrap: anywhere;
+}
+
+.pf-quiet {
+  color: var(--sp-dim, #9aa1ad);
+  font-size: 0.8rem;
+}
+
+/* --------------------------------------------------------------- forms */
+
+.pf-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0 4px;
+  max-width: 560px;
+}
+
+.pf-grid {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .pf-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pf-grid-3 {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}
+
+.pf-field {
+  display: grid;
+  gap: 5px;
+}
+
+.pf-field label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sp-dimmer, #5c626c);
+}
+
+.pf-field input,
+.pf-field select {
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--sp-ink, #eceef2);
+  background: var(--sp-raised, #121317);
+  border: 1px solid var(--sp-line-bright, #2b2f39);
+  border-radius: 3px;
+  padding: 9px 11px;
+  color-scheme: dark;
+}
+
+.pf-field input:focus,
+.pf-field select:focus {
+  outline: 2px solid var(--sp-signal, #ff4d00);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.pf-submit {
+  justify-self: start;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #0a0b0d;
+  background: var(--sp-ink, #eceef2);
+  border: 0;
+  border-radius: 3px;
+  padding: 11px 20px;
+  cursor: pointer;
+}
+
+.pf-submit:hover {
+  background: #ffffff;
+}
+
+.pf-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pf-inline-select {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--sp-ink, #eceef2);
+  background: var(--sp-raised, #121317);
+  border: 1px solid var(--sp-line, #1f2229);
+  border-radius: 3px;
+  padding: 4px 8px;
+  color-scheme: dark;
+}
+
+.pf-text-action {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--sp-dim, #9aa1ad);
+  cursor: pointer;
+}
+
+.pf-text-action:hover {
+  color: var(--sp-ink, #eceef2);
+}
+
+.pf-message {
+  font-size: 0.84rem;
+  color: var(--sp-dim, #9aa1ad);
+}
+
+/* The one time the platform shows a secret: the invitation link, exactly
+   once, in a block made for copying. */
+.pf-link-once {
+  border: 1px solid var(--sp-signal, #ff4d00);
+  border-radius: 4px;
+  background: rgba(255, 77, 0, 0.06);
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.pf-link-once code {
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+  color: var(--sp-ink, #eceef2);
+}
