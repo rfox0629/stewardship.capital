@@ -54,11 +54,40 @@ its own.
 
 ### Supabase dashboard
 
-Two settings the code cannot set for itself.
+Correct application code proves nothing about the project it runs against.
+Run the audit, which reads back what it can and names what it cannot:
 
-**The email template.** Authentication → Emails → Magic Link. Spark asks for a
-six digit code, so the template has to contain one. This works for both the
-typed code and the tapped link:
+```
+npm run audit:auth
+```
+
+Everything below was found by that audit or is listed there as unreadable.
+
+**Authentication → Sign In / Providers → Email**
+
+| Setting | Required | Why |
+| --- | --- | --- |
+| Allow new users to sign up | **Off** | Spark is invitation only. With this on, anyone can create an account straight against the Auth API. They cannot reach a workspace, because that needs membership, but they should not get an account either. |
+| Confirm email | On | An address must be proved read before it is an identity. |
+| Email OTP Length | **8** | Six digits is a million possibilities, and the verification rate limit has to be raised for shared venue wifi. Lengthen the code first so the higher limit buys a guesser nothing. |
+| Email OTP Expiration | **600** seconds | Ten minutes is long enough to walk to a laptop and short enough that a guesser gets few attempts per live code. |
+
+Turning signup off does **not** break invitations. An invited address that has
+no account yet is created deliberately with the service role in
+`ensureAccountExists`, only when a live invitation for that exact address
+exists. Account creation is a consequence of being invited, not a public door.
+
+**Authentication → URL Configuration**
+
+| Setting | Required |
+| --- | --- |
+| Site URL | The production origin, e.g. `https://stewardship.capital`. The audit found `http://localhost:3000`, which would send every emailed link to a machine that is not there. |
+| Redirect URLs | The production origin and any preview origin, each with `/spark/auth/callback`. The allow list already refuses unknown hosts, which is what stops an emailed link carrying a verified session to somebody else's domain. Keep it that way. |
+
+**Authentication → Emails → Magic Link**
+
+The template must contain the code, or nobody can sign in. This serves both
+the typed code and the tapped link:
 
 ```html
 <p>Your Spark code is <strong>{{ .Token }}</strong></p>
@@ -67,14 +96,39 @@ typed code and the tapped link:
 </p>
 ```
 
-**Rate limits.** Authentication → Rate Limits. Two defaults matter:
+**Authentication → Rate Limits**
 
-- *Token verifications*, 30 per hour per IP. Everyone signing in from one
-  venue's wifi shares an IP, so a weekend where fifty guests arrive at once
-  will exceed this. Raise it before an event.
-- *Emails*, 2 per hour on the built in SMTP. Fine for a founder preview,
-  nowhere near enough for real use. Configure a real SMTP provider before
-  inviting anyone who matters.
+The defaults are per IP, and roughly fifty six people on one venue's wifi are
+one IP. These are sized for that, not disabled for it.
+
+| Limit | Default | Set to | Why |
+| --- | --- | --- | --- |
+| Token verifications | 30 / 5 min | **150 / 5 min** | Every code entry. Fifty six guests signing in at the opening session, allowing a couple of attempts each. With an eight digit code, 1800 attempts an hour against a code that lives ten minutes is about a three in ten million chance of a hit. |
+| Sign in / sign up (OTP requests) | 30 / 5 min | **100 / 5 min** | Every request for a code, including the ones people ask for twice. |
+| Token refresh | 1800 / hour | leave | One refresh per person per hour of use. Nowhere near it. |
+| Emails | 2 / hour | **100 / hour**, after SMTP below | Only meaningful once a real sender is configured. |
+
+**Project → Authentication → SMTP Settings**
+
+The built in sender allows two emails an hour across the whole project and is
+explicitly not for production. Nothing in Spark works at event scale without a
+real sender.
+
+| Field | Value |
+| --- | --- |
+| Enable Custom SMTP | On |
+| Sender email | An address on a domain you control, e.g. `spark@stewardship.capital` |
+| Sender name | Spark |
+| Host / Port | Your provider's, 587 with STARTTLS |
+| Username / Password | The provider's API credentials |
+
+Then raise the email rate limit above. **No application change is required**;
+Spark already sends every email through Supabase, so configuring SMTP is
+entirely a dashboard change.
+
+Before the first real invitation, verify the sending domain with SPF, DKIM and
+DMARC records at your DNS provider. An invitation that lands in spam is an
+invitation that did not arrive.
 
 ## Inviting someone
 

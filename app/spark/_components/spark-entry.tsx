@@ -133,7 +133,7 @@ export function SparkEntry({
             autoComplete="one-time-code"
             autoFocus
             spellCheck={false}
-            placeholder="6 digits"
+            placeholder="Your code"
             required
             value={code}
             onChange={(event) => setCode(event.target.value)}

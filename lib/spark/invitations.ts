@@ -51,6 +51,39 @@ export const findLiveInvitation = async (
   }
 };
 
+/**
+ * Makes sure the invited address has an account, so a code can be sent to it.
+ *
+ * This exists so that public signup can stay switched off at the project
+ * level. With it off, the Auth API refuses to create accounts, which is what
+ * invitation only should mean; the one legitimate exception is an address a
+ * planner has already invited, and this is that exception, done deliberately
+ * with the service role rather than by leaving the front door open to
+ * everyone.
+ *
+ * Creating the account grants nothing. The person still has to prove they read
+ * the address before any session exists, and still has to hold a membership
+ * before any workspace does.
+ */
+export const ensureAccountExists = async (email: string): Promise<boolean> => {
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+    });
+
+    /* Already registered is the ordinary case: most invitations go to people
+       who have been in Spark before. */
+    if (error && !/already been registered|already exists/i.test(error.message)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export type AcceptResult = { ok: true; engagementId: string } | { ok: false };
 
 /**

@@ -10,7 +10,11 @@ import {
   transientCookie,
 } from "../../../../lib/spark/cookies";
 import { workspaceHome } from "../../../../lib/spark/authorize";
-import { acceptInvitation, findLiveInvitation } from "../../../../lib/spark/invitations";
+import {
+  acceptInvitation,
+  ensureAccountExists,
+  findLiveInvitation,
+} from "../../../../lib/spark/invitations";
 import { SPARK_ENTRY } from "../../../../lib/spark/paths";
 import { createClient } from "../../../../lib/supabase/server";
 
@@ -65,12 +69,15 @@ export async function GET(
     return frontDoor;
   }
 
-  /* No session yet. Creating the account is allowed here and only here,
-     because a live invitation is the one thing that authorises it. */
+  /* No session yet. A live invitation is the one thing that authorises an
+     account to exist, so it is created here, deliberately, rather than by
+     leaving signup open to everyone. */
+  if (!(await ensureAccountExists(invitation.email))) return frontDoor;
+
   try {
     const { error } = await supabase.auth.signInWithOtp({
       email: invitation.email,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: false },
     });
     if (error) return frontDoor;
   } catch {
