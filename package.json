@@ -12,7 +12,8 @@
     "spark:invite": "node scripts/mint-invitation.ts",
     "test:rls": "./scripts/verify-rls.sh",
     "db:migrate": "./scripts/apply-migrations.sh",
-    "db:verify": "./scripts/verify-production.sh"
+    "db:verify": "./scripts/verify-production.sh",
+    "test:rls:prod": "./scripts/verify-rls-production.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
