@@ -21,7 +21,13 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@events/*": [
+        "app/events-os/*"
+      ]
+    }
   },
   "include": [
     "next-env.d.ts",

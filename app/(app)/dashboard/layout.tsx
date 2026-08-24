@@ -11,7 +11,7 @@ export default function DashboardLayout({
     <div className="app-shell">
       <aside className="app-sidebar" aria-label="Dashboard navigation">
         <div className="app-sidebar-brand">
-          <BrandMark className="app-brand" href="/" />
+          <BrandMark className="app-brand" href="/internal/operating-system" />
           <p>Stewardship Operating System</p>
         </div>
         <DashboardNav variant="sidebar" />
@@ -27,7 +27,7 @@ export default function DashboardLayout({
 
       <div className="app-main">
         <header className="app-topbar">
-          <BrandMark className="app-mobile-brand" href="/" />
+          <BrandMark className="app-mobile-brand" href="/internal/operating-system" />
           <form action={signOut}>
             <button className="app-login-link" type="submit">
               Log Out

@@ -218,3 +218,28 @@ Primary docs:
 - `docs/data-architecture-v1.md`
 - `docs/brand-homepage-direction-v1.md`
 - `docs/build-roadmap-v1.md`
+
+## Route Map After The August 2026 Redesign
+
+USA-185 and USA-184 changed what lives where. Read this before touching routes.
+
+Public Stewardship Capital:
+
+- `/` is the visual homepage. Source in `app/(site)/page.tsx`, styles in `app/styles/sc-site.css`, tokens in `app/styles/sc-tokens.css`. All classes are `sc-` prefixed.
+- `/events` is the Stewardship Events entry point.
+
+Preserved, not public:
+
+- `/internal/operating-system` holds the previous homepage and Operating System entry point, verbatim, with a banner and `noindex`. It is not linked from public navigation. Do not delete it and do not link it publicly.
+- `/dashboard`, `/assessment`, `/login`, `/signup` are unchanged and are disallowed in `robots.txt`.
+
+Stewardship Events operating system:
+
+- `app/events-os` is a self contained application. Nothing outside it may import from it, and it imports nothing from the Stewardship Capital site, `lib/`, or Supabase.
+- Every route is built through `app/events-os/_lib/paths.ts`. Never hard code an events route.
+- Every read goes through `app/events-os/_lib/store.ts`. Data is seeded in `_lib/platform-data.ts`.
+- The folder is designed to move to its own repository and domain. See `docs/stewardship-events-architecture-v1.md`.
+
+Copy rule for every public surface: no em dashes.
+
+The homepage direction recorded under "Brand And Homepage Direction" above describes the preserved page at `/internal/operating-system`, not the current public homepage. The current homepage concept is in `docs/stewardship-capital-visual-concept-v1.md`.
