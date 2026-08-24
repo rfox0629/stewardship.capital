@@ -61,11 +61,8 @@ export const pathBelongsToWorkspace = (
   workspace: WorkspaceRef,
 ): boolean => within(pathname, workspacePath(workspace));
 
-export const pathBelongsToClient = (pathname: string, clientSlug: string) =>
-  within(pathname, clientPath(clientSlug));
+const CLIENT_SEGMENT = new RegExp(`^${SPARK_BASE}/c/([^/]+)`);
 
 /** The client segment of a Spark path, when it has one. */
-export const clientSlugOf = (pathname: string): string | null => {
-  const match = pathname.match(/^\/spark\/c\/([^/]+)/);
-  return match ? match[1] : null;
-};
+export const clientSlugOf = (pathname: string): string | null =>
+  pathname.match(CLIENT_SEGMENT)?.[1] ?? null;

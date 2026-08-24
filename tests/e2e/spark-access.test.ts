@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  accessTokenOf,
   admin,
   adopt,
   anonClient,
   BASE_URL,
+  expireAccessToken,
   clientFor,
   createIdentity,
   linkFor,
@@ -522,6 +524,26 @@ test("Spark access model, end to end against production schema", async (t) => {
       const hit = await visit(reopened, SHINE_HOME);
       assert.equal(hit.status, 200, "no fresh code needed on the next visit");
       assert.equal((await visit(reopened, ENTRY)).location, SHINE_HOME);
+    });
+
+    await t.test("an expired access token refreshes itself, silently", async () => {
+      const jar = await adopt(w.client.email);
+      const before = accessTokenOf(jar);
+      assert.ok(before, "the jar is carrying an access token");
+
+      assert.ok(
+        expireAccessToken(jar),
+        "could not age the session cookie; the format may have changed",
+      );
+
+      /* The access token is now past its expiry. The refresh token is not, so
+         this should go through without anyone being asked for a code. */
+      const hit = await visit(jar, SHINE_HOME);
+      assert.equal(hit.status, 200, "an hour later is still signed in");
+
+      const after = accessTokenOf(jar);
+      assert.ok(after, "a session is still in the jar");
+      assert.notEqual(after, before, "and it is a freshly issued one");
     });
 
     await t.test("session cookies are not readable by page scripts", async () => {

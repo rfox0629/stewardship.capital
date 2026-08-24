@@ -241,6 +241,54 @@ export const clientFor = async (email: string): Promise<SupabaseClient> => {
   return supabase;
 };
 
+/**
+ * Ages a jar's access token past its expiry, leaving the refresh token intact.
+ *
+ * The access token lives an hour. Rather than wait one out, this rewrites the
+ * session cookie so the server believes it already has, which is the state a
+ * person returning the next morning arrives in. What should happen next is a
+ * silent refresh, not a request to verify again.
+ */
+export const expireAccessToken = (jar: Jar): boolean => {
+  const names = Array.from(jar.keys()).filter((name) =>
+    /^sb-.+-auth-token(\.\d+)?$/.test(name),
+  );
+  if (names.length !== 1) return false;
+
+  const [name] = names;
+  const cookie = jar.get(name)!;
+  const raw = decodeURIComponent(cookie.value);
+  if (!raw.startsWith("base64-")) return false;
+
+  const session = JSON.parse(
+    Buffer.from(raw.slice("base64-".length), "base64url").toString("utf8"),
+  );
+  session.expires_at = Math.floor(Date.now() / 1000) - 60;
+  session.expires_in = 0;
+
+  const encoded =
+    "base64-" + Buffer.from(JSON.stringify(session), "utf8").toString("base64url");
+
+  /* Only if it still fits in one cookie; the library would chunk a longer one
+     and this helper does not pretend to reimplement that. */
+  if (encoded.length > 3180) return false;
+
+  jar.set(name, { value: encoded, persistent: cookie.persistent });
+  return true;
+};
+
+export const accessTokenOf = (jar: Jar): string | null => {
+  const names = Array.from(jar.keys()).filter((name) =>
+    /^sb-.+-auth-token(\.\d+)?$/.test(name),
+  );
+  if (names.length !== 1) return null;
+  const raw = decodeURIComponent(jar.get(names[0])!.value);
+  if (!raw.startsWith("base64-")) return null;
+  return JSON.parse(
+    Buffer.from(raw.slice("base64-".length), "base64url").toString("utf8"),
+  ).access_token ?? null;
+};
+
 export const anonClient = () =>
   createClient(url, publishable, {
     auth: { autoRefreshToken: false, persistSession: false },

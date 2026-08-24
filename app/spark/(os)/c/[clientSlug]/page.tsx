@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import { SparkBar } from "@spark/_components/spark-bar";
 import { Pill } from "@spark/_components/ui";
 import { money, shortDate } from "@spark/_lib/format";
-import { editionPath, plannerPath } from "@spark/_lib/paths";
+import { editionPath } from "@spark/_lib/paths";
 import {
   budgetRollup,
   clientBySlug,
@@ -43,7 +43,9 @@ export default async function ClientHomePage({ params }: PageProps) {
       }
     >
       <div className="eo-shell">
-        <Link className="eo-back" href={plannerPath()}>
+        {/* The front door, not the platform home: only staff can reach
+            that, and most people here are not staff. */}
+        <Link className="eo-back" href="/spark">
           Back to planner
         </Link>
 

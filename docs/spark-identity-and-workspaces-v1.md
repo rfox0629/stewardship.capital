@@ -1,3 +1,9 @@
+> **Superseded.** This describes Spark's own authentication: signed session
+> cookies, a challenge and code flow, invitations as signed claims. All of it
+> was replaced by Supabase Auth and database backed invitations. Kept for the
+> reasoning, which still holds; none of the file paths or environment variables
+> below exist any more. See [spark-access.md](./spark-access.md).
+
 # Spark Identity and Workspaces v1
 
 How someone gets into Spark, and what they can reach once they are in.
