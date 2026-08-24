@@ -38,7 +38,7 @@ There is no icon, no monogram, and no illustration. The wordmark and one luminou
 
 Graphite rather than pure black, so panels can stack and read as separate surfaces.
 
-**The accent rule.** Signal orange never decorates. It marks something activated, built, or requiring attention. In the hero field it appears only on nodes and edges that attention has woken. On a product panel it marks the moment a thing lands, not its resting state. This is what keeps a single saturated colour from feeling loud.
+**The accent rule.** Signal orange never decorates. It marks something activated. In the hero field it appears only on nodes and edges that attention has woken. Nothing else on a public page carries it, which is why the primary button on `/more` is white: at full width on a phone an orange button becomes the largest thing on the screen, and the node has to stay the distinctive mark.
 
 ## Typography
 
@@ -78,14 +78,13 @@ One engine, three behaviours, so every product world is drawn in the same langua
 ## Architecture
 
 ```
-/                     hero, three product panels, connect
-/work                 the register of what is being built
-/work/[slug]          one product world per entry
-/about                capital is more than money
-/connect              one way in
+/         title screen: Time. Talent. Treasure.
+/more     the Spark entry, the only public destination
 ```
 
-Adding a company is adding one object to `app/(www)/_lib/products.ts`. The homepage panels, the work register, and the product pages all read from it. That is the point of a parent build company: the architecture already holds the next one.
+The homepage is a title screen, not a landing page. One statement, one line of support, one quiet scripture, one way forward, and nothing below the fold. Navigation is the brand mark alone, because Spark is the only product exposed publicly and it is reached through the single call to action.
+
+`/work`, `/work/[slug]`, `/about`, `/connect`, and `/events` were removed from public view and now redirect to `/more`, or to `/` in the case of `/about`.
 
 ## What was preserved
 
