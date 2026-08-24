@@ -11,7 +11,7 @@ import {
 } from "../actions";
 
 type Stage =
-  | { name: "email" }
+  | { name: "email"; unavailable?: boolean }
   | { name: "code"; hint: string; wrong?: boolean }
   | { name: "refused" }
   | { name: "choose"; workspaces: Choice[] };
@@ -161,6 +161,8 @@ export function SparkEntry({
           const outcome = await requestAccess(email);
           if (outcome.status === "sent") {
             setStage({ name: "code", hint: outcome.hint });
+          } else if (outcome.status === "unavailable") {
+            setStage({ name: "email", unavailable: true });
           }
         });
       }}
@@ -184,6 +186,11 @@ export function SparkEntry({
           <Arrow />
         </button>
       </div>
+      {stage.unavailable ? (
+        <p className="entry-hint" role="status">
+          Spark could not send a code just now. Try again in a few minutes.
+        </p>
+      ) : null}
     </form>
   );
 }
