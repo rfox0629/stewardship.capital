@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test \"tests/**/*.test.ts\"",
     "spark:invite": "node scripts/mint-invitation.ts",
-    "test:rls": "./scripts/verify-rls.sh"
+    "test:rls": "./scripts/verify-rls.sh",
+    "db:migrate": "./scripts/apply-migrations.sh",
+    "db:verify": "./scripts/verify-production.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
