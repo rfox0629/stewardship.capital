@@ -20,7 +20,9 @@ export default function HomePage() {
         </div>
 
         <div className="mask">
-          <h1 id="hero-title">Time. Talent. Treasure.</h1>
+          <h1 id="hero-title">
+            <span>Time.</span> <span>Talent.</span> <span>Treasure.</span>
+          </h1>
         </div>
 
         <div className="mask">

@@ -159,7 +159,7 @@ html:has(.www) body {
   z-index: 2;
   width: var(--shell);
   margin: 0 auto;
-  padding: calc(var(--nav-h) + 24px) 0 40px;
+  padding: clamp(40px, 8vh, 80px) 0;
   pointer-events: none;
 }
 
@@ -211,12 +211,35 @@ html:has(.www) body {
   }
 }
 
+/* Three pillars stacked while the screen is narrow. Stacking buys room, so
+   each word is set larger here than it is on one line. */
 .hero h1 {
-  font-size: clamp(3.1rem, 11.5vw, 9.5rem);
+  font-size: clamp(3rem, 16vw, 6.5rem);
   font-weight: 700;
   font-variation-settings: "wdth" 106;
   letter-spacing: -0.052em;
-  line-height: 0.88;
+  line-height: 0.9;
+}
+
+.hero h1 span {
+  display: block;
+}
+
+/* Once there is room, the three run horizontally on a single line.
+   Measured on the rendered face, "Time. Talent. Treasure." is 10.34 times
+   its own font size wide. Dividing the shell by 10.6 fits it edge to edge
+   with a margin to spare at every width, and the cap holds it once the
+   shell stops growing at 1400. */
+@media (min-width: 860px) {
+  .hero h1 {
+    white-space: nowrap;
+    font-size: min(calc(9.43vw - 3.8px), 8rem);
+    line-height: 0.88;
+  }
+
+  .hero h1 span {
+    display: inline;
+  }
 }
 
 .hero-sub {
