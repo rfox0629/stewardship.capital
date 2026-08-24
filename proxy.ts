@@ -62,13 +62,20 @@ export async function proxy(request: NextRequest) {
     return box.response;
   }
 
-  /* The preserved financial platform keeps the guard it already had. */
+  /* The preserved financial platform is parked behind the explicit staff
+     grant. Spark and the legacy surfaces share one identity pool, so identity
+     alone would let any Spark guest walk into this product; membership of an
+     engagement was never meant to mean that. */
   if (startsWithAny(pathname, legacyProtected)) {
-    if (!(await hasIdentity(supabase))) {
+    const access = supabase ? await resolveAccess(supabase) : null;
+    if (!access) {
       const login = request.nextUrl.clone();
       login.pathname = "/login";
       login.searchParams.set("redirectTo", pathname);
       return NextResponse.redirect(login);
+    }
+    if (!access.staff) {
+      return NextResponse.redirect(new URL("/spark", request.url));
     }
     return box.response;
   }

@@ -132,21 +132,24 @@ invitation that did not arrive.
 
 ## Required before the first real invitation
 
-Findings from the independent architecture review, accepted as pre-client
-work. They may proceed alongside the SHINE visual build, but no real
-invitation goes out until all four are done.
+The four findings from the independent architecture review are resolved:
 
-| # | Finding | The fix |
+| # | Finding | Resolution |
 | --- | --- | --- |
-| F1 | The route triple (client, event, edition) is derived from `coalesce(series_slug, slug)` and `coalesce(edition_label, 'current')` but nothing makes it unique, so two engagement rows could answer to one URL | A uniqueness guarantee on the derived triple, as a migration, before a second engagement row exists per series |
-| F2 | Legacy `/dashboard` is gated on identity alone, so any Spark identity can enter the preserved financial platform | Its own authorization, or park the route |
-| F3 | `/spark/signout` aliases GET to POST, so a cross site top level link can sign someone out, which the POST design existed to prevent | Remove the alias |
-| F4 | `requestAccess` answers fast for unknown addresses and slow for known ones, because sending the email is awaited, so the front door leaks membership through timing | Do not await delivery, or normalise the response time |
+| F1 | The route triple was derived but nothing made it unique | `engagements_route_triple_idx`, a unique index on the derived triple, applied to production |
+| F2 | Legacy `/dashboard` admitted any Spark identity | Parked behind the explicit `platform_staff` grant in the proxy |
+| F3 | `/spark/signout` aliased GET to POST | Alias removed; signing out is a POST only |
+| F4 | The front door answered fast for unknown addresses and slow for known ones | The email sends after the response with `after()`, so every address answers in the same time |
 
-The B1 finding from the same review, a stakeholder reaching the client index
-and its budget rollups, was fixed before the foundation merged: the client
-index is a working surface, held to the same role line as the workspace
-overview, with regression tests at both the unit and HTTP level.
+What still gates the first invitation is the dashboard configuration above:
+signup off, the production site URL, the email template, rate limits, and SMTP.
+
+One operational lesson, learned the expensive way: the production RLS suite
+once ran a planner mutation scoped to the whole engagement, which was harmless
+while the engagement was empty and flattened fourteen real spark statuses the
+day it was not. Every assertion in that suite is now scoped to the rows the
+suite itself seeds. A test that touches production data must never address
+more than its own rows, even when it believes the table is empty.
 
 ## Inviting someone
 

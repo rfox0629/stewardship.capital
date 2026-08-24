@@ -76,10 +76,12 @@ insert into public.workspace_members (engagement_id, user_id, role)
 select id,'$OTHER','planner' from public.engagements where slug='check-2027';
 
 insert into public.sparks (engagement_id, title, category, status)
-select id,'rlscheck '||slug,'Experience','captured' from public.engagements;
+select id,'rlscheck '||slug,'Experience','captured' from public.engagements
+where slug in ('founders-weekend-2026','check-2027');
 
 insert into public.budget_lines (engagement_id, category, label, planned_cents)
-select id,'Venue and lodging','rlscheck '||slug, 1000000 from public.engagements;
+select id,'Venue and lodging','rlscheck '||slug, 1000000 from public.engagements
+where slug in ('founders-weekend-2026','check-2027');
 
 insert into public.schedule_items (engagement_id, day_key, starts_label, title, track, status)
 select id,'thu','3:00 pm','rlscheck confirmed','Hospitality','confirmed'
@@ -119,31 +121,31 @@ begin
    ('client sees only their engagement','1', pg_temp.as_user('$CLIENT','select count(*)::text from public.engagements')),
    ('other client sees only theirs','1', pg_temp.as_user('$OTHER','select count(*)::text from public.engagements')),
 
-   ('client sees only their sparks','1', pg_temp.as_user('$CLIENT','select count(*)::text from public.sparks')),
+   ('client sees only their sparks','1', pg_temp.as_user('$CLIENT','select count(*)::text from public.sparks where title like ''rlscheck%''')),
    ('guest sees no sparks','0', pg_temp.as_user('$GUEST','select count(*)::text from public.sparks')),
-   ('cross client spark read blocked','1', pg_temp.as_user('$OTHER','select count(*)::text from public.sparks')),
+   ('cross client spark read blocked','1', pg_temp.as_user('$OTHER','select count(*)::text from public.sparks where title like ''rlscheck%''')),
 
-   ('client sees only their budget','1', pg_temp.as_user('$CLIENT','select count(*)::text from public.budget_lines')),
+   ('client sees only their budget','1', pg_temp.as_user('$CLIENT','select count(*)::text from public.budget_lines where label like ''rlscheck%''')),
    ('guest sees no budget','0', pg_temp.as_user('$GUEST','select count(*)::text from public.budget_lines')),
 
-   ('client sees draft and confirmed schedule','2', pg_temp.as_user('$CLIENT','select count(*)::text from public.schedule_items')),
-   ('guest sees confirmed schedule only','1', pg_temp.as_user('$GUEST','select count(*)::text from public.schedule_items')),
+   ('client sees draft and confirmed schedule','2', pg_temp.as_user('$CLIENT','select count(*)::text from public.schedule_items where title like ''rlscheck%''')),
+   ('guest sees confirmed schedule only','1', pg_temp.as_user('$GUEST','select count(*)::text from public.schedule_items where title like ''rlscheck%''')),
 
    ('planner sees invitations','1', pg_temp.as_user('$STAFF','select count(*)::text from public.invitations')),
    ('client cannot read invitations','0', pg_temp.as_user('$CLIENT','select count(*)::text from public.invitations')),
    ('other client cannot read invitations','0', pg_temp.as_user('$OTHER','select count(*)::text from public.invitations')),
 
    ('client cannot approve a spark','0', pg_temp.as_user('$CLIENT',
-     'with u as (update public.sparks set status=''approved'' where true returning 1) select count(*)::text from u')),
+     'with u as (update public.sparks set status=''approved'' where title like ''rlscheck%'' returning 1) select count(*)::text from u')),
    ('client cannot write the schedule','0', pg_temp.as_user('$CLIENT',
-     'with u as (update public.schedule_items set title=''hijacked'' where true returning 1) select count(*)::text from u')),
+     'with u as (update public.schedule_items set title=''rlscheck hijack'' where title like ''rlscheck%'' returning 1) select count(*)::text from u')),
    ('client cannot write the budget','0', pg_temp.as_user('$CLIENT',
-     'with u as (update public.budget_lines set planned_cents=1 where true returning 1) select count(*)::text from u')),
+     'with u as (update public.budget_lines set planned_cents=1 where label like ''rlscheck%'' returning 1) select count(*)::text from u')),
    ('client cannot promote themselves','0', pg_temp.as_user('$CLIENT',
-     'with u as (update public.workspace_members set role=''planner'' where true returning 1) select count(*)::text from u')),
+     'with u as (update public.workspace_members set role=''planner'' where user_id=''$CLIENT'' returning 1) select count(*)::text from u')),
    ('planner can approve a spark','1', pg_temp.as_user('$STAFF',
-     'with u as (update public.sparks set status=''approved'' where engagement_id=(select id from public.engagements where slug=''founders-weekend-2026'') returning 1) select count(*)::text from u')),
-   ('run of show is planner only','0', pg_temp.as_user('$CLIENT','select count(*)::text from public.run_of_show_cues'));
+     'with u as (update public.sparks set status=''approved'' where title like ''rlscheck%'' and engagement_id=(select id from public.engagements where slug=''founders-weekend-2026'') returning 1) select count(*)::text from u')),
+   ('run of show is planner only','0', pg_temp.as_user('$CLIENT','select count(*)::text from public.run_of_show_cues where cue like ''rlscheck%'''));
 end \$\$;
 
 select case when actual=expected then 'PASS' else 'FAIL' end as result, name, expected, actual

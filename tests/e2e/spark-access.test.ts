@@ -409,7 +409,7 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       /* Inside their own workspace, held to their own part of it, and sent to
          it rather than out of Spark. */
-      for (const section of ["", "/budget", "/sparks", "/run-of-show"]) {
+      for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/decisions", "/run-of-show"]) {
         const hit = await visit(jar, `${SHINE_HOME}${section}`);
         assert.equal(hit.status, 307, section);
         assert.equal(hit.location, `${SHINE_HOME}/schedule`, section);
@@ -428,7 +428,7 @@ test("Spark access model, end to end against production schema", async (t) => {
       /* The client index stays theirs: B1 must not overcorrect. */
       assert.equal((await visit(jar, "/spark/c/shine")).status, 200);
 
-      for (const section of ["", "/budget", "/sparks", "/schedule", "/tasks"]) {
+      for (const section of ["", "/budget", "/sparks", "/schedule", "/tasks", "/resources", "/decisions"]) {
         assert.equal((await visit(jar, `${SHINE_HOME}${section}`)).status, 200, section);
       }
 

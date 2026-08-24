@@ -457,6 +457,119 @@
   vertical-align: 2px;
 }
 
+/* ------------------------------------------------------------- figures */
+
+/* Money and counts, right of a row on wide screens, wrapped beneath it on a
+   phone. Labels travel with their figures so there is never a header row to
+   cross reference, which is most of what keeps this from feeling like
+   accounting software. */
+.ev-figs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin-top: 4px;
+}
+
+.ev-fig {
+  font-size: 0.9rem;
+  color: var(--ev-ink);
+  white-space: nowrap;
+}
+
+.ev-fig b {
+  font-family: var(--ev-display), serif;
+  font-weight: 560;
+  font-size: 1.02rem;
+  color: var(--ev-primary);
+}
+
+.ev-fig-label {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ev-secondary);
+  margin-right: 6px;
+}
+
+@media (min-width: 860px) {
+  .ev-split {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+  }
+
+  .ev-split .ev-figs {
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+}
+
+/* --------------------------------------------------------------- pills */
+
+.ev-pill {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 1px 6px;
+  margin-left: 10px;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
+.ev-pill-good {
+  color: var(--ev-accent);
+}
+
+.ev-pill-warm {
+  color: var(--ev-secondary);
+}
+
+.ev-pill-deep {
+  color: var(--ev-deep);
+}
+
+/* --------------------------------------------------------- run of show */
+
+.ev-cue {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 4px 18px;
+  padding: 10px 0 9px;
+  border-bottom: 1px solid rgba(58, 58, 59, 0.1);
+}
+
+@media (max-width: 540px) {
+  .ev-cue {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+.ev-cue-at {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ev-secondary);
+  white-space: nowrap;
+  padding-top: 1px;
+}
+
+.ev-cue-who {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ev-accent);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
 /* ------------------------------------------------------------- forms */
 
 .ev-capture {

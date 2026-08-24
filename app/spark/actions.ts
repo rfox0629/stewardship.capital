@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { landingFor, workspaceHome } from "../../lib/spark/authorize";
 import { choicesFrom, resolveAccess, workspaceById } from "../../lib/spark/access";
@@ -49,14 +50,22 @@ export async function requestAccess(email: string): Promise<RequestOutcome> {
   const address = email.trim().toLowerCase();
   if (!EMAIL.test(address)) return { status: "invalid" };
 
-  try {
-    const supabase = await createClient();
-    await supabase.auth.signInWithOtp({
-      email: address,
-      options: { shouldCreateUser: false },
+  /* The send happens after the response, so a known address and an unknown
+     one answer in the same time. Awaiting it here would leak membership
+     through latency: the unknown address returns at once, the known one
+     waits on SMTP. */
+  const supabase = await createClient().catch(() => null);
+  if (supabase) {
+    after(async () => {
+      try {
+        await supabase.auth.signInWithOtp({
+          email: address,
+          options: { shouldCreateUser: false },
+        });
+      } catch {
+        /* A misconfigured deploy answers exactly like an unknown address. */
+      }
     });
-  } catch {
-    /* A misconfigured deploy answers exactly like an unknown address. */
   }
 
   const store = await cookies();
