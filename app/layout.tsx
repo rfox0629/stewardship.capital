@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 
 import { display, text } from "./fonts";
-import "./globals.css";
-import "./styles/sc-tokens.css";
+import "./styles/tokens.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Stewardship Capital",
-    template: "%s | Stewardship Capital",
+    default: "Stewardship.Capital",
+    template: "%s | Stewardship.Capital",
   },
   description:
-    "Stewardship Capital helps people, families, organizations, and ventures steward time, talent, and treasure as one entrusted system.",
+    "We turn vision into systems, products, and experiences built to move.",
 };
 
 export default function RootLayout({

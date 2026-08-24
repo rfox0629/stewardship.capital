@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BrandMark } from "../brand-mark";
 import { login } from "../auth/actions";
+import "../globals.css";
 
 type LoginPageProps = {
   searchParams: Promise<{

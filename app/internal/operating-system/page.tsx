@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrandMark } from "../../brand-mark";
+import "../../globals.css";
 
 export const metadata: Metadata = {
   title: "Operating System preview",

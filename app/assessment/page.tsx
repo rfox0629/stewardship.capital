@@ -1,6 +1,7 @@
 import { BrandMark } from "../brand-mark";
 import { getInitialAssessmentDraft } from "../../lib/assessment/assessment-repository";
 import { AssessmentFlow } from "./assessment-flow";
+import "../globals.css";
 
 export const dynamic = "force-dynamic";
 

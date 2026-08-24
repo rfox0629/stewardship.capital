@@ -1,0 +1,56 @@
+/*
+ * Stewardship.Capital design tokens.
+ *
+ * Graphite foundation, crisp white type, one electric accent. The accent is
+ * never decorative: it marks something that has been activated or built.
+ */
+
+:root {
+  /* Foundation. Graphite rather than black, so surfaces can stack. */
+  --void: #0a0b0d;
+  --base: #0d0f12;
+  --raised: #121317;
+  --raised-2: #171920;
+  --line: #1f2229;
+  --line-bright: #2a2e37;
+
+  /* Type */
+  --white: #fafafa;
+  --dim: #8a8f98;
+  --dimmer: #5c626c;
+
+  /* The one accent. Signal orange. */
+  --signal: #ff4d00;
+  --signal-hot: #ff6a2b;
+  --signal-dim: rgba(255, 77, 0, 0.14);
+
+  --font-display-stack: var(--font-display), "Archivo", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
+
+  /* The legacy platform and the events operating system still read these. */
+  --sc-font-display-stack: var(--font-legacy), Inter, ui-sans-serif, system-ui,
+    sans-serif;
+  --sc-font-text-stack: var(--font-legacy), Inter, ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --shell: min(100% - 40px, 1360px);
+  --nav-h: 68px;
+}
+
+/* Minimal base. The legacy platform stylesheet is no longer loaded globally,
+   so the only thing shared across every surface is this. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+}

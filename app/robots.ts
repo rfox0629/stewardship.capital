@@ -10,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         // of search while product strategy is being developed.
         disallow: [
           "/internal/",
-          "/events-os/",
+          "/spark/",
           "/dashboard/",
           "/assessment",
           "/login",

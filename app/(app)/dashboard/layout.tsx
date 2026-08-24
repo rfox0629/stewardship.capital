@@ -1,6 +1,7 @@
 import { BrandMark } from "../../brand-mark";
 import { signOut } from "../../auth/actions";
 import { DashboardNav } from "./dashboard-nav";
+import "../../globals.css";
 
 export default function DashboardLayout({
   children,

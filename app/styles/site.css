@@ -1,0 +1,541 @@
+/*
+ * Stewardship.Capital
+ *
+ * The approved hero composition, unchanged: graphite field, subtle network
+ * texture, large left aligned type, one orange node. Two screens only, the
+ * homepage and the way into Spark.
+ */
+
+html:has(.www),
+html:has(.www) body {
+  background: var(--void);
+}
+
+.www {
+  background: var(--void);
+  color: var(--white);
+  font-family: var(--font-display-stack);
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+.www :where(h1, h2, p, figure, blockquote) {
+  margin: 0;
+}
+
+.www :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.www ::selection {
+  background: var(--signal);
+  color: #fff;
+}
+
+.www :focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 12px 18px;
+  background: var(--signal);
+  color: #fff;
+}
+
+.skip:focus {
+  left: 14px;
+  top: 14px;
+}
+
+/* ------------------------------------------------------------- identity */
+
+.mark {
+  font-weight: 600;
+  font-variation-settings: "wdth" 100;
+  letter-spacing: -0.018em;
+  white-space: nowrap;
+}
+
+/* The node is painted rather than set, because a period at text size does
+   not register. It is the only place the accent appears at rest. */
+.mark-dot {
+  position: relative;
+  color: transparent;
+  display: inline-block;
+  width: 0.4em;
+}
+
+.mark-dot::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.07em;
+  width: 0.3em;
+  height: 0.3em;
+  transform: translateX(-50%);
+  background: var(--signal);
+  box-shadow: 0 0 9px rgba(255, 77, 0, 0.42);
+}
+
+/* ------------------------------------------------------------------ nav */
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  padding: 0 clamp(18px, 3.4vw, 40px);
+  display: flex;
+  align-items: center;
+}
+
+.nav-brand {
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+}
+
+/* ----------------------------------------------------------------- hero */
+
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  mask-image: radial-gradient(
+    132% 126% at 52% 50%,
+    #000 52%,
+    rgba(0, 0, 0, 0.5) 79%,
+    transparent 100%
+  );
+  animation: field-in 1.8s var(--ease-out) both;
+}
+
+@keyframes field-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Keeps the type legible wherever the field lights up behind it. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    108% 88% at 6% 52%,
+    rgba(10, 11, 13, 0.92) 0%,
+    rgba(10, 11, 13, 0.6) 30%,
+    rgba(10, 11, 13, 0) 62%
+  );
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  width: var(--shell);
+  margin: 0 auto;
+  padding: clamp(40px, 8vh, 80px) 0;
+  pointer-events: none;
+}
+
+.hero-inner > * {
+  pointer-events: auto;
+}
+
+.hero-mark {
+  font-size: clamp(1.35rem, 3.1vw, 2.35rem);
+  color: var(--white);
+  letter-spacing: -0.028em;
+  margin-bottom: clamp(14px, 1.8vw, 22px) !important;
+}
+
+.mask {
+  overflow: hidden;
+  padding: 0.1em 0;
+  margin: -0.1em 0;
+}
+
+.mask > * {
+  animation: mask-rise 1.05s var(--ease-out) both;
+}
+
+.mask:nth-of-type(1) > * {
+  animation-delay: 0.16s;
+}
+
+.mask:nth-of-type(2) > * {
+  animation-delay: 0.27s;
+}
+
+.mask:nth-of-type(3) > * {
+  animation-delay: 0.46s;
+}
+
+.mask:nth-of-type(4) > * {
+  animation-delay: 0.58s;
+}
+
+@keyframes mask-rise {
+  from {
+    transform: translateY(105%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Three pillars stacked while the screen is narrow. Stacking buys room, so
+   each word is set larger here than it is on one line. */
+.hero h1 {
+  font-size: clamp(3rem, 16vw, 6.5rem);
+  font-weight: 700;
+  font-variation-settings: "wdth" 106;
+  letter-spacing: -0.052em;
+  line-height: 0.9;
+}
+
+.hero h1 span {
+  display: block;
+}
+
+/* Once there is room, the three run horizontally on a single line.
+   Measured on the rendered face, "Time. Talent. Treasure." is 10.34 times
+   its own font size wide. Dividing the shell by 10.6 fits it edge to edge
+   with a margin to spare at every width, and the cap holds it once the
+   shell stops growing at 1400. */
+@media (min-width: 860px) {
+  .hero h1 {
+    white-space: nowrap;
+    font-size: min(calc(9.43vw - 3.8px), 8rem);
+    line-height: 0.88;
+  }
+
+  .hero h1 span {
+    display: inline;
+  }
+}
+
+.hero-sub {
+  margin-top: clamp(22px, 3vw, 34px) !important;
+  max-width: 42ch;
+  font-size: clamp(1rem, 1.35vw, 1.22rem);
+  line-height: 1.55;
+  color: var(--dim);
+}
+
+
+/* The scripture reference, quieter than the line it belongs to. */
+.hero-ref {
+  margin-top: 16px !important;
+  font-size: 0.74rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: clamp(34px, 4.5vw, 52px);
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-bright);
+  transition: border-color 0.35s var(--ease), color 0.35s var(--ease);
+}
+
+.more svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.4s var(--ease-out);
+}
+
+.more:hover {
+  color: var(--signal);
+  border-bottom-color: var(--signal);
+}
+
+.more:hover svg {
+  transform: translateX(6px);
+}
+
+
+.mask:nth-of-type(5) > * {
+  animation-delay: 0.7s;
+}
+
+/* ------------------------------------------------------ the way into Spark */
+
+.entry {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  padding: calc(var(--nav-h) + 28px) clamp(18px, 3.4vw, 40px) clamp(40px, 8vh, 80px);
+}
+
+.entry::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    82% 68% at 50% 50%,
+    rgba(10, 11, 13, 0.9) 0%,
+    rgba(10, 11, 13, 0.62) 42%,
+    rgba(10, 11, 13, 0) 78%
+  );
+}
+
+.entry-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+}
+
+.entry-mark {
+  font-size: clamp(2.3rem, 6.4vw, 3.9rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.entry-mark .mark {
+  font-variation-settings: "wdth" 104;
+}
+
+.entry-sub {
+  margin-top: clamp(14px, 2vw, 20px) !important;
+  font-size: 1rem;
+  color: var(--dim);
+}
+
+.entry-form {
+  margin-top: clamp(30px, 4vw, 42px);
+  text-align: left;
+  animation: mask-rise 1.05s var(--ease-out) 0.72s both;
+}
+
+.entry-label {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+  margin-bottom: 9px;
+}
+
+.entry-row {
+  display: grid;
+  gap: 10px;
+}
+
+.entry-row input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.98rem;
+  color: var(--white);
+  background: var(--base);
+  border: 1px solid var(--line-bright);
+  border-radius: 3px;
+  padding: 13px 15px;
+  transition: border-color 0.25s var(--ease);
+}
+
+.entry-row input::placeholder {
+  color: #4a505a;
+}
+
+.entry-row input:focus {
+  border-color: var(--signal);
+  outline: none;
+}
+
+.entry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 500;
+  padding: 13px 22px;
+  border-radius: 3px;
+  /* White rather than orange. At full width on a phone an orange button
+     becomes the largest thing on the screen, and the node has to stay the
+     distinctive mark. */
+  border: 1px solid var(--white);
+  background: var(--white);
+  color: var(--void);
+  cursor: pointer;
+  transition:
+    background 0.25s var(--ease),
+    border-color 0.25s var(--ease);
+}
+
+.entry-button svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.entry-button:hover {
+  background: #e8e8e8;
+  border-color: #e8e8e8;
+}
+
+.entry-button:hover svg {
+  transform: translateX(4px);
+}
+
+/* Refusal is quiet. No alarm, no colour, no hint about what would have
+   worked. */
+.entry-refused {
+  margin-top: clamp(30px, 4vw, 42px);
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: var(--dim);
+  animation: mask-rise 0.7s var(--ease-out) both;
+}
+
+/* A person's own workspaces, and only ever their own. */
+.entry-choose {
+  margin-top: clamp(30px, 4vw, 42px);
+  text-align: left;
+  animation: mask-rise 0.7s var(--ease-out) both;
+}
+
+.entry-choose ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.entry-choose button {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  font: inherit;
+  padding: 14px 16px;
+  border-radius: 3px;
+  border: 1px solid var(--line-bright);
+  background: var(--base);
+  color: var(--white);
+  cursor: pointer;
+  transition:
+    border-color 0.25s var(--ease),
+    background 0.25s var(--ease);
+}
+
+.entry-choose button:hover {
+  border-color: var(--signal);
+  background: var(--raised);
+}
+
+.entry-choose-client {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.entry-choose-label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Said once, under the field it applies to. */
+.entry-hint {
+  margin-top: 12px !important;
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+
+.entry-note {
+  margin-top: clamp(24px, 3vw, 32px) !important;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--dimmer);
+  animation: mask-rise 1.05s var(--ease-out) 0.84s both;
+}
+
+/* A button that reads as prose, for the one action offered to someone Spark
+   has nothing to show. */
+.entry-plain {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--dim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.2s var(--ease-out);
+}
+
+.entry-plain:hover {
+  color: var(--ink);
+}
+
+.entry-plain:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ----------------------------------------------------------- breakpoints */
+
+@media (min-width: 620px) {
+  .entry-row {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .www *,
+  .www *::before,
+  .www *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

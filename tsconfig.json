@@ -24,10 +24,11 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@events/*": [
-        "app/events-os/*"
+      "@spark/*": [
+        "app/spark/*"
       ]
-    }
+    },
+    "allowImportingTsExtensions": true
   },
   "include": [
     "next-env.d.ts",
