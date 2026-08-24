@@ -26,6 +26,12 @@
     "paths": {
       "@spark/*": [
         "app/spark/*"
+      ],
+      "@lib/*": [
+        "lib/*"
+      ],
+      "@app/*": [
+        "app/*"
       ]
     },
     "allowImportingTsExtensions": true
