@@ -307,3 +307,46 @@ export async function addSparkNote(
   revalidatePath(`/spark/c/${clientSlug}/e/${eventSlug}/${edition}/sparks`);
   return { ok: true };
 }
+
+/* --------------------------------------------------------- placement */
+
+const PLACE_DAYS = ["thu", "fri", "sat", "sun"];
+const DAYPARTS = ["morning", "afternoon", "evening", "anytime"];
+
+/**
+ * Moves an idea around the shape of the weekend, and nothing else. The
+ * discernment state does not change and no schedule row is touched: this is
+ * the handwritten sheet's gesture of writing an idea under a day.
+ */
+export async function placeSpark(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  sparkId: string,
+  day: string | null,
+  daypart: string | null,
+): Promise<CaptureOutcome> {
+  const context = await resolveEngagement(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+  if (context.role !== "planner" && !context.staff) return { ok: false };
+
+  if (day !== null && !PLACE_DAYS.includes(day)) return { ok: false };
+  if (daypart !== null && !DAYPARTS.includes(daypart)) return { ok: false };
+
+  const { data, error } = await context.supabase
+    .from("sparks")
+    .update({
+      tentative_day: day,
+      tentative_daypart: day === null ? null : daypart,
+    })
+    .eq("id", sparkId)
+    .eq("engagement_id", context.engagement.id)
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  const prefix = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
+  revalidatePath(`${prefix}/sparks`);
+  revalidatePath(`${prefix}/schedule`);
+  return { ok: true };
+}

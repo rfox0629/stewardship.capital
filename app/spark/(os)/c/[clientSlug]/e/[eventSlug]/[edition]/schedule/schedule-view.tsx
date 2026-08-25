@@ -33,6 +33,23 @@ export type Moment = {
 
 export type DayLane = { key: string; name: string; date: string | null };
 
+export type TentativeSpark = {
+  id: string;
+  title: string;
+  status: string;
+  day: string;
+  daypart: string;
+};
+
+/** Where each daypart's ghosts sit on the time axis. Approximate on
+ *  purpose: a tentative idea has a neighbourhood, not a time. */
+const DAYPART_BAND: Record<string, number> = {
+  morning: 8 * 60 + 15,
+  afternoon: 13 * 60 + 30,
+  evening: 18 * 60 + 45,
+  anytime: 21 * 60 + 30,
+};
+
 type Role = "planner" | "client" | "stakeholder";
 type Route = { clientSlug: string; eventSlug: string; edition: string };
 
@@ -236,6 +253,7 @@ export function ScheduleView({
   route,
   today,
   base,
+  tentative = [],
 }: {
   moments: Moment[];
   days: DayLane[];
@@ -243,6 +261,7 @@ export function ScheduleView({
   route: Route;
   today: string | null;
   base: string;
+  tentative?: TentativeSpark[];
 }) {
   const planner = role === "planner";
   const hydrated = useHydrated();
@@ -267,6 +286,10 @@ export function ScheduleView({
       : null,
   );
   const [addDay, setAddDay] = useState<string | null>(null);
+  const [showSparks, setShowSparks] = useState<boolean>(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("sparks") === "1",
+  );
   const [overrides, setOverrides] = useState<Map<string, Override>>(new Map());
   const [failure, setFailure] = useState<string | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -516,6 +539,16 @@ export function ScheduleView({
 
   /* Until hydration, mirror exactly what the server rendered. */
   const shownView = hydrated ? view : "weekend";
+  const shownSparks = hydrated ? showSparks : false;
+  const ghostsFor = (dayKey: string) => {
+    if (!shownSparks || !planner) return [];
+    const grouped = new Map<string, TentativeSpark[]>();
+    for (const spark of tentative.filter((candidate) => candidate.day === dayKey)) {
+      const band = spark.daypart in DAYPART_BAND ? spark.daypart : "anytime";
+      grouped.set(band, [...(grouped.get(band) ?? []), spark]);
+    }
+    return [...grouped.entries()];
+  };
   const shownDayKey = hydrated ? dayKey : (today ?? "thu");
   const openMoment = hydrated
     ? (merged.find((moment) => moment.id === openId) ?? null)
@@ -538,6 +571,16 @@ export function ScheduleView({
         </div>
         <div className="ev-bar-right">
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
+          {planner && tentative.length > 0 ? (
+            <button
+              type="button"
+              className="ev-bar-quiet"
+              aria-pressed={shownSparks}
+              onClick={() => setShowSparks((current) => !current)}
+            >
+              {shownSparks ? "Sparks on" : "Sparks"}
+            </button>
+          ) : null}
           {planner ? (
             <button type="button" className="ev-bar-add" onClick={() => setAddDay(activeDay?.key ?? "thu")}>
               Add
@@ -582,6 +625,24 @@ export function ScheduleView({
               ))}
               {laneDays.map((day) => (
                 <div key={day.key} className={`ev-grid-col ${day.key === today ? "ev-grid-today" : ""}`}>
+                  {ghostsFor(day.key).map(([band, sparks]) => (
+                    <div
+                      key={band}
+                      className="ev-ghosts"
+                      style={{ top: (DAYPART_BAND[band] - dayStart) * PX_PER_MIN }}
+                    >
+                      {sparks.map((spark) => (
+                        <Link
+                          key={spark.id}
+                          className={`ev-ghost ev-ghost-${spark.status}`}
+                          href={`${base}/sparks?open=${spark.id}`}
+                          title={`Spark, ${spark.status}: ${spark.title}`}
+                        >
+                          {spark.title}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
                   {merged
                     .filter((moment) => {
                       const shownDay = drag?.id === moment.id && drag.moved ? drag.previewDay : moment.day;
@@ -621,6 +682,23 @@ export function ScheduleView({
                 {block(moment, true)}
               </button>
             ))}
+            {ghostsFor(activeDay?.key ?? "").length > 0 ? (
+              <div className="ev-ghost-day">
+                <span className="ev-drawer-sub">Sparks that might land here</span>
+                {ghostsFor(activeDay?.key ?? "").flatMap(([band, sparks]) =>
+                  sparks.map((spark) => (
+                    <Link
+                      key={spark.id}
+                      className={`ev-ghost ev-ghost-${spark.status}`}
+                      href={`${base}/sparks?open=${spark.id}`}
+                    >
+                      {spark.title}
+                      <i>{band}</i>
+                    </Link>
+                  )),
+                )}
+              </div>
+            ) : null}
           </div>
         </>
       )}

@@ -37,6 +37,16 @@ export default async function SchedulePage({ params }: PageProps) {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   const role = context.staff ? "planner" : context.role;
 
+  const tentativeQ =
+    role === "planner"
+      ? await context.supabase
+          .from("sparks")
+          .select("id, title, status, tentative_day, tentative_daypart")
+          .eq("engagement_id", context.engagement.id)
+          .not("tentative_day", "is", null)
+          .in("status", ["captured", "discussing", "approved"])
+      : { data: [] };
+
   const { data } = await context.supabase
     .from("schedule_items")
     .select(
@@ -78,6 +88,19 @@ export default async function SchedulePage({ params }: PageProps) {
         route={{ clientSlug, eventSlug, edition }}
         today={todayKey(context.engagement.startsOn)}
         base={base}
+        tentative={((tentativeQ.data ?? []) as Array<{
+          id: string;
+          title: string;
+          status: string;
+          tentative_day: string | null;
+          tentative_daypart: string | null;
+        }>).map((row) => ({
+          id: row.id,
+          title: row.title,
+          status: row.status,
+          day: row.tentative_day ?? "",
+          daypart: row.tentative_daypart ?? "anytime",
+        }))}
       />
     </>
   );

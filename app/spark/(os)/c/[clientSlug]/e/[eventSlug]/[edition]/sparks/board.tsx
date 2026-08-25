@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
-import { addSparkNote, captureSpark, decideSpark } from "./actions";
+import { addSparkNote, captureSpark, decideSpark, placeSpark } from "./actions";
 import { AddToPlan } from "./add-to-plan";
 
 /**
@@ -28,8 +28,31 @@ export type BoardSpark = {
   status: string;
   raisedBy: string | null;
   decision: string | null;
+  /** Where the idea might happen. A gesture, never a schedule row. */
+  day: string | null;
+  daypart: string | null;
   links: Array<{ kind: string; label: string; href: string }>;
   notes: Array<{ author: string | null; body: string; at: string }>;
+};
+
+const PLACE_DAYS: Array<{ key: string; label: string }> = [
+  { key: "thu", label: "Thursday" },
+  { key: "fri", label: "Friday" },
+  { key: "sat", label: "Saturday" },
+  { key: "sun", label: "Sunday" },
+];
+
+const DAYPARTS: Array<{ key: string; label: string }> = [
+  { key: "morning", label: "Morning" },
+  { key: "afternoon", label: "Afternoon" },
+  { key: "evening", label: "Evening" },
+  { key: "anytime", label: "Anytime" },
+];
+
+const STATE_CLASS: Record<string, string> = {
+  captured: "ev-k-cap",
+  discussing: "ev-k-dis",
+  approved: "ev-k-mov",
 };
 
 const CATEGORIES = [
@@ -71,6 +94,15 @@ export function SparkBoard({
       ? new URLSearchParams(window.location.search).get("open")
       : null,
   );
+  const [boardView, setBoardView] = useState<"pipeline" | "weekend">(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("board") === "weekend"
+      ? "weekend"
+      : "pipeline",
+  );
+  const [placementOverride, setPlacementOverride] = useState<
+    Map<string, { day: string | null; daypart: string | null }>
+  >(new Map());
   const [capturing, setCapturing] = useState(false);
   const [restOpen, setRestOpen] = useState(false);
   const [modal, setModal] = useState<Modal>(null);
@@ -81,12 +113,47 @@ export function SparkBoard({
 
   const merged = useMemo(
     () =>
-      sparks.map((spark) => ({
-        ...spark,
-        status: statusOverride.get(spark.id) ?? spark.status,
-      })),
-    [sparks, statusOverride],
+      sparks.map((spark) => {
+        const placed = placementOverride.get(spark.id);
+        return {
+          ...spark,
+          status: statusOverride.get(spark.id) ?? spark.status,
+          day: placed ? placed.day : spark.day,
+          daypart: placed ? placed.daypart : spark.daypart,
+        };
+      }),
+    [sparks, statusOverride, placementOverride],
   );
+
+  /* Placing an idea in the weekend changes only where it might happen. */
+  const place = (spark: BoardSpark, day: string | null, daypart: string | null) => {
+    setPlacementOverride((prev) => new Map(prev).set(spark.id, { day, daypart }));
+    setFailure(null);
+    startTransition(async () => {
+      const outcome = await placeSpark(
+        route.clientSlug, route.eventSlug, route.edition, spark.id, day, daypart,
+      );
+      if (!outcome.ok) {
+        setPlacementOverride((prev) => {
+          const next = new Map(prev);
+          next.delete(spark.id);
+          return next;
+        });
+        setFailure("That move did not save, so the card was put back.");
+      }
+    });
+  };
+
+  const onPlaceDrop = (day: string | null, daypart: string | null) =>
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = dragId.current;
+      dragId.current = null;
+      if (!id) return;
+      const spark = merged.find((candidate) => candidate.id === id);
+      if (spark) place(spark, day, daypart);
+    };
 
   const move = (spark: BoardSpark, to: string, rationale?: string) => {
     setStatusOverride((prev) => new Map(prev).set(spark.id, to));
@@ -136,13 +203,20 @@ export function SparkBoard({
 
   const rested = merged.filter((spark) => spark.status === "parked" || spark.status === "declined");
   const open = hydrated ? (merged.find((spark) => spark.id === openId) ?? null) : null;
+  const shownBoard = hydrated ? boardView : "pipeline";
+  const placeable = merged.filter(
+    (spark) => spark.status !== "parked" && spark.status !== "declined",
+  );
 
-  const card = (spark: BoardSpark) => (
+  const card = (spark: BoardSpark, forPlacement = false) => (
     <button
       key={spark.id}
       type="button"
-      className="ev-k-card"
-      draggable={planner && (spark.status === "captured" || spark.status === "discussing")}
+      className={`ev-k-card ${STATE_CLASS[spark.status] ?? ""}`}
+      draggable={
+        planner &&
+        (forPlacement || spark.status === "captured" || spark.status === "discussing")
+      }
       onDragStart={() => {
         dragId.current = spark.id;
       }}
@@ -167,7 +241,24 @@ export function SparkBoard({
   return (
     <>
       <div className="ev-schedule-bar">
-        <p className="ev-flowline">Capture freely → Discern carefully → Move intentionally</p>
+        <div className="ev-toggle" role="tablist" aria-label="Board view">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={shownBoard === "pipeline"}
+            onClick={() => setBoardView("pipeline")}
+          >
+            Pipeline
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={shownBoard === "weekend"}
+            onClick={() => setBoardView("weekend")}
+          >
+            Weekend
+          </button>
+        </div>
         <div className="ev-bar-right">
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
           {rested.length > 0 ? (
@@ -181,27 +272,76 @@ export function SparkBoard({
         </div>
       </div>
 
-      <div className="ev-kboard">
-        {columns.map((column) => (
-          <section
-            key={column.key}
-            className="ev-kcol"
-            aria-label={column.title}
-            onDragOver={
-              planner && column.drop ? (event) => event.preventDefault() : undefined
-            }
-            onDrop={planner && column.drop ? onDropTo(column.drop) : undefined}
+      {shownBoard === "pipeline" ? (
+        <div className="ev-kboard">
+          {columns.map((column) => (
+            <section
+              key={column.key}
+              className="ev-kcol"
+              aria-label={column.title}
+              onDragOver={
+                planner && column.drop ? (event) => event.preventDefault() : undefined
+              }
+              onDrop={planner && column.drop ? onDropTo(column.drop) : undefined}
+            >
+              <div className="ev-kcol-head">
+                <h3>{column.title}</h3>
+                <span>{merged.filter((spark) => spark.status === column.key).length}</span>
+              </div>
+              <div className="ev-kcol-cards">
+                {merged.filter((spark) => spark.status === column.key).map((spark) => card(spark))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div
+            className="ev-tray"
+            onDragOver={planner ? (event) => event.preventDefault() : undefined}
+            onDrop={planner ? onPlaceDrop(null, null) : undefined}
           >
-            <div className="ev-kcol-head">
-              <h3>{column.title}</h3>
-              <span>{merged.filter((spark) => spark.status === column.key).length}</span>
+            <span className="ev-tray-label">Unscheduled</span>
+            <div className="ev-tray-cards">
+              {placeable
+                .filter((spark) => !spark.day)
+                .map((spark) => card(spark, true))}
             </div>
-            <div className="ev-kcol-cards">
-              {merged.filter((spark) => spark.status === column.key).map(card)}
-            </div>
-          </section>
-        ))}
-      </div>
+          </div>
+          <div className="ev-kboard ev-kboard-4">
+            {PLACE_DAYS.map((day) => (
+              <section key={day.key} className="ev-kcol" aria-label={day.label}>
+                <div className="ev-kcol-head">
+                  <h3>{day.label}</h3>
+                  <span>
+                    {placeable.filter((spark) => spark.day === day.key).length}
+                  </span>
+                </div>
+                {DAYPARTS.map((part) => {
+                  const zone = placeable.filter(
+                    (spark) =>
+                      spark.day === day.key &&
+                      (spark.daypart ?? "anytime") === part.key,
+                  );
+                  return (
+                    <div
+                      key={part.key}
+                      className="ev-zone"
+                      onDragOver={planner ? (event) => event.preventDefault() : undefined}
+                      onDrop={planner ? onPlaceDrop(day.key, part.key) : undefined}
+                    >
+                      <span className="ev-zone-label">{part.label}</span>
+                      <div className="ev-kcol-cards">
+                        {zone.map((spark) => card(spark, true))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </section>
+            ))}
+          </div>
+        </>
+      )}
 
       {capturing ? (
         <CaptureDrawer route={route} onClose={() => setCapturing(false)} />
@@ -386,6 +526,8 @@ function SparkDrawer({
               sparkId={spark.id}
               sparkTitle={spark.title}
               scheduleMoments={scheduleMoments}
+              tentativeDay={spark.day}
+              tentativeDaypart={spark.daypart}
             />
           ) : null}
 

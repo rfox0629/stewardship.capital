@@ -24,6 +24,8 @@ type SparkRow = {
   status: string;
   raised_by_name: string | null;
   decision: string | null;
+  tentative_day: string | null;
+  tentative_daypart: string | null;
 };
 
 export default async function SparksPage({ params }: PageProps) {
@@ -42,7 +44,7 @@ export default async function SparksPage({ params }: PageProps) {
     await Promise.all([
       supabase
         .from("sparks")
-        .select("id, title, detail, category, status, raised_by_name, decision")
+        .select("id, title, detail, category, status, raised_by_name, decision, tentative_day, tentative_daypart")
         .eq("engagement_id", engagementId)
         .order("created_at", { ascending: false }),
       supabase
@@ -101,6 +103,8 @@ export default async function SparksPage({ params }: PageProps) {
     status: row.status,
     raisedBy: row.raised_by_name,
     decision: row.decision,
+    day: row.tentative_day,
+    daypart: row.tentative_daypart,
     links: links.get(row.id) ?? [],
     notes: notes.get(row.id) ?? [],
   }));

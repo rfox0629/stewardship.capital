@@ -37,16 +37,26 @@ const CATEGORIES = [
   "Experience", "Production and AV", "Gifts and print", "Travel", "Contingency",
 ];
 
+const DAYPART_HINT: Record<string, string> = {
+  morning: "9:00 am",
+  afternoon: "2:00 pm",
+  evening: "7:30 pm",
+};
+
 export function AddToPlan({
   route,
   sparkId,
   sparkTitle,
   scheduleMoments,
+  tentativeDay,
+  tentativeDaypart,
 }: {
   route: Route;
   sparkId: string;
   sparkTitle: string;
   scheduleMoments: Array<{ id: string; label: string }>;
+  tentativeDay?: string | null;
+  tentativeDaypart?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [destination, setDestination] = useState<PlanDestination | null>(null);
@@ -125,13 +135,19 @@ export function AddToPlan({
       {destination === "schedule" ? (
         <div className="ev-form-grid">
           {field("Day", (
-            <select name="day" defaultValue="sat">
+            <select name="day" defaultValue={tentativeDay ?? "sat"}>
               {DAYS.map((day) => (
                 <option key={day.key} value={day.key}>{day.label}</option>
               ))}
             </select>
           ))}
-          {field("Starts", <input name="starts" placeholder="8:45 pm" required />)}
+          {field("Starts", (
+            <input
+              name="starts"
+              placeholder={DAYPART_HINT[tentativeDaypart ?? ""] ?? "8:45 pm"}
+              required
+            />
+          ))}
           {field("Track", (
             <select name="track" defaultValue="Experience">
               {TRACKS.map((track) => <option key={track}>{track}</option>)}
