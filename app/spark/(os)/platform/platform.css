@@ -43,7 +43,7 @@
 .pf-lede {
   margin-top: 10px;
   max-width: 58ch;
-  color: var(--sp-dim, #9aa1ad);
+  color: #c3c8d1;
   line-height: 1.6;
 }
 
@@ -66,12 +66,12 @@
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--sp-dim, #9aa1ad);
+  color: #b9bfc9;
 }
 
 .pf-note {
   font-size: 0.8rem;
-  color: var(--sp-dimmer, #5c626c);
+  color: #9aa1ad;
 }
 
 /* ------------------------------------------------------------- clients */
@@ -88,7 +88,7 @@
 
 .pf-org-slug {
   font-size: 0.78rem;
-  color: var(--sp-dimmer, #5c626c);
+  color: #8a909b;
   margin-left: 10px;
 }
 
@@ -123,7 +123,7 @@
 
 .pf-eng-meta {
   font-size: 0.8rem;
-  color: var(--sp-dim, #9aa1ad);
+  color: #aab0bb;
 }
 
 .pf-eng-open {
@@ -139,11 +139,11 @@
 }
 
 .pf-sub {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--sp-dimmer, #5c626c);
+  color: #9aa1ad;
   margin: 16px 0 4px;
 }
 
@@ -176,8 +176,8 @@
 }
 
 .pf-quiet {
-  color: var(--sp-dim, #9aa1ad);
-  font-size: 0.8rem;
+  color: #aab0bb;
+  font-size: 0.82rem;
 }
 
 /* --------------------------------------------------------------- forms */
@@ -209,11 +209,11 @@
 }
 
 .pf-field label {
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--sp-dimmer, #5c626c);
+  color: #9aa1ad;
 }
 
 .pf-field input,
@@ -226,6 +226,10 @@
   border-radius: 3px;
   padding: 9px 11px;
   color-scheme: dark;
+}
+
+.pf-field input::placeholder {
+  color: #6d747f;
 }
 
 .pf-field input:focus,
@@ -279,7 +283,7 @@
   background: none;
   border: 0;
   padding: 0;
-  color: var(--sp-dim, #9aa1ad);
+  color: #aab0bb;
   cursor: pointer;
 }
 
@@ -289,7 +293,7 @@
 
 .pf-message {
   font-size: 0.84rem;
-  color: var(--sp-dim, #9aa1ad);
+  color: #c3c8d1;
 }
 
 /* The one time the platform shows a secret: the invitation link, exactly
