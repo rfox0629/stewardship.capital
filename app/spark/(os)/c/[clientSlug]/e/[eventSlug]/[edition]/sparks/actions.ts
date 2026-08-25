@@ -271,3 +271,39 @@ export async function addToPlan(
   }
   return { ok: true };
 }
+
+/* ------------------------------------------------------------- notes */
+
+export async function addSparkNote(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  sparkId: string,
+  body: string,
+): Promise<CaptureOutcome> {
+  const context = await resolveEngagement(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+  if (context.role === "stakeholder") return { ok: false };
+
+  const trimmed = body.trim().slice(0, 1000);
+  if (!trimmed) return { ok: false };
+
+  const { data: me } = await context.supabase.auth.getClaims();
+  const authorId = (me?.claims as { sub?: string } | undefined)?.sub ?? null;
+
+  const { data, error } = await context.supabase
+    .from("spark_notes")
+    .insert({
+      engagement_id: context.engagement.id,
+      spark_id: sparkId,
+      author_id: authorId,
+      author_email: context.email,
+      body: trimmed,
+    })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidatePath(`/spark/c/${clientSlug}/e/${eventSlug}/${edition}/sparks`);
+  return { ok: true };
+}

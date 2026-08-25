@@ -159,3 +159,45 @@ export async function deleteMoment(
   revalidate(clientSlug, eventSlug, edition);
   return { ok: true };
 }
+
+/**
+ * What a drag commits: a new day and time, or a new end, and nothing else.
+ * The same real row moves; nothing is duplicated to simulate movement.
+ */
+export async function rescheduleMoment(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  momentId: string,
+  change: { day?: string; starts?: string; ends?: string | null },
+): Promise<MomentOutcome> {
+  const context = await plannerContext(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const patch: Record<string, string | null> = {};
+  if (change.day !== undefined) {
+    if (!(DAY_ORDER as readonly string[]).includes(change.day)) return { ok: false };
+    patch.day_key = change.day;
+  }
+  if (change.starts !== undefined) {
+    if (!TIME.test(change.starts)) return { ok: false };
+    patch.starts_label = change.starts.toLowerCase();
+  }
+  if (change.ends !== undefined) {
+    if (change.ends !== null && !TIME.test(change.ends)) return { ok: false };
+    patch.ends_label = change.ends ? change.ends.toLowerCase() : null;
+  }
+  if (Object.keys(patch).length === 0) return { ok: false };
+
+  const { data, error } = await context.supabase
+    .from("schedule_items")
+    .update(patch)
+    .eq("id", momentId)
+    .eq("engagement_id", context.engagement.id)
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}

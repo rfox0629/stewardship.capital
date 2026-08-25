@@ -38,6 +38,8 @@ select md5(string_agg(part, '|' order by part)) || ':' || count(*) from (
   union all
   select 'member:' || user_id::text || ':' || role from public.workspace_members where engagement_id in (select id from eng)
   union all
+  select 'snote:' || body from public.spark_notes where engagement_id in (select id from eng)
+  union all
   select 'eng:' || name || ':' || coalesce(campaign,'') || ':' || budget_total_cents || ':' || guests_expected
     from public.engagements where id in (select id from eng)
 ) parts;
