@@ -58,8 +58,10 @@ const SECTIONS: Record<string, SparkRole[]> = {
   budget: WORKING,
   tasks: WORKING,
   resources: WORKING,
-  decisions: WORKING,
-  "run-of-show": PLANNER_ONLY,
+  /* Decisions and the run of show are no longer routes of their own: the
+     decision lives on the spark that was decided, and cues live inside the
+     schedule. Their old paths fall to the planner-only default below, which
+     still reveals nothing to a guest following an old link. */
 };
 
 const allowedRoles = (section: string): SparkRole[] =>

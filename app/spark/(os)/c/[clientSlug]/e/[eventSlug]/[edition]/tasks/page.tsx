@@ -24,6 +24,7 @@ type TaskRow = {
   due_on: string | null;
   status: string;
   area: string | null;
+  estimated_cents: number;
   spark: { title: string } | { title: string }[] | null;
 };
 
@@ -52,7 +53,7 @@ export default async function TasksPage({ params }: PageProps) {
 
   const { data } = await context.supabase
     .from("tasks")
-    .select("id, title, owner_name, due_on, status, area, spark:sparks(title)")
+    .select("id, title, owner_name, due_on, status, area, estimated_cents, spark:sparks(title)")
     .eq("engagement_id", context.engagement.id)
     .order("due_on", { ascending: true, nullsFirst: false });
 
@@ -66,6 +67,9 @@ export default async function TasksPage({ params }: PageProps) {
         {task.area ? <span>{task.area}</span> : null}
         {task.owner_name ? <span>{task.owner_name}</span> : null}
         {task.due_on ? <span>Due {dueLabel(task.due_on)}</span> : null}
+        {task.estimated_cents > 0 ? (
+          <span>${Math.round(task.estimated_cents / 100).toLocaleString()} est.</span>
+        ) : null}
       </p>
       <p className="ev-row-title">
         {task.title}

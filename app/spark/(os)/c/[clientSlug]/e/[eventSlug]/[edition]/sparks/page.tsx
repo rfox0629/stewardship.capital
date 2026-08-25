@@ -1,20 +1,17 @@
 import { notFound, redirect } from "next/navigation";
 
+import { DAY_NAMES } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
-import { CaptureForm, DecideControls } from "./spark-controls";
+import { PlanTabs } from "../plan-tabs";
+import { SparkBoard, type BoardSpark } from "./board";
 
-export const metadata = { title: "Sparks" };
+export const metadata = { title: "Plan" };
 
 /**
- * Capture freely. Discern carefully. Move intentionally.
- *
- * The page is the philosophy: three sections in that order, and the further
- * down the page an idea travels, the more it has earned. Nothing here is a
- * task. A spark that never becomes anything has still done its job.
- *
- * Rows come from the sparks table under the reader's own session; guests
- * never reach this page, and the planner's controls appear only for the
- * planner, with the same line enforced again in the action and again by RLS.
+ * The Ideas side of the Plan. The board explains itself; this page only
+ * gathers what it shows. Rows come through the reader's own session, so
+ * guests never reach here and clients see the working surface without the
+ * planner's hands.
  */
 
 type PageProps = {
@@ -29,7 +26,10 @@ type SparkRow = {
   status: string;
   raised_by_name: string | null;
   decision: string | null;
-  created_at: string;
+  decided_by_name: string | null;
+  decided_at: string | null;
+  tentative_day: string | null;
+  tentative_daypart: string | null;
 };
 
 export default async function SparksPage({ params }: PageProps) {
@@ -40,148 +40,92 @@ export default async function SparksPage({ params }: PageProps) {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   if (context.role === "stakeholder") redirect(`${base}/schedule`);
 
-  const route = { clientSlug, eventSlug, edition };
-  const planner = context.role === "planner";
+  const planner = context.role === "planner" || context.staff;
+  const engagementId = context.engagement.id;
+  const supabase = context.supabase;
 
-  const [{ data }, { data: builtRows }] = await Promise.all([
-    context.supabase
-      .from("sparks")
-      .select("id, title, detail, category, status, raised_by_name, decision, created_at")
-      .eq("engagement_id", context.engagement.id)
-      .order("created_at", { ascending: false }),
-    /* Where approved ideas have already landed. The provenance runs both
-       ways: the schedule names its spark, and the spark names its moment. */
-    context.supabase
-      .from("schedule_items")
-      .select("spark_id, day_key, starts_label, title")
-      .eq("engagement_id", context.engagement.id)
-      .not("spark_id", "is", null),
-  ]);
+  const [sparksQ, notesQ, scheduleQ, tasksQ, budgetQ, resourcesQ, cuesQ] =
+    await Promise.all([
+      supabase
+        .from("sparks")
+        .select(
+          "id, title, detail, category, status, raised_by_name, decision, decided_by_name, decided_at, tentative_day, tentative_daypart",
+        )
+        .eq("engagement_id", engagementId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("spark_notes")
+        .select("spark_id, author_email, body, created_at")
+        .eq("engagement_id", engagementId)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("schedule_items")
+        .select("id, spark_id, day_key, starts_label, title")
+        .eq("engagement_id", engagementId),
+      supabase.from("tasks").select("spark_id, title").eq("engagement_id", engagementId).not("spark_id", "is", null),
+      supabase.from("budget_lines").select("spark_id, label, planned_cents").eq("engagement_id", engagementId).not("spark_id", "is", null),
+      supabase.from("resources").select("spark_id, name").eq("engagement_id", engagementId).not("spark_id", "is", null),
+      planner
+        ? supabase.from("run_of_show_cues").select("spark_id, cue").eq("engagement_id", engagementId).not("spark_id", "is", null)
+        : Promise.resolve({ data: [] as Array<{ spark_id: string; cue: string }> }),
+    ]);
 
-  const sparks = (data ?? []) as SparkRow[];
-
-  const DAY_NAMES: Record<string, string> = {
-    thu: "Thursday",
-    fri: "Friday",
-    sat: "Saturday",
-    sun: "Sunday",
+  const links = new Map<string, BoardSpark["links"]>();
+  const push = (sparkId: string | null, kind: string, label: string, href: string) => {
+    if (!sparkId) return;
+    links.set(sparkId, [...(links.get(sparkId) ?? []), { kind, label, href }]);
   };
-  const becameBySpark = new Map<string, string[]>();
-  for (const built of builtRows ?? []) {
-    const key = String(built.spark_id);
-    const label = `${DAY_NAMES[built.day_key] ?? built.day_key} ${built.starts_label}, ${built.title}`;
-    becameBySpark.set(key, [...(becameBySpark.get(key) ?? []), label]);
+  for (const row of scheduleQ.data ?? []) {
+    if (row.spark_id) {
+      push(row.spark_id, "Schedule",
+        `${DAY_NAMES[row.day_key] ?? row.day_key} ${row.starts_label}, ${row.title}`,
+        `${base}/schedule?open=${row.id}`);
+    }
   }
-  const of = (...statuses: string[]) =>
-    sparks.filter((spark) => statuses.includes(spark.status));
+  for (const row of tasksQ.data ?? []) push(row.spark_id, "Task", row.title, `${base}/tasks`);
+  for (const row of budgetQ.data ?? [])
+    push(row.spark_id, "Budget", `${row.label}, $${Math.round(row.planned_cents / 100).toLocaleString()}`, `${base}/budget`);
+  for (const row of resourcesQ.data ?? []) push(row.spark_id, "Resource", row.name, `${base}/resources`);
+  for (const row of (cuesQ.data ?? []) as Array<{ spark_id: string; cue: string }>)
+    push(row.spark_id, "Run of show", row.cue, `${base}/schedule?lens=ros`);
 
-  const captured = of("captured");
-  const discussing = of("discussing");
-  const approved = of("approved");
-  const rested = of("parked", "declined");
+  const notes = new Map<string, BoardSpark["notes"]>();
+  for (const row of notesQ.data ?? []) {
+    const entry = {
+      author: row.author_email ? String(row.author_email).split("@")[0] : null,
+      body: row.body,
+      at: new Date(row.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    };
+    notes.set(row.spark_id, [...(notes.get(row.spark_id) ?? []), entry]);
+  }
 
-  const row = (spark: SparkRow, options: { muted?: boolean } = {}) => (
-    <li key={spark.id} className={options.muted ? "ev-muted" : undefined}>
-      <p className="ev-row-kicker">
-        <span>{spark.category}</span>
-        {spark.raised_by_name ? <span>{spark.raised_by_name}</span> : null}
-        {spark.status === "parked" ? <span>Parked</span> : null}
-        {spark.status === "declined" ? <span>Declined</span> : null}
-      </p>
-      <p className="ev-row-title">{spark.title}</p>
-      {spark.detail ? <p className="ev-row-detail">{spark.detail}</p> : null}
-      {spark.decision ? <p className="ev-row-decision">{spark.decision}</p> : null}
-      {(becameBySpark.get(spark.id) ?? []).map((where) => (
-        <p key={where} className="ev-row-became">
-          On the schedule: {where}
-        </p>
-      ))}
-      {planner ? (
-        <DecideControls route={route} sparkId={spark.id} status={spark.status} />
-      ) : null}
-    </li>
-  );
+  const sparks: BoardSpark[] = ((sparksQ.data ?? []) as SparkRow[]).map((row) => ({
+    id: row.id,
+    title: row.title,
+    detail: row.detail,
+    category: row.category,
+    status: row.status,
+    raisedBy: row.raised_by_name,
+    decision: row.decision,
+    decidedBy: row.decided_by_name,
+    decidedAt: row.decided_at
+      ? new Date(row.decided_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : null,
+    day: row.tentative_day,
+    daypart: row.tentative_daypart,
+    links: links.get(row.id) ?? [],
+    notes: notes.get(row.id) ?? [],
+  }));
 
   return (
     <>
-      <h2 className="ev-page-title">Sparks</h2>
-      <p className="ev-lede">
-        An idea, not an approval. Capture what comes to you and let it rest
-        here; the team discerns together what the weekend should carry.
-      </p>
-
-      <section className="ev-section" aria-labelledby="capture-title">
-        <div className="ev-section-head">
-          <h3 className="ev-section-title" id="capture-title">
-            Capture freely
-          </h3>
-          <span className="ev-section-note">
-            {captured.length === 0
-              ? "Nothing waiting"
-              : `${captured.length} waiting`}
-          </span>
-        </div>
-        <CaptureForm {...route} />
-        {captured.length > 0 ? (
-          <ul className="ev-rows">{captured.map((spark) => row(spark))}</ul>
-        ) : null}
-      </section>
-
-      <section className="ev-section" aria-labelledby="discern-title">
-        <div className="ev-section-head">
-          <h3 className="ev-section-title" id="discern-title">
-            Discern carefully
-          </h3>
-          <span className="ev-section-note">
-            {discussing.length === 0
-              ? "Nothing in discussion"
-              : `${discussing.length} in discussion`}
-          </span>
-        </div>
-        {discussing.length > 0 ? (
-          <ul className="ev-rows">{discussing.map((spark) => row(spark))}</ul>
-        ) : (
-          <p className="ev-row-detail" style={{ paddingTop: 12 }}>
-            When a captured idea is ready to be weighed, it moves here.
-          </p>
-        )}
-      </section>
-
-      <section className="ev-section" aria-labelledby="move-title">
-        <div className="ev-section-head">
-          <h3 className="ev-section-title" id="move-title">
-            Move intentionally
-          </h3>
-          <span className="ev-section-note">
-            {approved.length === 0
-              ? "Nothing approved yet"
-              : `${approved.length} approved`}
-          </span>
-        </div>
-        {approved.length > 0 ? (
-          <ul className="ev-rows">{approved.map((spark) => row(spark))}</ul>
-        ) : (
-          <p className="ev-row-detail" style={{ paddingTop: 12 }}>
-            Approved sparks become schedule, budget, and hands on deck.
-          </p>
-        )}
-      </section>
-
-      {rested.length > 0 ? (
-        <section className="ev-section" aria-labelledby="rest-title">
-          <div className="ev-section-head">
-            <h3 className="ev-section-title" id="rest-title">
-              At rest
-            </h3>
-            <span className="ev-section-note">
-              Parked for later, or set down with a reason
-            </span>
-          </div>
-          <ul className="ev-rows">
-            {rested.map((spark) => row(spark, { muted: true }))}
-          </ul>
-        </section>
-      ) : null}
+      <h2 className="ev-page-title">Plan</h2>
+      <PlanTabs base={base} active="ideas" />
+      <SparkBoard
+        sparks={sparks}
+        route={{ clientSlug, eventSlug, edition }}
+        planner={planner}
+      />
     </>
   );
 }

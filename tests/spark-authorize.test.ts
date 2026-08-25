@@ -166,8 +166,8 @@ test("a guest is held to the schedule, and sent there rather than away", () => {
   }
 });
 
-test("a client reaches the working surfaces but not the run of show", () => {
-  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/decisions", "/schedule"]) {
+test("a client reaches the working surfaces but not the retired planner paths", () => {
+  for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/schedule"]) {
     assert.deepEqual(
       authorizeSparkPath(`${SHINE}${section}`, shineClient),
       { allow: true },
@@ -175,10 +175,14 @@ test("a client reaches the working surfaces but not the run of show", () => {
     );
   }
 
-  assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineClient), {
-    allow: false,
-    redirectTo: SHINE,
-  });
+  /* Decisions and the run of show are no longer routes; their old paths
+     fall to the planner-only default and reveal nothing. */
+  for (const retired of ["/run-of-show", "/decisions"]) {
+    assert.deepEqual(authorizeSparkPath(`${SHINE}${retired}`, shineClient), {
+      allow: false,
+      redirectTo: SHINE,
+    }, retired);
+  }
 });
 
 test("a planner reaches everything in their own engagement", () => {
@@ -206,12 +210,12 @@ test("a section nobody has named yet is planner only, not public", () => {
 });
 
 test("the route rules match the lines the database draws", () => {
-  /* run_of_show_cues is planner only in RLS; sparks, budget, tasks, resources
-     and decisions are planner and client; schedule is every member. If these
+  /* run_of_show_cues is planner only in RLS; sparks, budget, tasks and
+     resources are planner and client; schedule is every member. If these
      ever disagree, one of the two layers is lying about what is private. */
   assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineGuest).allow, false);
   assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineClient).allow, false);
-  for (const section of ["/budget", "/tasks", "/resources", "/decisions"]) {
+  for (const section of ["/budget", "/tasks", "/resources"]) {
     assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineGuest).allow, false, section);
     assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineClient).allow, true, section);
   }

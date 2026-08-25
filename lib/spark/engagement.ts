@@ -23,6 +23,8 @@ export type EngagementContext = {
   /** This person's place in the engagement. Staff act as planners. */
   role: SparkRole;
   staff: boolean;
+  /** The verified address of the session, for authorship. */
+  email: string;
   workspace: SparkWorkspace;
   engagement: {
     id: string;
@@ -105,6 +107,7 @@ export const resolveEngagement = cache(
     return {
       role: workspace.role,
       staff: access.staff,
+      email: access.email,
       workspace,
       engagement: {
         id: data.id,

@@ -459,13 +459,16 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.notEqual(index.location, ENTRY, "authorized at the client index");
       assert.ok([200, 404].includes(index.status), `unexpected ${index.status}`);
 
-      for (const section of ["", "/budget", "/sparks", "/schedule", "/tasks", "/resources", "/decisions"]) {
+      for (const section of ["", "/budget", "/sparks", "/schedule", "/tasks", "/resources"]) {
         assert.equal((await visit(jar, `${A_HOME}${section}`)).status, 200, section);
       }
 
-      const cues = await visit(jar, `${A_HOME}/run-of-show`);
-      assert.equal(cues.status, 307);
-      assert.equal(cues.location, A_HOME);
+      /* The retired planner paths fall to the planner-only default. */
+      for (const retired of ["/run-of-show", "/decisions"]) {
+        const hit = await visit(jar, `${A_HOME}${retired}`);
+        assert.equal(hit.status, 307, retired);
+        assert.equal(hit.location, A_HOME, retired);
+      }
     });
 
     /* -------------------------------------------------------- invitations */
