@@ -31,7 +31,7 @@ spark_psql -q -c "
   );" >/dev/null
 
 applied_any=false
-for file in "$(dirname "${BASH_SOURCE[0]}")"/../supabase/migrations/20260824*.sql; do
+for file in "$(dirname "${BASH_SOURCE[0]}")"/../supabase/migrations/[0-9]*.sql; do
   base="$(basename "$file")"
   version="${base%%_*}"
   name="${base#*_}"; name="${name%.sql}"

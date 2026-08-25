@@ -77,7 +77,7 @@ export default async function EngagementLayout({ children, params }: LayoutProps
      keeps type legible and holds the photograph inside the palette. */
   const mastheadStyle: CSSProperties | undefined = theme.images.hero
     ? {
-        backgroundImage: `linear-gradient(rgba(38, 44, 31, 0.82), rgba(38, 44, 31, 0.62)), url(${theme.images.hero})`,
+        backgroundImage: `linear-gradient(rgba(32, 37, 26, 0.86), rgba(32, 37, 26, 0.72)), url(${theme.images.hero})`,
         backgroundSize: "cover",
         backgroundPosition: "center 65%",
       }

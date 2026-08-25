@@ -1,24 +1,25 @@
 import { notFound } from "next/navigation";
 
+import { DAY_NAMES, DAY_ORDER, dayDateLabel, parseTimeLabel, todayKey } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
+import { ScheduleView, type DayLane, type Moment } from "./schedule-view";
 
 export const metadata = { title: "Schedule" };
 
 /**
  * The weekend, hour by hour.
  *
- * One query for every role. Row level security is the editor: a guest's
- * session only receives confirmed items, so the draft rows and their notes
- * never leave the database for them, and the working view is the same page
- * with more rows. What each person sees is decided by policy, not by
- * template logic.
+ * One query for every role; row level security is the editor. A guest's
+ * session only ever receives confirmed items, so drafts, notes, provenance,
+ * and the team's Wednesday never leave the database for them. The working
+ * view is the same page with more rows and more hands.
  */
 
 type PageProps = {
   params: Promise<{ clientSlug: string; eventSlug: string; edition: string }>;
 };
 
-type ScheduleRow = {
+type Row = {
   id: string;
   day_key: string;
   starts_label: string;
@@ -29,27 +30,7 @@ type ScheduleRow = {
   status: string;
   note: string | null;
   position: number;
-  spark_id: string | null;
   spark: { title: string } | { title: string }[] | null;
-};
-
-const DAY_ORDER = ["thu", "fri", "sat", "sun"] as const;
-const DAY_NAMES: Record<string, string> = {
-  thu: "Thursday",
-  fri: "Friday",
-  sat: "Saturday",
-  sun: "Sunday",
-};
-
-const dayDate = (startsOn: string | null, index: number): string | null => {
-  if (!startsOn) return null;
-  const date = new Date(`${startsOn}T12:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + index);
-  return date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
 };
 
 export default async function SchedulePage({ params }: PageProps) {
@@ -57,75 +38,58 @@ export default async function SchedulePage({ params }: PageProps) {
   const context = await resolveEngagement(clientSlug, eventSlug, edition);
   if (!context) notFound();
 
-  const working = context.role !== "stakeholder";
+  const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
+  const role = context.staff ? "planner" : context.role;
 
   const { data } = await context.supabase
     .from("schedule_items")
     .select(
-      "id, day_key, starts_label, ends_label, title, track, location, status, note, position, spark_id, spark:sparks(title)",
+      "id, day_key, starts_label, ends_label, title, track, location, status, note, position, spark:sparks(title)",
     )
-    .eq("engagement_id", context.engagement.id)
-    .order("position", { ascending: true });
+    .eq("engagement_id", context.engagement.id);
 
-  const items = (data ?? []) as ScheduleRow[];
-  const days = DAY_ORDER.map((key, index) => ({
+  const moments: Moment[] = ((data ?? []) as Row[]).map((row) => ({
+    id: row.id,
+    day: row.day_key,
+    starts: row.starts_label,
+    ends: row.ends_label,
+    title: row.title,
+    track: row.track,
+    location: row.location,
+    status: row.status,
+    note: row.note,
+    sparkTitle: (Array.isArray(row.spark) ? row.spark[0] : row.spark)?.title ?? null,
+    minutes: parseTimeLabel(row.starts_label),
+  }));
+
+  const days: DayLane[] = DAY_ORDER.map((key) => ({
     key,
     name: DAY_NAMES[key],
-    date: dayDate(context.engagement.startsOn, index),
-    items: items.filter((item) => item.day_key === key),
-  })).filter((day) => day.items.length > 0);
+    date: dayDateLabel(context.engagement.startsOn, key),
+    moments: moments
+      .filter((moment) => moment.day === key)
+      .sort((a, b) => (a.minutes ?? 9999) - (b.minutes ?? 9999)),
+  })).filter((day) => day.moments.length > 0 || (role === "planner" && key_in_weekend(day.key)));
 
   return (
     <>
       <h2 className="ev-page-title">The schedule</h2>
       <p className="ev-lede">
-        {working
-          ? "Confirmed moments and the ones still taking shape. Guests see only what is settled."
+        {role !== "stakeholder"
+          ? "The whole weekend at a glance. Confirmed moments, the ones still taking shape, and the room to breathe between them."
           : "Where to be and when. Everything here is confirmed."}
       </p>
 
-      {days.map((day) => (
-        <section key={day.key} className="ev-day" aria-label={day.name}>
-          <div className="ev-day-head">
-            <h3 className="ev-day-name">{day.name}</h3>
-            {day.date ? <span className="ev-day-date">{day.date}</span> : null}
-          </div>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {day.items.map((item) => (
-              <li key={item.id} className="ev-slot">
-                <span className="ev-slot-time">
-                  {item.starts_label}
-                  {item.ends_label ? ` to ${item.ends_label}` : ""}
-                </span>
-                <span>
-                  <span className="ev-slot-title">
-                    {item.title}
-                    {working && item.status === "draft" ? (
-                      <span className="ev-draft">Taking shape</span>
-                    ) : null}
-                  </span>
-                  {item.location ? (
-                    <span className="ev-slot-where"> · {item.location}</span>
-                  ) : null}
-                  {working && item.note ? (
-                    <span className="ev-slot-note" style={{ display: "block" }}>
-                      {item.note}
-                    </span>
-                  ) : null}
-                  {working && item.spark ? (
-                    <span className="ev-slot-spark" style={{ display: "block" }}>
-                      From the spark: {
-                        (Array.isArray(item.spark) ? item.spark[0] : item.spark)
-                          ?.title
-                      }
-                    </span>
-                  ) : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      <ScheduleView
+        days={days}
+        role={role}
+        route={{ clientSlug, eventSlug, edition }}
+        today={todayKey(context.engagement.startsOn)}
+        base={base}
+      />
     </>
   );
 }
+
+/** Planners see the guest weekend's empty days too, so they can add to them. */
+const key_in_weekend = (key: string) => key !== "wed";
