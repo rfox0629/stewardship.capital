@@ -1,15 +1,17 @@
 import { notFound, redirect } from "next/navigation";
 
-import { DAY_NAMES, parseTimeLabel } from "@lib/spark/days";
+import { DAY_NAMES } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
+import { PlanTabs } from "../plan-tabs";
 import { SparkBoard, type BoardSpark } from "./board";
 
-export const metadata = { title: "Sparks" };
+export const metadata = { title: "Plan" };
 
 /**
- * The board explains itself; this page only gathers what it shows. Rows come
- * through the reader's own session, so guests never reach here and clients
- * see the working surface without the planner's hands.
+ * The Ideas side of the Plan. The board explains itself; this page only
+ * gathers what it shows. Rows come through the reader's own session, so
+ * guests never reach here and clients see the working surface without the
+ * planner's hands.
  */
 
 type PageProps = {
@@ -24,6 +26,8 @@ type SparkRow = {
   status: string;
   raised_by_name: string | null;
   decision: string | null;
+  decided_by_name: string | null;
+  decided_at: string | null;
   tentative_day: string | null;
   tentative_daypart: string | null;
 };
@@ -40,11 +44,13 @@ export default async function SparksPage({ params }: PageProps) {
   const engagementId = context.engagement.id;
   const supabase = context.supabase;
 
-  const [sparksQ, notesQ, scheduleQ, tasksQ, budgetQ, resourcesQ, decisionsQ, cuesQ] =
+  const [sparksQ, notesQ, scheduleQ, tasksQ, budgetQ, resourcesQ, cuesQ] =
     await Promise.all([
       supabase
         .from("sparks")
-        .select("id, title, detail, category, status, raised_by_name, decision, tentative_day, tentative_daypart")
+        .select(
+          "id, title, detail, category, status, raised_by_name, decision, decided_by_name, decided_at, tentative_day, tentative_daypart",
+        )
         .eq("engagement_id", engagementId)
         .order("created_at", { ascending: false }),
       supabase
@@ -59,10 +65,9 @@ export default async function SparksPage({ params }: PageProps) {
       supabase.from("tasks").select("spark_id, title").eq("engagement_id", engagementId).not("spark_id", "is", null),
       supabase.from("budget_lines").select("spark_id, label, planned_cents").eq("engagement_id", engagementId).not("spark_id", "is", null),
       supabase.from("resources").select("spark_id, name").eq("engagement_id", engagementId).not("spark_id", "is", null),
-      supabase.from("decisions").select("spark_id, question").eq("engagement_id", engagementId).not("spark_id", "is", null),
       planner
-        ? supabase.from("run_of_show_cues").select("spark_id, at_label, cue").eq("engagement_id", engagementId).not("spark_id", "is", null)
-        : Promise.resolve({ data: [] as Array<{ spark_id: string; at_label: string; cue: string }> }),
+        ? supabase.from("run_of_show_cues").select("spark_id, cue").eq("engagement_id", engagementId).not("spark_id", "is", null)
+        : Promise.resolve({ data: [] as Array<{ spark_id: string; cue: string }> }),
     ]);
 
   const links = new Map<string, BoardSpark["links"]>();
@@ -74,16 +79,15 @@ export default async function SparksPage({ params }: PageProps) {
     if (row.spark_id) {
       push(row.spark_id, "Schedule",
         `${DAY_NAMES[row.day_key] ?? row.day_key} ${row.starts_label}, ${row.title}`,
-        `${base}/schedule`);
+        `${base}/schedule?open=${row.id}`);
     }
   }
   for (const row of tasksQ.data ?? []) push(row.spark_id, "Task", row.title, `${base}/tasks`);
   for (const row of budgetQ.data ?? [])
     push(row.spark_id, "Budget", `${row.label}, $${Math.round(row.planned_cents / 100).toLocaleString()}`, `${base}/budget`);
   for (const row of resourcesQ.data ?? []) push(row.spark_id, "Resource", row.name, `${base}/resources`);
-  for (const row of decisionsQ.data ?? []) push(row.spark_id, "Decision", row.question, `${base}/decisions`);
-  for (const row of (cuesQ.data ?? []) as Array<{ spark_id: string; at_label: string; cue: string }>)
-    push(row.spark_id, "Run of show", `${row.at_label}, ${row.cue}`, `${base}/run-of-show`);
+  for (const row of (cuesQ.data ?? []) as Array<{ spark_id: string; cue: string }>)
+    push(row.spark_id, "Run of show", row.cue, `${base}/schedule?lens=ros`);
 
   const notes = new Map<string, BoardSpark["notes"]>();
   for (const row of notesQ.data ?? []) {
@@ -103,31 +107,24 @@ export default async function SparksPage({ params }: PageProps) {
     status: row.status,
     raisedBy: row.raised_by_name,
     decision: row.decision,
+    decidedBy: row.decided_by_name,
+    decidedAt: row.decided_at
+      ? new Date(row.decided_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : null,
     day: row.tentative_day,
     daypart: row.tentative_daypart,
     links: links.get(row.id) ?? [],
     notes: notes.get(row.id) ?? [],
   }));
 
-  const scheduleMoments = ((scheduleQ.data ?? []) as Array<{ id: string; day_key: string; starts_label: string; title: string }>)
-    .sort(
-      (a, b) =>
-        a.day_key.localeCompare(b.day_key) ||
-        (parseTimeLabel(a.starts_label) ?? 9999) - (parseTimeLabel(b.starts_label) ?? 9999),
-    )
-    .map((row) => ({
-      id: row.id,
-      label: `${DAY_NAMES[row.day_key] ?? row.day_key} ${row.starts_label}, ${row.title}`,
-    }));
-
   return (
     <>
-      <h2 className="ev-page-title">Sparks</h2>
+      <h2 className="ev-page-title">Plan</h2>
+      <PlanTabs base={base} active="ideas" />
       <SparkBoard
         sparks={sparks}
         route={{ clientSlug, eventSlug, edition }}
         planner={planner}
-        scheduleMoments={scheduleMoments}
       />
     </>
   );

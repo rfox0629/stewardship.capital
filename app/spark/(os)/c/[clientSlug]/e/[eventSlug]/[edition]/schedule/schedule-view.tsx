@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
-import { createMoment, deleteMoment, rescheduleMoment, updateMoment } from "./actions";
+import {
+  addCue,
+  addMomentResource,
+  addMomentTask,
+  createMoment,
+  deleteCue,
+  deleteMoment,
+  rescheduleMoment,
+  updateCue,
+  updateMoment,
+} from "./actions";
 
 /**
  * The weekend as a working calendar: time down, days across, moments as
@@ -26,12 +36,35 @@ export type Moment = {
   location: string | null;
   status: string;
   note: string | null;
+  sparkId: string | null;
   sparkTitle: string | null;
   minutes: number | null;
   endMinutes: number | null;
 };
 
 export type DayLane = { key: string; name: string; date: string | null };
+
+/** A run of show cue, stored relative to its moment's start. The absolute
+ *  time is always computed, never stored, so a moved moment needs nothing. */
+export type Cue = {
+  id: string;
+  momentId: string;
+  offset: number;
+  cue: string;
+  who: string | null;
+  note: string | null;
+};
+
+export type RelatedRecord = {
+  id: string;
+  momentId: string;
+  kind: "task" | "resource";
+  label: string;
+  sub: string;
+};
+
+const fmtOffset = (offset: number) =>
+  offset === 0 ? "start" : offset > 0 ? `+${offset} min` : `${offset} min`;
 
 export type TentativeSpark = {
   id: string;
@@ -111,22 +144,43 @@ type DragState = {
 
 /* ------------------------------------------------------------- drawer */
 
+type DrawerTab = "details" | "ros" | "tasks" | "resources";
+
 function MomentDrawer({
   moment,
   role,
   route,
   days,
+  cues,
+  related,
   onClose,
 }: {
   moment: Moment;
   role: Role;
   route: Route;
   days: DayLane[];
+  cues: Cue[];
+  related: RelatedRecord[];
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  /* The drawer only mounts after hydration, so the deep link is safe here. */
+  const [tab, setTab] = useState<DrawerTab>(() => {
+    if (typeof window === "undefined") return "details";
+    const wanted = new URLSearchParams(window.location.search).get("tab");
+    return wanted === "ros" || wanted === "tasks" || wanted === "resources"
+      ? wanted
+      : "details";
+  });
   const planner = role === "planner";
+
+  const tabs: Array<{ key: DrawerTab; label: string }> = [
+    { key: "details", label: "Details" },
+    { key: "ros", label: `Run of show${cues.length ? ` · ${cues.length}` : ""}` },
+    { key: "tasks", label: "Tasks" },
+    { key: "resources", label: "Resources" },
+  ];
 
   return (
     <div className="ev-drawer-wrap" role="dialog" aria-modal="true" aria-label={moment.title}>
@@ -143,6 +197,42 @@ function MomentDrawer({
         </div>
 
         {planner ? (
+          <div className="ev-drawer-tabs" role="tablist" aria-label="Moment">
+            {tabs.map((entry) => (
+              <button
+                key={entry.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === entry.key}
+                onClick={() => setTab(entry.key)}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {planner && tab === "ros" ? (
+          <RosEditor moment={moment} cues={cues} route={route} />
+        ) : null}
+        {planner && tab === "tasks" ? (
+          <MomentRecords
+            moment={moment}
+            rows={related.filter((row) => row.kind === "task")}
+            kind="task"
+            route={route}
+          />
+        ) : null}
+        {planner && tab === "resources" ? (
+          <MomentRecords
+            moment={moment}
+            rows={related.filter((row) => row.kind === "resource")}
+            kind="resource"
+            route={route}
+          />
+        ) : null}
+
+        {planner && tab === "details" ? (
           <form
             className="ev-drawer-body"
             action={(formData) =>
@@ -223,7 +313,8 @@ function MomentDrawer({
             </div>
             {message ? <p className="ev-drawer-msg" role="status">{message}</p> : null}
           </form>
-        ) : (
+        ) : null}
+        {!planner ? (
           <div className="ev-drawer-body">
             <h3 className="ev-drawer-title">{moment.title}</h3>
             <p className="ev-drawer-line">
@@ -238,8 +329,225 @@ function MomentDrawer({
               <p className="ev-drawer-spark"><b>Spark</b> {moment.sparkTitle}</p>
             ) : null}
           </div>
-        )}
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------- the run of show, editable */
+
+function RosEditor({
+  moment,
+  cues,
+  route,
+}: {
+  moment: Moment;
+  cues: Cue[];
+  route: Route;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [editing, setEditing] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const start = moment.minutes;
+  const length =
+    start !== null && moment.endMinutes !== null ? moment.endMinutes - start : null;
+  const ordered = [...cues].sort((a, b) => a.offset - b.offset);
+
+  const cueForm = (cue: Cue | null) => (
+    <form
+      className="ev-cue-form"
+      action={(formData) =>
+        startTransition(async () => {
+          const outcome = cue
+            ? await updateCue(route.clientSlug, route.eventSlug, route.edition, cue.id, formData)
+            : await addCue(route.clientSlug, route.eventSlug, route.edition, moment.id, formData);
+          if (outcome.ok) {
+            setEditing(null);
+            setMessage(null);
+          } else setMessage(outcome.message ?? "That did not save.");
+        })
+      }
+    >
+      <div className="ev-cue-form-grid">
+        <label>
+          Min
+          <input
+            name="offset"
+            type="number"
+            step={1}
+            defaultValue={cue?.offset ?? 0}
+            required
+          />
+        </label>
+        <label>
+          Cue
+          <input name="cue" defaultValue={cue?.cue ?? ""} maxLength={300} required />
+        </label>
+        <label>
+          Who
+          <input name="who" defaultValue={cue?.who ?? ""} maxLength={80} />
+        </label>
+      </div>
+      <label className="ev-cue-note">
+        Note
+        <input name="note" defaultValue={cue?.note ?? ""} maxLength={300} />
+      </label>
+      <div className="ev-row-actions">
+        <button type="submit" disabled={pending}>{cue ? "Save" : "Add cue"}</button>
+        {cue ? (
+          <>
+            <button
+              type="button"
+              className="ev-quiet"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  await deleteCue(route.clientSlug, route.eventSlug, route.edition, cue.id);
+                  setEditing(null);
+                })
+              }
+            >
+              Delete
+            </button>
+            <button type="button" className="ev-quiet" onClick={() => setEditing(null)}>
+              Cancel
+            </button>
+          </>
+        ) : null}
+      </div>
+    </form>
+  );
+
+  return (
+    <div className="ev-drawer-body">
+      <p className="ev-drawer-line">
+        {moment.title} · {moment.starts}
+        {moment.ends ? ` to ${moment.ends}` : ""}
+      </p>
+      <p className="ev-ros-hint">
+        Minutes are relative to the start. Move the moment and every cue moves
+        with it.
+      </p>
+      {ordered.map((cue) =>
+        editing === cue.id ? (
+          <div key={cue.id}>{cueForm(cue)}</div>
+        ) : (
+          <button
+            key={cue.id}
+            type="button"
+            className="ev-cue-row"
+            onClick={() => setEditing(cue.id)}
+          >
+            <span className="ev-cue-when">
+              {fmtOffset(cue.offset)}
+              {start !== null ? <i>{fmt(start + cue.offset)}</i> : null}
+            </span>
+            <span className="ev-cue-text">
+              {cue.cue}
+              {cue.note ? <small>{cue.note}</small> : null}
+              {length !== null && cue.offset > length ? (
+                <small className="ev-cue-warn">past the end of this moment</small>
+              ) : null}
+            </span>
+            <span className="ev-cue-who">{cue.who ?? ""}</span>
+          </button>
+        ),
+      )}
+      {editing === null || editing === "new" ? cueForm(null) : null}
+      {message ? <p className="ev-drawer-msg" role="status">{message}</p> : null}
+    </div>
+  );
+}
+
+/* ------------------------------------- what this moment needs, recorded */
+
+function MomentRecords({
+  moment,
+  rows,
+  kind,
+  route,
+}: {
+  moment: Moment;
+  rows: RelatedRecord[];
+  kind: "task" | "resource";
+  route: Route;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+
+  return (
+    <div className="ev-drawer-body">
+      {rows.length > 0 ? (
+        rows.map((row) => (
+          <p key={`${row.kind}-${row.id}`} className="ev-drawer-noteline">
+            {row.label}
+            <span>{row.sub}</span>
+          </p>
+        ))
+      ) : (
+        <p className="ev-row-detail">
+          {kind === "task" ? "No tasks for this moment yet." : "Nothing needed yet."}
+        </p>
+      )}
+      <form
+        className="ev-cue-form"
+        action={(formData) =>
+          startTransition(async () => {
+            const outcome =
+              kind === "task"
+                ? await addMomentTask(route.clientSlug, route.eventSlug, route.edition, moment.id, formData)
+                : await addMomentResource(route.clientSlug, route.eventSlug, route.edition, moment.id, formData);
+            if (!outcome.ok) setMessage(outcome.message ?? "That did not save.");
+            else setMessage(null);
+          })
+        }
+      >
+        {kind === "task" ? (
+          <div className="ev-cue-form-grid">
+            <label>
+              Task
+              <input name="title" maxLength={160} required />
+            </label>
+            <label>
+              Who
+              <input name="owner" maxLength={80} />
+            </label>
+            <label>
+              Due
+              <input name="due" type="date" />
+            </label>
+          </div>
+        ) : (
+          <div className="ev-cue-form-grid">
+            <label>
+              Needed
+              <input name="name" maxLength={160} required />
+            </label>
+            <label>
+              Kind
+              <select name="kind" defaultValue="supply">
+                <option value="person">Person</option>
+                <option value="vendor">Vendor</option>
+                <option value="equipment">Equipment</option>
+                <option value="supply">Supply</option>
+                <option value="deliverable">Deliverable</option>
+              </select>
+            </label>
+            <label>
+              Cost
+              <input name="cost" inputMode="decimal" placeholder="0" />
+            </label>
+          </div>
+        )}
+        <div className="ev-row-actions">
+          <button type="submit" disabled={pending}>
+            {kind === "task" ? "Add task" : "Add resource"}
+          </button>
+        </div>
+      </form>
+      {message ? <p className="ev-drawer-msg" role="status">{message}</p> : null}
     </div>
   );
 }
@@ -253,6 +561,8 @@ export function ScheduleView({
   route,
   today,
   base,
+  cues = [],
+  related = [],
   tentative = [],
 }: {
   moments: Moment[];
@@ -261,6 +571,8 @@ export function ScheduleView({
   route: Route;
   today: string | null;
   base: string;
+  cues?: Cue[];
+  related?: RelatedRecord[];
   tentative?: TentativeSpark[];
 }) {
   const planner = role === "planner";
@@ -289,6 +601,13 @@ export function ScheduleView({
   const [showSparks, setShowSparks] = useState<boolean>(() =>
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("sparks") === "1",
+  );
+  /* Two lenses over the same schedule: the calendar, and its cues. */
+  const [lens, setLens] = useState<"schedule" | "ros">(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("lens") === "ros"
+      ? "ros"
+      : "schedule",
   );
   const [overrides, setOverrides] = useState<Map<string, Override>>(new Map());
   const [failure, setFailure] = useState<string | null>(null);
@@ -540,6 +859,7 @@ export function ScheduleView({
   /* Until hydration, mirror exactly what the server rendered. */
   const shownView = hydrated ? view : "weekend";
   const shownSparks = hydrated ? showSparks : false;
+  const shownLens = hydrated && planner ? lens : "schedule";
   const ghostsFor = (dayKey: string) => {
     if (!shownSparks || !planner) return [];
     const grouped = new Map<string, TentativeSpark[]>();
@@ -561,17 +881,31 @@ export function ScheduleView({
   return (
     <>
       <div className="ev-schedule-bar">
-        <div className="ev-toggle" role="tablist" aria-label="View">
-          <button type="button" role="tab" aria-selected={shownView === "weekend"} onClick={() => setView("weekend")}>
-            Weekend
-          </button>
-          <button type="button" role="tab" aria-selected={shownView === "day"} onClick={() => setView("day")}>
-            Day
-          </button>
+        <div className="ev-bar-left">
+          {planner ? (
+            <div className="ev-toggle" role="tablist" aria-label="Lens">
+              <button type="button" role="tab" aria-selected={shownLens === "schedule"} onClick={() => setLens("schedule")}>
+                Schedule
+              </button>
+              <button type="button" role="tab" aria-selected={shownLens === "ros"} onClick={() => setLens("ros")}>
+                Run of show
+              </button>
+            </div>
+          ) : null}
+          {shownLens === "schedule" ? (
+            <div className="ev-toggle" role="tablist" aria-label="View">
+              <button type="button" role="tab" aria-selected={shownView === "weekend"} onClick={() => setView("weekend")}>
+                Weekend
+              </button>
+              <button type="button" role="tab" aria-selected={shownView === "day"} onClick={() => setView("day")}>
+                Day
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="ev-bar-right">
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
-          {planner && tentative.length > 0 ? (
+          {shownLens === "schedule" && planner && tentative.length > 0 ? (
             <button
               type="button"
               className="ev-bar-quiet"
@@ -594,7 +928,16 @@ export function ScheduleView({
         </div>
       </div>
 
-      {shownView === "weekend" ? (
+      {shownLens === "ros" ? (
+        <RosLens
+          cues={cues}
+          moments={merged}
+          days={laneDays}
+          today={today}
+          nowMin={nowMin}
+          onOpen={(id) => setOpenId(id)}
+        />
+      ) : shownView === "weekend" ? (
         <div className="ev-grid-wrap">
           <div className="ev-grid-head" style={{ marginLeft: 52 }}>
             {laneDays.map((day) => (
@@ -709,6 +1052,8 @@ export function ScheduleView({
           role={role}
           route={route}
           days={laneDays}
+          cues={cues.filter((cue) => cue.momentId === openMoment.id)}
+          related={related.filter((row) => row.momentId === openMoment.id)}
           onClose={() => {
             setOpenId(null);
             setOverrides((prev) => {
@@ -814,6 +1159,109 @@ function AddDrawer({
           {message ? <p className="ev-drawer-msg" role="status">{message}</p> : null}
         </form>
       </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------- the run of show, assembled */
+
+/**
+ * Nobody maintains a master run of show. This assembles one: every cue from
+ * every scheduled moment, placed at its moment's start plus its own offset,
+ * in order, grouped by day. On the event day the current and coming cue are
+ * pinned on top, which is the whole phone experience during the weekend.
+ */
+function RosLens({
+  cues,
+  moments,
+  days,
+  today,
+  nowMin,
+  onOpen,
+}: {
+  cues: Cue[];
+  moments: Moment[];
+  days: DayLane[];
+  today: string | null;
+  nowMin: number;
+  onOpen: (momentId: string) => void;
+}) {
+  const byMoment = new Map(moments.map((moment) => [moment.id, moment]));
+  const rows = cues
+    .map((cue) => {
+      const moment = byMoment.get(cue.momentId);
+      if (!moment || moment.minutes === null) return null;
+      return { cue, moment, abs: moment.minutes + cue.offset };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
+
+  const todayRows = today
+    ? rows.filter((row) => row.moment.day === today).sort((a, b) => a.abs - b.abs)
+    : [];
+  const current = [...todayRows].reverse().find((row) => row.abs <= nowMin) ?? null;
+  const next = todayRows.find((row) => row.abs > nowMin) ?? null;
+
+  const pinned = (label: "Now" | "Next", row: { cue: Cue; moment: Moment; abs: number }) => (
+    <button
+      type="button"
+      className={`ev-ros-pin ${label === "Now" ? "ev-ros-pin-now" : ""}`}
+      onClick={() => onOpen(row.moment.id)}
+    >
+      <span className="ev-ros-pin-label">{label}</span>
+      <span className="ev-ros-pin-cue">
+        {fmt(row.abs)} · {row.cue.cue}
+      </span>
+      <span className="ev-ros-pin-sub">
+        {[row.cue.who, row.moment.title].filter(Boolean).join(" · ")}
+      </span>
+    </button>
+  );
+
+  return (
+    <div className="ev-ros">
+      {current || next ? (
+        <div className="ev-ros-pins">
+          {current ? pinned("Now", current) : null}
+          {next ? pinned("Next", next) : null}
+        </div>
+      ) : null}
+      {days.map((day) => {
+        const dayRows = rows
+          .filter((row) => row.moment.day === day.key)
+          .sort((a, b) => a.abs - b.abs || a.moment.title.localeCompare(b.moment.title));
+        if (dayRows.length === 0) return null;
+        return (
+          <section key={day.key} className="ev-ros-day" aria-label={day.name}>
+            <h3 className="ev-ros-dayname">
+              {day.name}
+              {day.date ? <span>{day.date}</span> : null}
+            </h3>
+            {dayRows.map((row) => (
+              <button
+                key={row.cue.id}
+                type="button"
+                className={`ev-ros-row ${
+                  current?.cue.id === row.cue.id ? "ev-ros-row-now" : ""
+                } ${next?.cue.id === row.cue.id ? "ev-ros-row-next" : ""}`}
+                onClick={() => onOpen(row.moment.id)}
+              >
+                <span className="ev-ros-time">{fmt(row.abs)}</span>
+                <span className="ev-ros-cue">
+                  {row.cue.cue}
+                  {row.cue.note ? <small>{row.cue.note}</small> : null}
+                  <em>{row.moment.title}</em>
+                </span>
+                <span className="ev-ros-who">{row.cue.who ?? ""}</span>
+              </button>
+            ))}
+          </section>
+        );
+      })}
+      {rows.length === 0 ? (
+        <p className="ev-row-detail">
+          No cues yet. Open a scheduled moment and add its run of show.
+        </p>
+      ) : null}
     </div>
   );
 }

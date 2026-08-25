@@ -102,6 +102,7 @@ export async function decideSpark(
       status: next,
       decision: settled ? (decision ?? "").trim().slice(0, 400) || null : null,
       decided_at: settled ? new Date().toISOString() : null,
+      decided_by_name: settled ? context.email.split("@")[0] : null,
     })
     .eq("id", sparkId)
     .eq("engagement_id", context.engagement.id)
@@ -117,23 +118,27 @@ export async function decideSpark(
 
 /* ------------------------------------------------------- into the plan */
 
-export type PlanDestination =
-  | "schedule"
-  | "task"
-  | "budget"
-  | "resource"
-  | "decision"
-  | "run-of-show";
+export type PlanDestination = "schedule" | "task" | "resource";
 
 export type AddToPlanOutcome = { ok: boolean; message?: string };
+
+const RESOURCE_KINDS = ["person", "vendor", "equipment", "supply", "deliverable"];
+
+/** Dollars in a form field become cents, or zero. Never negative, never NaN. */
+const cents = (formData: FormData, name: string) => {
+  const dollars = Number(String(formData.get(name) ?? "").trim());
+  return Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0;
+};
 
 /**
  * An approved idea becomes part of the plan, without being typed twice.
  *
- * The spark stays what it always was, the original idea; what this creates is
- * the downstream record, carrying the spark's id so provenance holds in both
- * directions. One spark may feed several destinations, one call each, and
- * nothing is created that the planner did not explicitly ask for.
+ * Three destinations, and only three: something happens (schedule), someone
+ * does something (task), something is needed (resource). None is required and
+ * any combination is fine; each is one deliberate choice carrying the spark's
+ * id so provenance holds in both directions. Budget is not a destination:
+ * costs ride the task or resource that incurs them and the budget page adds
+ * them up.
  *
  * Planner only, approved sparks only. Discernment stays human: this runs
  * after the decision, never instead of it.
@@ -201,62 +206,22 @@ export async function addToPlan(
         due_on: text("due") || null,
         area: text("area") || null,
         status: "todo",
-      })
-      .select("id");
-  } else if (destination === "budget") {
-    const dollars = Number(text("planned"));
-    if (!Number.isFinite(dollars) || dollars < 0) {
-      return { ok: false, message: "A planned amount in dollars." };
-    }
-    result = await supabase
-      .from("budget_lines")
-      .insert({
-        ...base,
-        category: text("category") || "Experience",
-        label: text("title") || spark.title,
-        planned_cents: Math.round(dollars * 100),
+        estimated_cents: cents(formData, "cost"),
       })
       .select("id");
   } else if (destination === "resource") {
+    const kind = text("kind", 20);
     result = await supabase
       .from("resources")
       .insert({
         ...base,
-        kind: text("kind") === "vendor" ? "vendor" : "supply",
+        kind: RESOURCE_KINDS.includes(kind) ? kind : "supply",
         name: text("title") || spark.title,
         detail: text("detail", 400) || spark.detail,
         quantity: text("quantity", 60) || null,
-        status: "needed",
-      })
-      .select("id");
-  } else if (destination === "decision") {
-    const question = text("question", 300) || `${spark.title}?`;
-    result = await supabase
-      .from("decisions")
-      .insert({
-        ...base,
-        question,
-        context: text("context", 400) || spark.detail,
         owner_name: text("owner") || null,
-        needs_by: text("due") || null,
-        status: "open",
-      })
-      .select("id");
-  } else if (destination === "run-of-show") {
-    const scheduleItemId = text("scheduleItemId", 64);
-    const at = text("at").toLowerCase();
-    if (!scheduleItemId || !/^\d{1,2}(:\d{2})?\s*(am|pm)$/.test(at)) {
-      return { ok: false, message: "A schedule moment and a cue time." };
-    }
-    result = await supabase
-      .from("run_of_show_cues")
-      .insert({
-        ...base,
-        schedule_item_id: scheduleItemId,
-        at_label: at,
-        cue: text("cue", 300) || spark.title,
-        who_name: text("who") || null,
-        position: 99,
+        status: "needed",
+        estimated_cents: cents(formData, "cost"),
       })
       .select("id");
   }
@@ -266,7 +231,7 @@ export async function addToPlan(
   }
 
   const prefix = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
-  for (const path of ["/sparks", "/schedule", "/tasks", "/budget", "/resources", "/decisions", "/run-of-show", ""]) {
+  for (const path of ["/sparks", "/schedule", "/tasks", "/budget", "/resources", ""]) {
     revalidatePath(`${prefix}${path}`);
   }
   return { ok: true };

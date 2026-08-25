@@ -5,15 +5,17 @@ import { resolveEngagement } from "@lib/spark/engagement";
 export const metadata = { title: "Budget" };
 
 /**
- * The budget, as a working document rather than a ledger.
+ * The budget is the financial rollup of the plan, not a parallel ledger.
  *
- * Three figures per line, planned, committed, and spent, each carrying its
- * own label so nothing has to be cross referenced against a header row. The
- * question this page exists to answer in the weekly meeting is not "is the
- * bookkeeping right" but "what have we promised, and what room is left".
+ * Two kinds of money meet here: the engagement's fixed lines (venue, food,
+ * contracted vendors), and costs carried by the plan itself, on the
+ * resources and tasks that incur them. Nothing is entered twice: a cost
+ * typed on a resource appears here because the resource carries it. The
+ * question this page answers in the weekly meeting is "what have we
+ * promised, and what room is left".
  *
  * Working members only. Stakeholders never reach this route, and even a
- * misrouted request would find that RLS returns them zero budget rows.
+ * misrouted request would find that RLS returns them zero rows.
  */
 
 type PageProps = {
@@ -29,6 +31,16 @@ type BudgetRow = {
   actual_cents: number;
   owner_name: string | null;
   spark: { title: string } | { title: string }[] | null;
+};
+
+type CostRow = {
+  id: string;
+  label: string;
+  sub: string | null;
+  sparkTitle: string | null;
+  estimated: number;
+  committed: number;
+  actual: number;
 };
 
 const money = (cents: number) =>
@@ -49,22 +61,67 @@ export default async function BudgetPage({ params }: PageProps) {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   if (context.role === "stakeholder") redirect(`${base}/schedule`);
 
-  const { data } = await context.supabase
-    .from("budget_lines")
-    .select(
-      "id, category, label, planned_cents, committed_cents, actual_cents, owner_name, spark:sparks(title)",
-    )
-    .eq("engagement_id", context.engagement.id)
-    .order("created_at", { ascending: true });
+  const engagementId = context.engagement.id;
+  const [linesQ, resourcesQ, tasksQ] = await Promise.all([
+    context.supabase
+      .from("budget_lines")
+      .select(
+        "id, category, label, planned_cents, committed_cents, actual_cents, owner_name, spark:sparks(title)",
+      )
+      .eq("engagement_id", engagementId)
+      .order("created_at", { ascending: true }),
+    context.supabase
+      .from("resources")
+      .select("id, name, kind, owner_name, estimated_cents, committed_cents, actual_cents, spark:sparks(title)")
+      .eq("engagement_id", engagementId)
+      .or("estimated_cents.gt.0,committed_cents.gt.0,actual_cents.gt.0"),
+    context.supabase
+      .from("tasks")
+      .select("id, title, owner_name, estimated_cents, committed_cents, actual_cents, spark:sparks(title)")
+      .eq("engagement_id", engagementId)
+      .or("estimated_cents.gt.0,committed_cents.gt.0,actual_cents.gt.0"),
+  ]);
 
-  const lines = (data ?? []) as BudgetRow[];
+  const lines = (linesQ.data ?? []) as BudgetRow[];
 
-  const total = (pick: (row: BudgetRow) => number) =>
-    lines.reduce((sum, row) => sum + pick(row), 0);
+  const planCosts: CostRow[] = [
+    ...((resourcesQ.data ?? []) as Array<{
+      id: string; name: string; kind: string; owner_name: string | null;
+      estimated_cents: number; committed_cents: number; actual_cents: number;
+      spark: { title: string } | { title: string }[] | null;
+    }>).map((row) => ({
+      id: `res-${row.id}`,
+      label: row.name,
+      sub: [`Resource · ${row.kind}`, row.owner_name].filter(Boolean).join(" · "),
+      sparkTitle: (Array.isArray(row.spark) ? row.spark[0] : row.spark)?.title ?? null,
+      estimated: row.estimated_cents,
+      committed: row.committed_cents,
+      actual: row.actual_cents,
+    })),
+    ...((tasksQ.data ?? []) as Array<{
+      id: string; title: string; owner_name: string | null;
+      estimated_cents: number; committed_cents: number; actual_cents: number;
+      spark: { title: string } | { title: string }[] | null;
+    }>).map((row) => ({
+      id: `task-${row.id}`,
+      label: row.title,
+      sub: ["Task", row.owner_name].filter(Boolean).join(" · "),
+      sparkTitle: (Array.isArray(row.spark) ? row.spark[0] : row.spark)?.title ?? null,
+      estimated: row.estimated_cents,
+      committed: row.committed_cents,
+      actual: row.actual_cents,
+    })),
+  ];
 
-  const planned = total((row) => row.planned_cents);
-  const committed = total((row) => row.committed_cents);
-  const actual = total((row) => row.actual_cents);
+  const planned =
+    lines.reduce((sum, row) => sum + row.planned_cents, 0) +
+    planCosts.reduce((sum, row) => sum + row.estimated, 0);
+  const committed =
+    lines.reduce((sum, row) => sum + row.committed_cents, 0) +
+    planCosts.reduce((sum, row) => sum + row.committed, 0);
+  const actual =
+    lines.reduce((sum, row) => sum + row.actual_cents, 0) +
+    planCosts.reduce((sum, row) => sum + row.actual, 0);
   const budget = context.engagement.budgetTotalCents;
 
   const categories = [...new Set(lines.map((row) => row.category))].map(
@@ -80,7 +137,7 @@ export default async function BudgetPage({ params }: PageProps) {
 
   return (
     <>
-      <h2 className="ev-page-title">The budget</h2>
+      <h2 className="ev-page-title">Budget</h2>
       <p className="ev-lede">
         {money(budget)} for the weekend. Committed is what has been promised
         to someone; spent is what has actually left.
@@ -108,11 +165,56 @@ export default async function BudgetPage({ params }: PageProps) {
             <dd>{money(actual)}</dd>
           </div>
           <div>
-            <dt>{budget >= planned ? "Unplanned" : "Over plan"}</dt>
+            <dt>{budget >= planned ? "Remaining" : "Over plan"}</dt>
             <dd>{money(Math.abs(budget - planned))}</dd>
           </div>
         </dl>
       </section>
+
+      {planCosts.length > 0 ? (
+        <section className="ev-section" aria-label="Costs carried by the plan">
+          <div className="ev-section-head">
+            <h3 className="ev-section-title">From the plan</h3>
+            <span className="ev-section-note">
+              {money(planCosts.reduce((sum, row) => sum + row.estimated, 0))} estimated,
+              carried by resources and tasks
+            </span>
+          </div>
+          <ul className="ev-rows">
+            {planCosts.map((row) => (
+              <li key={row.id}>
+                <div className="ev-split">
+                  <div>
+                    <p className="ev-row-title">{row.label}</p>
+                    {row.sub ? <p className="ev-row-detail">{row.sub}</p> : null}
+                    {row.sparkTitle ? (
+                      <p className="ev-row-became">From the spark: {row.sparkTitle}</p>
+                    ) : null}
+                  </div>
+                  <div className="ev-figs">
+                    <span className="ev-fig">
+                      <span className="ev-fig-label">Estimated</span>
+                      <b>{money(row.estimated)}</b>
+                    </span>
+                    {row.committed > 0 ? (
+                      <span className="ev-fig">
+                        <span className="ev-fig-label">Committed</span>
+                        <b>{money(row.committed)}</b>
+                      </span>
+                    ) : null}
+                    {row.actual > 0 ? (
+                      <span className="ev-fig">
+                        <span className="ev-fig-label">Spent</span>
+                        <b>{money(row.actual)}</b>
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {categories.map(({ category, rows, planned: categoryPlanned }) => (
         <section key={category} className="ev-section" aria-label={category}>

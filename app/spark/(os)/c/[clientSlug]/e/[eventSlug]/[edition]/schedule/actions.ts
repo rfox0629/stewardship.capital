@@ -201,3 +201,212 @@ export async function rescheduleMoment(
   revalidate(clientSlug, eventSlug, edition);
   return { ok: true };
 }
+
+/* ------------------------------------------------------ the run of show */
+
+/**
+ * Cues live inside a scheduled moment and are timed relative to its start,
+ * so a moment that moves takes its cues along without anyone rebuilding
+ * anything. Changing a moment's duration deliberately does not stretch the
+ * offsets: they are explicit, and the editor surfaces any cue that has
+ * fallen outside the moment instead of quietly rescaling it.
+ */
+
+const OFFSET_MIN = -120;
+const OFFSET_MAX = 12 * 60;
+
+const readCue = (formData: FormData) => {
+  const offset = Number(String(formData.get("offset") ?? "").trim());
+  const cue = String(formData.get("cue") ?? "").trim().slice(0, 300);
+  const who = String(formData.get("who") ?? "").trim().slice(0, 80);
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+  if (!cue || !Number.isInteger(offset) || offset < OFFSET_MIN || offset > OFFSET_MAX) {
+    return null;
+  }
+  return { offset, cue, who: who || null, note: note || null };
+};
+
+/** The moment, only if it is this engagement's. Cues never cross that line. */
+const momentOf = async (
+  context: NonNullable<Awaited<ReturnType<typeof plannerContext>>>,
+  momentId: string,
+) => {
+  const { data } = await context.supabase
+    .from("schedule_items")
+    .select("id, title, starts_label")
+    .eq("id", momentId)
+    .eq("engagement_id", context.engagement.id)
+    .maybeSingle();
+  return data;
+};
+
+export async function addCue(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  momentId: string,
+  formData: FormData,
+): Promise<MomentOutcome> {
+  const context = await plannerContext(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const fields = readCue(formData);
+  if (!fields) return { ok: false, message: "A cue and a whole number of minutes." };
+
+  const moment = await momentOf(context, momentId);
+  if (!moment) return { ok: false };
+
+  const { data, error } = await context.supabase
+    .from("run_of_show_cues")
+    .insert({
+      engagement_id: context.engagement.id,
+      schedule_item_id: momentId,
+      offset_minutes: fields.offset,
+      at_label: moment.starts_label,
+      cue: fields.cue,
+      who_name: fields.who,
+      note: fields.note,
+      position: 99,
+    })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}
+
+export async function updateCue(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  cueId: string,
+  formData: FormData,
+): Promise<MomentOutcome> {
+  const context = await plannerContext(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const fields = readCue(formData);
+  if (!fields) return { ok: false, message: "A cue and a whole number of minutes." };
+
+  const { data, error } = await context.supabase
+    .from("run_of_show_cues")
+    .update({
+      offset_minutes: fields.offset,
+      cue: fields.cue,
+      who_name: fields.who,
+      note: fields.note,
+    })
+    .eq("id", cueId)
+    .eq("engagement_id", context.engagement.id)
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}
+
+export async function deleteCue(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  cueId: string,
+): Promise<MomentOutcome> {
+  const context = await plannerContext(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const { data, error } = await context.supabase
+    .from("run_of_show_cues")
+    .delete()
+    .eq("id", cueId)
+    .eq("engagement_id", context.engagement.id)
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}
+
+/* -------------------------------------- what a moment needs, in one place */
+
+/**
+ * A task or resource born inside a moment's drawer, so the working meeting
+ * never leaves the calendar to record what a moment needs. The record lands
+ * in the same tables as everywhere else, linked to the moment.
+ */
+export async function addMomentTask(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  momentId: string,
+  formData: FormData,
+): Promise<MomentOutcome> {
+  const context = await plannerContext(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const title = String(formData.get("title") ?? "").trim().slice(0, 160);
+  if (!title) return { ok: false, message: "A title." };
+  const moment = await momentOf(context, momentId);
+  if (!moment) return { ok: false };
+
+  const { data, error } = await context.supabase
+    .from("tasks")
+    .insert({
+      engagement_id: context.engagement.id,
+      schedule_item_id: momentId,
+      title,
+      owner_name: String(formData.get("owner") ?? "").trim().slice(0, 80) || null,
+      due_on: String(formData.get("due") ?? "").trim() || null,
+      status: "todo",
+    })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidate(clientSlug, eventSlug, edition);
+  revalidatePath(`/spark/c/${clientSlug}/e/${eventSlug}/${edition}/tasks`);
+  return { ok: true };
+}
+
+const MOMENT_RESOURCE_KINDS = ["person", "vendor", "equipment", "supply", "deliverable"];
+
+export async function addMomentResource(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  momentId: string,
+  formData: FormData,
+): Promise<MomentOutcome> {
+  const context = await plannerContext(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const name = String(formData.get("name") ?? "").trim().slice(0, 160);
+  const kind = String(formData.get("kind") ?? "");
+  if (!name || !MOMENT_RESOURCE_KINDS.includes(kind)) {
+    return { ok: false, message: "A name and a kind." };
+  }
+  const moment = await momentOf(context, momentId);
+  if (!moment) return { ok: false };
+
+  const dollars = Number(String(formData.get("cost") ?? "").trim());
+  const { data, error } = await context.supabase
+    .from("resources")
+    .insert({
+      engagement_id: context.engagement.id,
+      schedule_item_id: momentId,
+      kind,
+      name,
+      status: "needed",
+      estimated_cents:
+        Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0,
+    })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidate(clientSlug, eventSlug, edition);
+  revalidatePath(`/spark/c/${clientSlug}/e/${eventSlug}/${edition}/resources`);
+  return { ok: true };
+}

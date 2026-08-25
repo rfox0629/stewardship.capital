@@ -53,20 +53,17 @@ export default async function EngagementLayout({ children, params }: LayoutProps
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   const working = role === "planner" || role === "client";
 
+  /* Four doors: Plan, Tasks, Resources, Budget. Ideas and the Weekend live
+     inside Plan as two lenses of one surface, and the run of show lives
+     inside the Weekend as a lens on the schedule. Decisions live on the
+     sparks that were decided. A guest's only door is the schedule. */
   const nav: EventNavItem[] = working
     ? [
         { href: base, label: "The weekend" },
-        { href: `${base}/sparks`, label: "Sparks" },
-        { href: `${base}/schedule`, label: "Schedule" },
-        { href: `${base}/budget`, label: "Budget" },
+        { href: `${base}/sparks`, label: "Plan", also: [`${base}/schedule`] },
         { href: `${base}/tasks`, label: "Tasks" },
         { href: `${base}/resources`, label: "Resources" },
-        { href: `${base}/decisions`, label: "Decisions" },
-        /* The run of show is the one planner-only surface; a link a reader
-           cannot open is not rendered for them. */
-        ...(role === "planner" || context.staff
-          ? [{ href: `${base}/run-of-show`, label: "Run of show" }]
-          : []),
+        { href: `${base}/budget`, label: "Budget" },
       ]
     : [{ href: `${base}/schedule`, label: "Schedule" }];
 

@@ -63,6 +63,7 @@ begin
     ('client cannot write the budget','0', pg_temp.as_user(megan,
       'with u as (update public.budget_lines set planned_cents=1 where true returning 1) select count(*)::text from u')),
     ('run of show is planner only','0', pg_temp.as_user(megan,'select count(*)::text from public.run_of_show_cues')),
+    ('run of show is hidden from guests','0', pg_temp.as_user(guest,'select count(*)::text from public.run_of_show_cues')),
     ('anon sees nothing','0', pg_temp.as_user('00000000-0000-0000-0000-000000000000','select count(*)::text from public.engagements'));
 end $$;
 

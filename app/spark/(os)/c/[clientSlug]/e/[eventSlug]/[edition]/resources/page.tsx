@@ -22,8 +22,18 @@ type ResourceRow = {
   quantity: string | null;
   owner_name: string | null;
   status: string;
+  estimated_cents: number;
+  committed_cents: number;
+  actual_cents: number;
   spark: { title: string } | { title: string }[] | null;
 };
+
+const money = (cents: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
 
 const STATUS: Record<string, { label: string; tone: string }> = {
   confirmed: { label: "Confirmed", tone: "ev-pill-good" },
@@ -44,15 +54,20 @@ export default async function ResourcesPage({ params }: PageProps) {
 
   const { data } = await context.supabase
     .from("resources")
-    .select("id, kind, name, detail, quantity, owner_name, status, spark:sparks(title)")
+    .select(
+      "id, kind, name, detail, quantity, owner_name, status, estimated_cents, committed_cents, actual_cents, spark:sparks(title)",
+    )
     .eq("engagement_id", context.engagement.id)
     .order("status", { ascending: true })
     .order("name", { ascending: true });
 
   const resources = (data ?? []) as ResourceRow[];
   const groups = [
+    { key: "person", title: "People", note: "Who is being asked" },
     { key: "vendor", title: "Vendors", note: "The people being hired" },
+    { key: "equipment", title: "Equipment", note: "What has to be on site" },
     { key: "supply", title: "Supplies", note: "The things being gathered" },
+    { key: "deliverable", title: "Deliverables", note: "What has to be made" },
   ]
     .map((group) => ({
       ...group,
@@ -81,6 +96,12 @@ export default async function ResourcesPage({ params }: PageProps) {
                   <p className="ev-row-kicker">
                     {row.owner_name ? <span>{row.owner_name}</span> : null}
                     {row.quantity ? <span>{row.quantity}</span> : null}
+                    {row.estimated_cents > 0 ? (
+                      <span>{money(row.estimated_cents)} est.</span>
+                    ) : null}
+                    {row.actual_cents > 0 ? (
+                      <span>{money(row.actual_cents)} spent</span>
+                    ) : null}
                   </p>
                   <p className="ev-row-title">
                     {row.name}

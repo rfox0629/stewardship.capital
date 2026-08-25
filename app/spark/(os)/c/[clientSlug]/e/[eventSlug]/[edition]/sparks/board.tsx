@@ -7,15 +7,16 @@ import { addSparkNote, captureSpark, decideSpark, placeSpark } from "./actions";
 import { AddToPlan } from "./add-to-plan";
 
 /**
- * The pipeline as a board: three columns, compact cards, and a drawer for
- * everything deeper. A card at rest shows only what recognises it; the idea's
- * full story lives one click away.
+ * Ideas, working two columns wide: Spark and Discern. Everything that has
+ * left discernment leaves the board too. Approved ideas live in the plan and
+ * in a quiet Approved drawer as provenance; parked and declined ideas rest in
+ * theirs, each keeping the reason it was settled.
  *
- * Dragging capture into discernment changes the real state. Dragging into
- * Move intentionally is more consequential, so the drop does not approve by
- * itself: it opens the decision, asks for the sentence, and only then moves
- * the card. Every drag has a button twin in the drawer, and on a phone the
- * buttons are the way.
+ * Dragging Spark into Discern changes the real state. Approval never rides a
+ * drag: the decision modal asks for the sentence first, and the moment it
+ * commits, the drawer opens on Add to the plan so the working meeting keeps
+ * moving. Every drag has a button twin, and on a phone the buttons are the
+ * way.
  */
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
@@ -28,6 +29,8 @@ export type BoardSpark = {
   status: string;
   raisedBy: string | null;
   decision: string | null;
+  decidedBy: string | null;
+  decidedAt: string | null;
   /** Where the idea might happen. A gesture, never a schedule row. */
   day: string | null;
   daypart: string | null;
@@ -62,10 +65,13 @@ const CATEGORIES = [
 const KIND_SHORT: Record<string, string> = {
   Schedule: "SCHED",
   Task: "TASK",
-  Budget: "BUDGET",
   Resource: "RES",
-  Decision: "DECIDE",
+  Budget: "BUDGET",
   "Run of show": "ROS",
+};
+
+const DAY_SHORT: Record<string, string> = {
+  thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun",
 };
 
 const noopSubscribe = () => () => {};
@@ -81,12 +87,10 @@ export function SparkBoard({
   sparks,
   route,
   planner,
-  scheduleMoments,
 }: {
   sparks: BoardSpark[];
   route: Route;
   planner: boolean;
-  scheduleMoments: Array<{ id: string; label: string }>;
 }) {
   const hydrated = useHydrated();
   const [openId, setOpenId] = useState<string | null>(() =>
@@ -94,19 +98,14 @@ export function SparkBoard({
       ? new URLSearchParams(window.location.search).get("open")
       : null,
   );
-  const [boardView, setBoardView] = useState<"pipeline" | "weekend">(() =>
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("board") === "weekend"
-      ? "weekend"
-      : "pipeline",
-  );
+  const [capturing, setCapturing] = useState(false);
+  const [restOpen, setRestOpen] = useState(false);
+  const [approvedOpen, setApprovedOpen] = useState(false);
+  const [modal, setModal] = useState<Modal>(null);
+  const [statusOverride, setStatusOverride] = useState<Map<string, string>>(new Map());
   const [placementOverride, setPlacementOverride] = useState<
     Map<string, { day: string | null; daypart: string | null }>
   >(new Map());
-  const [capturing, setCapturing] = useState(false);
-  const [restOpen, setRestOpen] = useState(false);
-  const [modal, setModal] = useState<Modal>(null);
-  const [statusOverride, setStatusOverride] = useState<Map<string, string>>(new Map());
   const [failure, setFailure] = useState<string | null>(null);
   const dragId = useRef<string | null>(null);
   const [, startTransition] = useTransition();
@@ -139,21 +138,10 @@ export function SparkBoard({
           next.delete(spark.id);
           return next;
         });
-        setFailure("That move did not save, so the card was put back.");
+        setFailure("That placement did not save.");
       }
     });
   };
-
-  const onPlaceDrop = (day: string | null, daypart: string | null) =>
-    (event: React.DragEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const id = dragId.current;
-      dragId.current = null;
-      if (!id) return;
-      const spark = merged.find((candidate) => candidate.id === id);
-      if (spark) place(spark, day, daypart);
-    };
 
   const move = (spark: BoardSpark, to: string, rationale?: string) => {
     setStatusOverride((prev) => new Map(prev).set(spark.id, to));
@@ -173,50 +161,28 @@ export function SparkBoard({
     });
   };
 
-  const onDropTo = (target: "discussing" | "approved") => (event: React.DragEvent) => {
+  const onDropTo = (target: "captured" | "discussing") => (event: React.DragEvent) => {
     event.preventDefault();
     const id = dragId.current;
     dragId.current = null;
-    if (!id) return;
+    if (!id || target === "captured") return;
     const spark = merged.find((candidate) => candidate.id === id);
     if (!spark) return;
-
-    if (target === "discussing" && spark.status === "captured") {
+    if (spark.status === "captured" || spark.status === "parked") {
       move(spark, "discussing");
-    } else if (target === "discussing" && spark.status === "parked") {
-      move(spark, "discussing");
-    } else if (target === "approved" && spark.status === "discussing") {
-      /* Crossing this line is a decision, not a gesture. */
-      setModal({ kind: "approve", spark, via: "drag" });
     }
   };
 
-  const columns: Array<{
-    key: "captured" | "discussing" | "approved";
-    title: string;
-    drop?: "discussing" | "approved";
-  }> = [
-    { key: "captured", title: "Capture freely" },
-    { key: "discussing", title: "Discern carefully", drop: "discussing" },
-    { key: "approved", title: "Move intentionally", drop: "approved" },
-  ];
-
   const rested = merged.filter((spark) => spark.status === "parked" || spark.status === "declined");
+  const approved = merged.filter((spark) => spark.status === "approved");
   const open = hydrated ? (merged.find((spark) => spark.id === openId) ?? null) : null;
-  const shownBoard = hydrated ? boardView : "pipeline";
-  const placeable = merged.filter(
-    (spark) => spark.status !== "parked" && spark.status !== "declined",
-  );
 
-  const card = (spark: BoardSpark, forPlacement = false) => (
+  const card = (spark: BoardSpark) => (
     <button
       key={spark.id}
       type="button"
       className={`ev-k-card ${STATE_CLASS[spark.status] ?? ""}`}
-      draggable={
-        planner &&
-        (forPlacement || spark.status === "captured" || spark.status === "discussing")
-      }
+      draggable={planner && spark.status === "captured"}
       onDragStart={() => {
         dragId.current = spark.id;
       }}
@@ -226,6 +192,7 @@ export function SparkBoard({
       <span className="ev-k-kicker">
         {spark.category}
         {spark.raisedBy ? ` · ${spark.raisedBy}` : ""}
+        {spark.day ? ` · ${DAY_SHORT[spark.day] ?? spark.day}` : ""}
       </span>
       {(spark.links.length > 0 || spark.notes.length > 0) && (
         <span className="ev-k-chips">
@@ -238,29 +205,22 @@ export function SparkBoard({
     </button>
   );
 
+  const columns: Array<{ key: "captured" | "discussing"; title: string; hint: string }> = [
+    { key: "captured", title: "Spark", hint: "Ideas" },
+    { key: "discussing", title: "Discern", hint: "Should we do it?" },
+  ];
+
   return (
     <>
       <div className="ev-schedule-bar">
-        <div className="ev-toggle" role="tablist" aria-label="Board view">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={shownBoard === "pipeline"}
-            onClick={() => setBoardView("pipeline")}
-          >
-            Pipeline
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={shownBoard === "weekend"}
-            onClick={() => setBoardView("weekend")}
-          >
-            Weekend
-          </button>
-        </div>
+        <div className="ev-bar-left" />
         <div className="ev-bar-right">
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
+          {approved.length > 0 ? (
+            <button type="button" className="ev-bar-quiet" onClick={() => setApprovedOpen(true)}>
+              Approved · {approved.length}
+            </button>
+          ) : null}
           {rested.length > 0 ? (
             <button type="button" className="ev-bar-quiet" onClick={() => setRestOpen(true)}>
               At rest · {rested.length}
@@ -272,109 +232,82 @@ export function SparkBoard({
         </div>
       </div>
 
-      {shownBoard === "pipeline" ? (
-        <div className="ev-kboard">
-          {columns.map((column) => (
-            <section
-              key={column.key}
-              className="ev-kcol"
-              aria-label={column.title}
-              onDragOver={
-                planner && column.drop ? (event) => event.preventDefault() : undefined
-              }
-              onDrop={planner && column.drop ? onDropTo(column.drop) : undefined}
-            >
-              <div className="ev-kcol-head">
-                <h3>{column.title}</h3>
-                <span>{merged.filter((spark) => spark.status === column.key).length}</span>
-              </div>
-              <div className="ev-kcol-cards">
-                {merged.filter((spark) => spark.status === column.key).map((spark) => card(spark))}
-              </div>
-            </section>
-          ))}
-        </div>
-      ) : (
-        <>
-          <div
-            className="ev-tray"
+      <div className="ev-kboard ev-kboard-2">
+        {columns.map((column) => (
+          <section
+            key={column.key}
+            className="ev-kcol"
+            aria-label={column.title}
             onDragOver={planner ? (event) => event.preventDefault() : undefined}
-            onDrop={planner ? onPlaceDrop(null, null) : undefined}
+            onDrop={planner ? onDropTo(column.key) : undefined}
           >
-            <span className="ev-tray-label">Unscheduled</span>
-            <div className="ev-tray-cards">
-              {placeable
-                .filter((spark) => !spark.day)
-                .map((spark) => card(spark, true))}
+            <div className="ev-kcol-head">
+              <h3>{column.title}</h3>
+              <span>{merged.filter((spark) => spark.status === column.key).length}</span>
             </div>
-          </div>
-          <div className="ev-kboard ev-kboard-4">
-            {PLACE_DAYS.map((day) => (
-              <section key={day.key} className="ev-kcol" aria-label={day.label}>
-                <div className="ev-kcol-head">
-                  <h3>{day.label}</h3>
-                  <span>
-                    {placeable.filter((spark) => spark.day === day.key).length}
-                  </span>
-                </div>
-                {DAYPARTS.map((part) => {
-                  const zone = placeable.filter(
-                    (spark) =>
-                      spark.day === day.key &&
-                      (spark.daypart ?? "anytime") === part.key,
-                  );
-                  return (
-                    <div
-                      key={part.key}
-                      className="ev-zone"
-                      onDragOver={planner ? (event) => event.preventDefault() : undefined}
-                      onDrop={planner ? onPlaceDrop(day.key, part.key) : undefined}
-                    >
-                      <span className="ev-zone-label">{part.label}</span>
-                      <div className="ev-kcol-cards">
-                        {zone.map((spark) => card(spark, true))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </section>
-            ))}
-          </div>
-        </>
-      )}
+            <div className="ev-kcol-cards">
+              {merged.filter((spark) => spark.status === column.key).map((spark) => card(spark))}
+            </div>
+          </section>
+        ))}
+      </div>
 
       {capturing ? (
         <CaptureDrawer route={route} onClose={() => setCapturing(false)} />
       ) : null}
 
       {restOpen ? (
-        <div className="ev-drawer-wrap" role="dialog" aria-modal="true" aria-label="At rest">
-          <button type="button" className="ev-drawer-scrim" aria-label="Close" onClick={() => setRestOpen(false)} />
-          <div className="ev-drawer">
-            <div className="ev-drawer-head">
-              <p className="ev-drawer-kicker">At rest</p>
-              <button type="button" className="ev-drawer-x" onClick={() => setRestOpen(false)} aria-label="Close">×</button>
-            </div>
-            <div className="ev-drawer-body">
-              {rested.map((spark) => (
-                <div key={spark.id} className="ev-rest-row">
-                  <p className="ev-k-title">{spark.title}</p>
-                  <p className="ev-k-kicker">
-                    {spark.status === "parked" ? "Parked" : "Declined"} · {spark.category}
-                  </p>
-                  {spark.decision ? <p className="ev-drawer-note">{spark.decision}</p> : null}
-                  {planner ? (
-                    <div className="ev-row-actions">
-                      <button type="button" onClick={() => { move(spark, "discussing"); setRestOpen(false); }}>
-                        Reopen
-                      </button>
-                    </div>
-                  ) : null}
+        <ListDrawer title="At rest" onClose={() => setRestOpen(false)}>
+          {rested.map((spark) => (
+            <div key={spark.id} className="ev-rest-row">
+              <p className="ev-k-title">{spark.title}</p>
+              <p className="ev-k-kicker">
+                {spark.status === "parked" ? "Parked" : "Declined"} · {spark.category}
+                {spark.decidedBy ? ` · ${spark.decidedBy}` : ""}
+                {spark.decidedAt ? ` · ${spark.decidedAt}` : ""}
+              </p>
+              {spark.decision ? <p className="ev-drawer-note">{spark.decision}</p> : null}
+              {planner ? (
+                <div className="ev-row-actions">
+                  <button type="button" onClick={() => { move(spark, "discussing"); setRestOpen(false); }}>
+                    Reopen
+                  </button>
                 </div>
-              ))}
+              ) : null}
             </div>
-          </div>
-        </div>
+          ))}
+        </ListDrawer>
+      ) : null}
+
+      {approvedOpen ? (
+        <ListDrawer title="Approved, in the plan" onClose={() => setApprovedOpen(false)}>
+          {approved.map((spark) => (
+            <div key={spark.id} className="ev-rest-row">
+              <button
+                type="button"
+                className="ev-rest-open"
+                onClick={() => { setOpenId(spark.id); setApprovedOpen(false); }}
+              >
+                {spark.title}
+              </button>
+              <p className="ev-k-kicker">
+                {spark.category}
+                {spark.decidedBy ? ` · ${spark.decidedBy}` : ""}
+                {spark.decidedAt ? ` · ${spark.decidedAt}` : ""}
+              </p>
+              {spark.decision ? <p className="ev-drawer-note">{spark.decision}</p> : null}
+              {spark.links.length > 0 ? (
+                <p className="ev-k-chips">
+                  {[...new Set(spark.links.map((link) => link.kind))].map((kind) => (
+                    <em key={kind}>{KIND_SHORT[kind] ?? kind}</em>
+                  ))}
+                </p>
+              ) : (
+                <p className="ev-row-detail">Not in the plan yet</p>
+              )}
+            </div>
+          ))}
+        </ListDrawer>
       ) : null}
 
       {open ? (
@@ -382,9 +315,9 @@ export function SparkBoard({
           spark={open}
           route={route}
           planner={planner}
-          scheduleMoments={scheduleMoments}
           onClose={() => setOpenId(null)}
           onMove={move}
+          onPlace={place}
           onAskApprove={() => setModal({ kind: "approve", spark: open, via: "drawer" })}
           onAskSettle={(to) => setModal({ kind: "settle", spark: open, to })}
         />
@@ -395,14 +328,45 @@ export function SparkBoard({
           modal={modal}
           onClose={() => setModal(null)}
           onCommit={(rationale) => {
-            if (modal.kind === "approve") move(modal.spark, "approved", rationale);
-            else move(modal.spark, modal.to, rationale);
+            if (modal.kind === "approve") {
+              move(modal.spark, "approved", rationale);
+              /* Approval flows straight into the plan: the drawer stays open
+                 with Add to the plan in reach. */
+              setOpenId(modal.spark.id);
+            } else {
+              move(modal.spark, modal.to, rationale);
+              setOpenId(null);
+            }
             setModal(null);
-            setOpenId(null);
           }}
         />
       ) : null}
     </>
+  );
+}
+
+/* --------------------------------------------------------- list drawer */
+
+function ListDrawer({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="ev-drawer-wrap" role="dialog" aria-modal="true" aria-label={title}>
+      <button type="button" className="ev-drawer-scrim" aria-label="Close" onClick={onClose} />
+      <div className="ev-drawer">
+        <div className="ev-drawer-head">
+          <p className="ev-drawer-kicker">{title}</p>
+          <button type="button" className="ev-drawer-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        <div className="ev-drawer-body">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -417,7 +381,7 @@ function CaptureDrawer({ route, onClose }: { route: Route; onClose: () => void }
       <button type="button" className="ev-drawer-scrim" aria-label="Close" onClick={onClose} />
       <div className="ev-drawer">
         <div className="ev-drawer-head">
-          <p className="ev-drawer-kicker">Capture freely</p>
+          <p className="ev-drawer-kicker">Spark</p>
           <button type="button" className="ev-drawer-x" onClick={onClose} aria-label="Close">×</button>
         </div>
         <form
@@ -465,18 +429,18 @@ function SparkDrawer({
   spark,
   route,
   planner,
-  scheduleMoments,
   onClose,
   onMove,
+  onPlace,
   onAskApprove,
   onAskSettle,
 }: {
   spark: BoardSpark;
   route: Route;
   planner: boolean;
-  scheduleMoments: Array<{ id: string; label: string }>;
   onClose: () => void;
   onMove: (spark: BoardSpark, to: string) => void;
+  onPlace: (spark: BoardSpark, day: string | null, daypart: string | null) => void;
   onAskApprove: () => void;
   onAskSettle: (to: "parked" | "declined") => void;
 }) {
@@ -497,13 +461,22 @@ function SparkDrawer({
         <div className="ev-drawer-body">
           <h3 className="ev-drawer-title">{spark.title}</h3>
           {spark.detail ? <p className="ev-drawer-note">{spark.detail}</p> : null}
-          {spark.decision ? <p className="ev-row-decision">{spark.decision}</p> : null}
+          {spark.decision ? (
+            <p className="ev-row-decision">
+              {spark.decision}
+              {spark.decidedBy || spark.decidedAt ? (
+                <span className="ev-decided-line">
+                  {[spark.decidedBy, spark.decidedAt].filter(Boolean).join(" · ")}
+                </span>
+              ) : null}
+            </p>
+          ) : null}
 
           {planner ? (
             <div className="ev-row-actions">
               {spark.status === "captured" ? (
                 <button type="button" disabled={pending} onClick={() => { onMove(spark, "discussing"); onClose(); }}>
-                  Bring into discernment
+                  Discern
                 </button>
               ) : null}
               {spark.status === "discussing" ? (
@@ -525,10 +498,36 @@ function SparkDrawer({
               route={route}
               sparkId={spark.id}
               sparkTitle={spark.title}
-              scheduleMoments={scheduleMoments}
               tentativeDay={spark.day}
               tentativeDaypart={spark.daypart}
             />
+          ) : null}
+
+          {planner && (spark.status === "captured" || spark.status === "discussing" || spark.status === "approved") ? (
+            <div className="ev-place-row">
+              <span className="ev-drawer-sub">Might fit</span>
+              <select
+                value={spark.day ?? ""}
+                onChange={(event) =>
+                  onPlace(spark, event.target.value || null, event.target.value ? (spark.daypart ?? "anytime") : null)
+                }
+              >
+                <option value="">Unscheduled</option>
+                {PLACE_DAYS.map((day) => (
+                  <option key={day.key} value={day.key}>{day.label}</option>
+                ))}
+              </select>
+              {spark.day ? (
+                <select
+                  value={spark.daypart ?? "anytime"}
+                  onChange={(event) => onPlace(spark, spark.day, event.target.value)}
+                >
+                  {DAYPARTS.map((part) => (
+                    <option key={part.key} value={part.key}>{part.label}</option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
           ) : null}
 
           {spark.links.length > 0 ? (
@@ -601,7 +600,7 @@ function DecisionModal({
       <button type="button" className="ev-drawer-scrim" aria-label="Close" onClick={onClose} />
       <div className="ev-modal">
         <p className="ev-drawer-kicker">
-          {modal.kind === "approve" ? "Move intentionally" : modal.to === "parked" ? "Park" : "Decline"}
+          {modal.kind === "approve" ? "Approve" : modal.to === "parked" ? "Park" : "Decline"}
         </p>
         <h3 className="ev-drawer-title">{modal.spark.title}</h3>
         <div className="ev-field">
