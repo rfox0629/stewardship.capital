@@ -50,18 +50,16 @@ const PLANNER_ONLY: SparkRole[] = ["planner"];
  * private by default rather than public by accident.
  */
 const SECTIONS: Record<string, SparkRole[]> = {
-  /* The overview carries budget and spark counts, so it is working members. A
+  /* The weekend carries budget figures, so it is working members. A
      stakeholder's home is the schedule instead, see workspaceHome. */
   "": WORKING,
   schedule: EVERYONE,
-  sparks: WORKING,
+  plan: WORKING,
+  actions: WORKING,
   budget: WORKING,
-  tasks: WORKING,
-  resources: WORKING,
-  /* Decisions and the run of show are no longer routes of their own: the
-     decision lives on the spark that was decided, and cues live inside the
-     schedule. Their old paths fall to the planner-only default below, which
-     still reveals nothing to a guest following an old link. */
+  /* Sparks, tasks, resources, decisions, and the run of show are no longer
+     routes. Their old paths fall to the planner only default below, which
+     reveals nothing to a guest following a stale link. */
 };
 
 const allowedRoles = (section: string): SparkRole[] =>

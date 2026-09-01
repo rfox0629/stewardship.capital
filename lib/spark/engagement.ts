@@ -19,6 +19,29 @@ import { createClient } from "../supabase/server.ts";
  * request instead of asking twice.
  */
 
+/**
+ * Vision, venue, and drink material an engagement carries for reading. Every
+ * part is optional: an engagement that has none simply shows none, and a
+ * "needs" line is how a sheet says which of its columns did not come across.
+ */
+export type EngagementReference = {
+  vision?: {
+    theme?: string;
+    scripture?: string;
+    elements?: Array<{ name: string; scripture?: string; connection?: string; practical?: string }>;
+    needs?: string;
+  };
+  venue?: {
+    name?: string;
+    needs?: string;
+    amenities?: Array<{ name: string; standing?: string }>;
+  };
+  drinks?: {
+    needs?: string;
+    options?: Array<{ name: string; ingredients?: string; feel?: string }>;
+  };
+};
+
 export type EngagementContext = {
   /** This person's place in the engagement. Staff act as planners. */
   role: SparkRole;
@@ -39,6 +62,7 @@ export type EngagementContext = {
     budgetTotalCents: number;
     guestsExpected: number;
     organizationName: string;
+    reference: EngagementReference;
   };
   theme: EngagementTheme;
   supabase: Awaited<ReturnType<typeof createClient>>;
@@ -71,7 +95,7 @@ export const resolveEngagement = cache(
     const { data, error } = await supabase
       .from("engagements")
       .select(
-        "id, name, campaign, summary, status, starts_on, ends_on, location, venue, budget_total_cents, guests_expected, theme, organizations!inner(slug, name, theme)",
+        "id, name, campaign, summary, status, starts_on, ends_on, location, venue, budget_total_cents, guests_expected, theme, reference, organizations!inner(slug, name, theme)",
       )
       .eq("organizations.slug", clientSlug)
       .eq("series_slug", eventSlug)
@@ -122,6 +146,8 @@ export const resolveEngagement = cache(
         budgetTotalCents: data.budget_total_cents ?? 0,
         guestsExpected: data.guests_expected ?? 0,
         organizationName: organization?.name ?? clientSlug,
+        /* Vision, venue, and drinks: read only material the Weekend renders. */
+        reference: (data.reference ?? {}) as EngagementReference,
       },
       theme,
       supabase,

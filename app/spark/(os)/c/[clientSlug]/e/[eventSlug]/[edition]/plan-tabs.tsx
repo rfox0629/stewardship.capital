@@ -1,15 +1,15 @@
 import Link from "next/link";
 
 /**
- * One Plan, two lenses. Ideas is the Spark and Discern board; Weekend is the
- * event calendar, which carries its own Schedule and Run of Show lens. Two
- * routes underneath, one surface to the reader.
+ * One Plan, two sides. Ideas is what the team is considering; Schedule is
+ * what is actually happening. Two routes underneath, one surface to the
+ * reader.
  */
-export function PlanTabs({ base, active }: { base: string; active: "ideas" | "weekend" }) {
+export function PlanTabs({ base, active }: { base: string; active: "ideas" | "schedule" }) {
   return (
     <div className="ev-plan-tabs" role="tablist" aria-label="Plan">
       <Link
-        href={`${base}/sparks`}
+        href={`${base}/plan`}
         role="tab"
         aria-selected={active === "ideas"}
         className={active === "ideas" ? "ev-plan-tab-on" : ""}
@@ -19,10 +19,10 @@ export function PlanTabs({ base, active }: { base: string; active: "ideas" | "we
       <Link
         href={`${base}/schedule`}
         role="tab"
-        aria-selected={active === "weekend"}
-        className={active === "weekend" ? "ev-plan-tab-on" : ""}
+        aria-selected={active === "schedule"}
+        className={active === "schedule" ? "ev-plan-tab-on" : ""}
       >
-        Weekend
+        Schedule
       </Link>
     </div>
   );

@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 
 import "@app/styles/site.css";
 import "@spark/event.css";
+import "@spark/workspace.css";
 
 import { SiteNav } from "@app/(www)/_components/site-nav";
 import { eventBody, eventDisplay, eventSub } from "@app/fonts";
@@ -57,12 +58,14 @@ export default async function EngagementLayout({ children, params }: LayoutProps
      inside Plan as two lenses of one surface, and the run of show lives
      inside the Weekend as a lens on the schedule. Decisions live on the
      sparks that were decided. A guest's only door is the schedule. */
+  /* Four doors. Ideas and the Schedule are two sides of one Plan, and the
+     run of show lives inside a scheduled moment. A guest's only door is the
+     schedule, and a link a reader cannot open is never rendered for them. */
   const nav: EventNavItem[] = working
     ? [
         { href: base, label: "The weekend" },
-        { href: `${base}/sparks`, label: "Plan", also: [`${base}/schedule`] },
-        { href: `${base}/tasks`, label: "Tasks" },
-        { href: `${base}/resources`, label: "Resources" },
+        { href: `${base}/plan`, label: "Plan", also: [`${base}/schedule`] },
+        { href: `${base}/actions`, label: "Actions" },
         { href: `${base}/budget`, label: "Budget" },
       ]
     : [{ href: `${base}/schedule`, label: "Schedule" }];

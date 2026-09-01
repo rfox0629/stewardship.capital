@@ -436,7 +436,7 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       /* Inside their own workspace, held to their own part of it, and sent to
          it rather than out of Spark. */
-      for (const section of ["", "/budget", "/sparks", "/tasks", "/resources", "/decisions", "/run-of-show"]) {
+      for (const section of ["", "/budget", "/plan", "/actions", "/sparks", "/tasks", "/resources"]) {
         const hit = await visit(jar, `${A_HOME}${section}`);
         assert.equal(hit.status, 307, section);
         assert.equal(hit.location, `${A_HOME}/schedule`, section);
@@ -459,12 +459,12 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.notEqual(index.location, ENTRY, "authorized at the client index");
       assert.ok([200, 404].includes(index.status), `unexpected ${index.status}`);
 
-      for (const section of ["", "/budget", "/sparks", "/schedule", "/tasks", "/resources"]) {
+      for (const section of ["", "/budget", "/plan", "/schedule", "/actions"]) {
         assert.equal((await visit(jar, `${A_HOME}${section}`)).status, 200, section);
       }
 
       /* The retired planner paths fall to the planner-only default. */
-      for (const retired of ["/run-of-show", "/decisions"]) {
+      for (const retired of ["/run-of-show", "/decisions", "/sparks", "/tasks", "/resources"]) {
         const hit = await visit(jar, `${A_HOME}${retired}`);
         assert.equal(hit.status, 307, retired);
         assert.equal(hit.location, A_HOME, retired);

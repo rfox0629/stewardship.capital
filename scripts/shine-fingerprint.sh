@@ -21,10 +21,10 @@ select md5(string_agg(part, '|' order by part)) || ':' || count(*) from (
   select 'spark:' || title || ':' || status || ':' || coalesce(decision,'') || ':' || coalesce(tentative_day,'') || coalesce(tentative_daypart,'') as part
     from public.sparks where engagement_id in (select id from eng)
   union all
-  select 'sched:' || title || ':' || status || ':' || day_key || ':' || starts_label
+  select 'sched:' || title || ':' || status || ':' || day_key || ':' || coalesce(starts_label, '~' || coalesce(daypart,''))
     from public.schedule_items where engagement_id in (select id from eng)
   union all
-  select 'budget:' || label || ':' || planned_cents || ':' || committed_cents || ':' || actual_cents
+  select 'budget:' || label || ':' || planned_cents || ':' || committed_cents || ':' || actual_cents || ':' || coalesce(status,'')
     from public.budget_lines where engagement_id in (select id from eng)
   union all
   select 'task:' || title || ':' || status from public.tasks where engagement_id in (select id from eng)

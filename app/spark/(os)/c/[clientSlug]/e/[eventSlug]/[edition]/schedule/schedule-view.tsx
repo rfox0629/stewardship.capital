@@ -29,13 +29,15 @@ import {
 export type Moment = {
   id: string;
   day: string;
-  starts: string;
+  starts: string | null;
   ends: string | null;
   title: string;
   track: string;
   location: string | null;
   status: string;
   note: string | null;
+  /** A moment the sheet gives without a clock time carries a part of day. */
+  daypart: string | null;
   sparkId: string | null;
   sparkTitle: string | null;
   minutes: number | null;
@@ -66,7 +68,7 @@ export type RelatedRecord = {
 const fmtOffset = (offset: number) =>
   offset === 0 ? "start" : offset > 0 ? `+${offset} min` : `${offset} min`;
 
-export type TentativeSpark = {
+export type TentativeIdea = {
   id: string;
   title: string;
   status: string;
@@ -97,7 +99,7 @@ const TRACK_CLASS: Record<string, string> = {
 };
 const OPEN_SPACE = /^(free|open)\b|^rest\b|family time/i;
 
-const PX_PER_MIN = 0.92;
+const PX_PER_MIN = 2.2;
 const SNAP = 15;
 const DEFAULT_LEN = 60;
 
@@ -144,7 +146,7 @@ type DragState = {
 
 /* ------------------------------------------------------------- drawer */
 
-type DrawerTab = "details" | "ros" | "tasks" | "resources";
+type DrawerTab = "details" | "ros" | "actions";
 
 function MomentDrawer({
   moment,
@@ -169,17 +171,14 @@ function MomentDrawer({
   const [tab, setTab] = useState<DrawerTab>(() => {
     if (typeof window === "undefined") return "details";
     const wanted = new URLSearchParams(window.location.search).get("tab");
-    return wanted === "ros" || wanted === "tasks" || wanted === "resources"
-      ? wanted
-      : "details";
+    return wanted === "ros" || wanted === "actions" ? wanted : "details";
   });
   const planner = role === "planner";
 
   const tabs: Array<{ key: DrawerTab; label: string }> = [
     { key: "details", label: "Details" },
     { key: "ros", label: `Run of show${cues.length ? ` · ${cues.length}` : ""}` },
-    { key: "tasks", label: "Tasks" },
-    { key: "resources", label: "Resources" },
+    { key: "actions", label: `Actions${related.length ? ` · ${related.length}` : ""}` },
   ];
 
   return (
@@ -215,21 +214,8 @@ function MomentDrawer({
         {planner && tab === "ros" ? (
           <RosEditor moment={moment} cues={cues} route={route} />
         ) : null}
-        {planner && tab === "tasks" ? (
-          <MomentRecords
-            moment={moment}
-            rows={related.filter((row) => row.kind === "task")}
-            kind="task"
-            route={route}
-          />
-        ) : null}
-        {planner && tab === "resources" ? (
-          <MomentRecords
-            moment={moment}
-            rows={related.filter((row) => row.kind === "resource")}
-            kind="resource"
-            route={route}
-          />
+        {planner && tab === "actions" ? (
+          <MomentRecords moment={moment} rows={related} route={route} />
         ) : null}
 
         {planner && tab === "details" ? (
@@ -260,7 +246,7 @@ function MomentDrawer({
               </div>
               <div className="ev-field">
                 <label>Starts</label>
-                <input name="starts" defaultValue={moment.starts} required placeholder="3:00 pm" />
+                <input name="starts" defaultValue={moment.starts ?? ""} placeholder="3:00 pm" />
               </div>
               <div className="ev-field">
                 <label>Ends</label>
@@ -292,7 +278,7 @@ function MomentDrawer({
             </div>
             {moment.sparkTitle ? (
               <p className="ev-drawer-spark">
-                <b>Spark</b> {moment.sparkTitle}
+                <b>Idea</b> {moment.sparkTitle}
               </p>
             ) : null}
             <div className="ev-row-actions">
@@ -318,7 +304,8 @@ function MomentDrawer({
           <div className="ev-drawer-body">
             <h3 className="ev-drawer-title">{moment.title}</h3>
             <p className="ev-drawer-line">
-              {days.find((day) => day.key === moment.day)?.name}, {moment.starts}
+              {days.find((day) => day.key === moment.day)?.name}
+              {moment.starts ? `, ${moment.starts}` : moment.daypart ? `, ${moment.daypart}` : ""}
               {moment.ends ? ` to ${moment.ends}` : ""}
             </p>
             {moment.location ? <p className="ev-drawer-line">{moment.location}</p> : null}
@@ -326,7 +313,7 @@ function MomentDrawer({
               <p className="ev-drawer-note">{moment.note}</p>
             ) : null}
             {role === "client" && moment.sparkTitle ? (
-              <p className="ev-drawer-spark"><b>Spark</b> {moment.sparkTitle}</p>
+              <p className="ev-drawer-spark"><b>Idea</b> {moment.sparkTitle}</p>
             ) : null}
           </div>
         ) : null}
@@ -423,7 +410,7 @@ function RosEditor({
   return (
     <div className="ev-drawer-body">
       <p className="ev-drawer-line">
-        {moment.title} · {moment.starts}
+        {moment.title}{moment.starts ? ` · ${moment.starts}` : ""}
         {moment.ends ? ` to ${moment.ends}` : ""}
       </p>
       <p className="ev-ros-hint">
@@ -466,31 +453,40 @@ function RosEditor({
 function MomentRecords({
   moment,
   rows,
-  kind,
   route,
 }: {
   moment: Moment;
   rows: RelatedRecord[];
-  kind: "task" | "resource";
   route: Route;
 }) {
+  const [kind, setKind] = useState<"task" | "resource">("task");
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
 
-  return (
-    <div className="ev-drawer-body">
-      {rows.length > 0 ? (
-        rows.map((row) => (
+  const actions = rows.filter((row) => row.kind === "task");
+  const needs = rows.filter((row) => row.kind === "resource");
+
+  const list = (label: string, items: RelatedRecord[]) =>
+    items.length > 0 ? (
+      <div className="ev-drawer-section">
+        <p className="ev-drawer-sub">{label}</p>
+        {items.map((row) => (
           <p key={`${row.kind}-${row.id}`} className="ev-drawer-noteline">
             {row.label}
             <span>{row.sub}</span>
           </p>
-        ))
-      ) : (
-        <p className="ev-row-detail">
-          {kind === "task" ? "No tasks for this moment yet." : "Nothing needed yet."}
-        </p>
-      )}
+        ))}
+      </div>
+    ) : null;
+
+  return (
+    <div className="ev-drawer-body">
+      {rows.length === 0 ? (
+        <p className="ev-row-detail">Nothing needed for this moment yet.</p>
+      ) : null}
+      {list("Actions", actions)}
+      {list("Needs", needs)}
+
       <form
         className="ev-cue-form"
         action={(formData) =>
@@ -504,14 +500,31 @@ function MomentRecords({
           })
         }
       >
+        <div className="ev-seg-small" role="group" aria-label="What to add">
+          <button
+            type="button"
+            aria-pressed={kind === "task"}
+            onClick={() => setKind("task")}
+          >
+            Action
+          </button>
+          <button
+            type="button"
+            aria-pressed={kind === "resource"}
+            onClick={() => setKind("resource")}
+          >
+            Need
+          </button>
+        </div>
+
         {kind === "task" ? (
           <div className="ev-cue-form-grid">
             <label>
-              Task
+              Action
               <input name="title" maxLength={160} required />
             </label>
             <label>
-              Who
+              Owner
               <input name="owner" maxLength={80} />
             </label>
             <label>
@@ -543,7 +556,7 @@ function MomentRecords({
         )}
         <div className="ev-row-actions">
           <button type="submit" disabled={pending}>
-            {kind === "task" ? "Add task" : "Add resource"}
+            {kind === "task" ? "Add action" : "Add need"}
           </button>
         </div>
       </form>
@@ -573,7 +586,7 @@ export function ScheduleView({
   base: string;
   cues?: Cue[];
   related?: RelatedRecord[];
-  tentative?: TentativeSpark[];
+  tentative?: TentativeIdea[];
 }) {
   const planner = role === "planner";
   const hydrated = useHydrated();
@@ -585,12 +598,17 @@ export function ScheduleView({
     if (wanted === "day" || wanted === "weekend") return wanted;
     return window.matchMedia("(max-width: 760px)").matches ? "day" : "weekend";
   });
+  /* Not every day of the weekend has a schedule. Opening on an empty one
+     looks like a broken screen, so the day view starts on today when the
+     weekend is running, and otherwise on the first day that has anything. */
+  const firstBusyDay =
+    days.find((day) => moments.some((moment) => moment.day === day.key))?.key ?? "thu";
   const [dayKey, setDayKey] = useState<string>(() => {
     if (typeof window !== "undefined") {
       const wanted = new URLSearchParams(window.location.search).get("day");
       if (wanted) return wanted;
     }
-    return today ?? "thu";
+    return today ?? firstBusyDay;
   });
   const [openId, setOpenId] = useState<string | null>(() =>
     typeof window !== "undefined"
@@ -637,15 +655,21 @@ export function ScheduleView({
   );
 
   const laneDays = days;
+  /* The grid covers the hours the weekend uses, with an hour of air either
+     side, rather than a fixed dawn to midnight that is mostly empty. */
   const dayStart = useMemo(() => {
-    const starts = merged.map((moment) => moment.minutes ?? 8 * 60);
-    return Math.min(7 * 60, Math.floor(Math.min(...starts, 7 * 60) / 60) * 60);
+    const starts = merged
+      .map((moment) => moment.minutes)
+      .filter((value): value is number => value !== null);
+    if (starts.length === 0) return 8 * 60;
+    return Math.max(0, Math.floor((Math.min(...starts) - 60) / 60) * 60);
   }, [merged]);
   const dayEnd = useMemo(() => {
-    const ends = merged.map(
-      (moment) => moment.endMinutes ?? (moment.minutes ?? 8 * 60) + DEFAULT_LEN,
-    );
-    return Math.max(22 * 60, Math.ceil(Math.max(...ends, 22 * 60) / 60) * 60);
+    const ends = merged
+      .map((moment) => moment.endMinutes ?? moment.minutes)
+      .filter((value): value is number => value !== null);
+    if (ends.length === 0) return 22 * 60;
+    return Math.min(24 * 60, Math.ceil((Math.max(...ends) + 90) / 60) * 60);
   }, [merged]);
   const gridHeight = (dayEnd - dayStart) * PX_PER_MIN;
   const hours = useMemo(() => {
@@ -789,7 +813,10 @@ export function ScheduleView({
         }
       : moment;
     const start = shown.minutes ?? dayStart;
-    const length = (shown.endMinutes ?? start + DEFAULT_LEN) - start;
+    const length =
+      (shown.endMinutes ?? impliedEnd.get(moment.id) ?? start + DEFAULT_LEN) - start;
+    /* Short moments read on one line, which is most of this weekend. */
+    const tight = length < 26;
     const marker = markers.get(moment.id);
     const open = OPEN_SPACE.test(moment.title);
 
@@ -800,13 +827,14 @@ export function ScheduleView({
       open ? "ev-block-open" : "",
       dragging ? "ev-block-dragging" : "",
       inTimeline ? "ev-block-row" : "",
+      tight && !inTimeline ? "ev-block-tight" : "",
     ].join(" ");
 
     const style = inTimeline
       ? undefined
       : {
           top: (start - dayStart) * PX_PER_MIN,
-          height: Math.max(26, length * PX_PER_MIN - 2),
+          height: Math.max(22, length * PX_PER_MIN - 2),
         };
 
     return (
@@ -828,7 +856,7 @@ export function ScheduleView({
         }}
       >
         <span className="ev-block-time">
-          {shown.starts}
+          {shown.starts ?? shown.daypart}
           {marker ? (
             <em className={marker === "now" ? "ev-now" : "ev-next"}>
               {marker === "now" ? "Now" : "Next"}
@@ -862,14 +890,36 @@ export function ScheduleView({
   const shownLens = hydrated && planner ? lens : "schedule";
   const ghostsFor = (dayKey: string) => {
     if (!shownSparks || !planner) return [];
-    const grouped = new Map<string, TentativeSpark[]>();
+    const grouped = new Map<string, TentativeIdea[]>();
     for (const spark of tentative.filter((candidate) => candidate.day === dayKey)) {
       const band = spark.daypart in DAYPART_BAND ? spark.daypart : "anytime";
       grouped.set(band, [...(grouped.get(band) ?? []), spark]);
     }
     return [...grouped.entries()];
   };
-  const shownDayKey = hydrated ? dayKey : (today ?? "thu");
+  /* The sheet says "Afternoon: free time" and means it. Those moments carry
+     a part of day rather than a start, so they sit in their own band. */
+  const untimedFor = (key: string) =>
+    merged.filter((moment) => moment.minutes === null && moment.day === key);
+
+  /* The sheet gives starts and no ends: a moment runs until the next one
+     begins. Without this every block would claim a default hour and bury
+     the three that follow it. */
+  const impliedEnd = new Map<string, number>();
+  for (const day of laneDays) {
+    const timed = merged
+      .filter((moment) => moment.day === day.key && moment.minutes !== null)
+      .toSorted((a, b) => (a.minutes as number) - (b.minutes as number));
+    timed.forEach((moment, index) => {
+      const start = moment.minutes as number;
+      const next = timed[index + 1]?.minutes ?? null;
+      const end =
+        moment.endMinutes ??
+        (next !== null ? Math.min(next, start + DEFAULT_LEN) : start + DEFAULT_LEN);
+      impliedEnd.set(moment.id, Math.max(start + 10, end));
+    });
+  }
+  const shownDayKey = hydrated ? dayKey : (today ?? firstBusyDay);
   const openMoment = hydrated
     ? (merged.find((moment) => moment.id === openId) ?? null)
     : null;
@@ -912,7 +962,7 @@ export function ScheduleView({
               aria-pressed={shownSparks}
               onClick={() => setShowSparks((current) => !current)}
             >
-              {shownSparks ? "Sparks on" : "Sparks"}
+              {shownSparks ? "Ideas shown" : "Show ideas"}
             </button>
           ) : null}
           {planner ? (
@@ -947,6 +997,25 @@ export function ScheduleView({
               </div>
             ))}
           </div>
+          {laneDays.some((day) => untimedFor(day.key).length > 0) ? (
+            <div className="ev-untimed-row" style={{ marginLeft: 52 }}>
+              {laneDays.map((day) => (
+                <div key={day.key} className="ev-untimed-cell">
+                  {untimedFor(day.key).map((moment) => (
+                    <button
+                      key={moment.id}
+                      type="button"
+                      className={`ev-untimed ${TRACK_CLASS[moment.track] ?? ""}`}
+                      onClick={() => setOpenId(moment.id)}
+                    >
+                      <span>{moment.daypart}</span>
+                      {moment.title}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="ev-grid-scroll">
             <div className="ev-grid-axis" style={{ height: gridHeight }}>
               {hours.map((minute) => (
@@ -978,8 +1047,8 @@ export function ScheduleView({
                         <Link
                           key={spark.id}
                           className={`ev-ghost ev-ghost-${spark.status}`}
-                          href={`${base}/sparks?open=${spark.id}`}
-                          title={`Spark, ${spark.status}: ${spark.title}`}
+                          href={`${base}/plan?open=${spark.id}`}
+                          title={`Idea: ${spark.title}`}
                         >
                           {spark.title}
                         </Link>
@@ -988,6 +1057,7 @@ export function ScheduleView({
                   ))}
                   {merged
                     .filter((moment) => {
+                      if (moment.minutes === null) return false;
                       const shownDay = drag?.id === moment.id && drag.moved ? drag.previewDay : moment.day;
                       return shownDay === day.key;
                     })
@@ -1027,13 +1097,13 @@ export function ScheduleView({
             ))}
             {ghostsFor(activeDay?.key ?? "").length > 0 ? (
               <div className="ev-ghost-day">
-                <span className="ev-drawer-sub">Sparks that might land here</span>
+                <span className="ev-drawer-sub">Ideas that might land here</span>
                 {ghostsFor(activeDay?.key ?? "").flatMap(([band, sparks]) =>
                   sparks.map((spark) => (
                     <Link
                       key={spark.id}
                       className={`ev-ghost ev-ghost-${spark.status}`}
-                      href={`${base}/sparks?open=${spark.id}`}
+                      href={`${base}/plan?open=${spark.id}`}
                     >
                       {spark.title}
                       <i>{band}</i>
