@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { DAY_NAMES, DAY_ORDER, parseTimeLabel } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
+import { DecisionQueue, type Decision } from "./decisions";
 import { Reference } from "./reference";
 
 export const metadata = { title: "The weekend" };
@@ -90,23 +91,17 @@ export default async function WeekendPage({ params }: PageProps) {
         ))}
       </div>
 
-      {deciding.length > 0 ? (
-        <section className="wk-attention" aria-label="Needs our attention">
-          <header className="wk-sec-head">
-            <h3>Needs our attention</h3>
-            <Link href={`${base}/plan`}>All ideas</Link>
-          </header>
-          <div className="wk-decisions">
-            {deciding.map((idea) => (
-              <Link key={idea.id} href={`${base}/plan?open=${idea.id}`} className="wk-decision">
-                <b>{idea.title}</b>
-                {idea.detail ? <span>{idea.detail}</span> : null}
-                <em>Decide</em>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <DecisionQueue
+        decisions={deciding.map((row): Decision => ({
+          id: row.id,
+          title: row.title,
+          detail: row.detail,
+          day: row.tentative_day,
+        }))}
+        route={{ clientSlug, eventSlug, edition }}
+        base={base}
+        planner={planner}
+      />
 
       <section className="wk-snapshot" aria-label="The weekend as it stands">
         <header className="wk-sec-head">

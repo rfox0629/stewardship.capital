@@ -41,7 +41,7 @@ export default async function PlanPage({ params }: PageProps) {
   const engagementId = context.engagement.id;
   const supabase = context.supabase;
 
-  const [ideasQ, notesQ, scheduleQ, actionsQ, needsQ] = await Promise.all([
+  const [ideasQ, notesQ, scheduleQ, actionsQ, needsQ, costQ] = await Promise.all([
     supabase
       .from("sparks")
       .select("id, title, detail, status, decision, decided_by_name, tentative_day, tentative_daypart")
@@ -67,7 +67,17 @@ export default async function PlanPage({ params }: PageProps) {
       .select("spark_id, name, status")
       .eq("engagement_id", engagementId)
       .not("spark_id", "is", null),
+    supabase
+      .from("budget_lines")
+      .select("spark_id, planned_cents")
+      .eq("engagement_id", engagementId)
+      .not("spark_id", "is", null),
   ]);
+
+  const cost = new Map<string, number>();
+  for (const row of costQ.data ?? []) {
+    if (row.spark_id) cost.set(row.spark_id, row.planned_cents);
+  }
 
   const links = new Map<string, Idea["links"]>();
   const push = (id: string | null, kind: string, label: string, href: string) => {
@@ -84,6 +94,8 @@ export default async function PlanPage({ params }: PageProps) {
     push(row.spark_id, "Action", [row.title, row.owner_name].filter(Boolean).join(" · "), `${base}/actions`);
   for (const row of needsQ.data ?? [])
     push(row.spark_id, "Need", row.name, `${base}/actions`);
+  for (const row of costQ.data ?? [])
+    push(row.spark_id, "Budget", `$${Math.round(row.planned_cents / 100).toLocaleString()}`, `${base}/budget`);
 
   const notes = new Map<string, Idea["notes"]>();
   for (const row of notesQ.data ?? []) {
@@ -106,6 +118,7 @@ export default async function PlanPage({ params }: PageProps) {
     daypart: row.tentative_daypart,
     decision: row.decision,
     decidedBy: row.decided_by_name,
+    costDollars: cost.has(row.id) ? Math.round((cost.get(row.id) as number) / 100) : null,
     links: links.get(row.id) ?? [],
     notes: notes.get(row.id) ?? [],
   }));

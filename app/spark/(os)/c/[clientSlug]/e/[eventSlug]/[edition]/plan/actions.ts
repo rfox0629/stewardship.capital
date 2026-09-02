@@ -371,3 +371,70 @@ export async function ideaFromReference(
   revalidate(clientSlug, eventSlug, edition);
   return { ok: true };
 }
+
+/* ------------------------------------------------------------- the cost */
+
+/**
+ * What this idea will cost, entered once.
+ *
+ * Money attaches to the idea itself rather than to whichever record happened
+ * to be created first, so there is exactly one place per idea to type a
+ * number and no way to count it twice. The budget reads these beside the
+ * engagement's own lines.
+ */
+export async function setIdeaCost(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  ideaId: string,
+  dollars: string,
+): Promise<Outcome> {
+  const context = await resolveEngagement(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+  if (context.role !== "planner" && !context.staff) return { ok: false };
+
+  const amount = Number(dollars.trim());
+  if (!Number.isFinite(amount) || amount < 0) return { ok: false, message: "A number." };
+  const planned = Math.round(amount * 100);
+
+  const { data: idea } = await context.supabase
+    .from("sparks")
+    .select("id, title")
+    .eq("id", ideaId)
+    .eq("engagement_id", context.engagement.id)
+    .maybeSingle();
+  if (!idea) return { ok: false };
+
+  const { data: existing } = await context.supabase
+    .from("budget_lines")
+    .select("id")
+    .eq("engagement_id", context.engagement.id)
+    .eq("spark_id", idea.id)
+    .maybeSingle();
+
+  const result = existing
+    ? await context.supabase
+        .from("budget_lines")
+        .update({ planned_cents: planned, label: idea.title })
+        .eq("id", existing.id)
+        .eq("engagement_id", context.engagement.id)
+        .select("id")
+    : await context.supabase
+        .from("budget_lines")
+        .insert({
+          engagement_id: context.engagement.id,
+          spark_id: idea.id,
+          category: "From ideas",
+          label: idea.title,
+          planned_cents: planned,
+          status: "estimate",
+        })
+        .select("id");
+
+  if (result.error || (result.data?.length ?? 0) === 0) {
+    return { ok: false, message: "That did not save." };
+  }
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}

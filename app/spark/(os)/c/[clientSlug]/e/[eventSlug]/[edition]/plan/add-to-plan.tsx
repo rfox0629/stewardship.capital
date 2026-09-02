@@ -2,24 +2,22 @@
 
 import { useState, useTransition } from "react";
 
-import { addToPlan, type PlanDestination } from "./actions";
+import { addToPlan, setIdeaCost, type PlanDestination } from "./actions";
 
 /**
- * What should come of this idea?
+ * After yes, four optional questions.
  *
- * Three answers, none required, any combination allowed. Every field arrives
- * filled in from the idea, so the thing that has already been said once is
- * never typed again. A schedule moment will take a real time, but it will
- * also take "Saturday evening" and wait for the rest.
+ * Nothing here is required and nothing is a form until it is asked for. Each
+ * quick action opens one or two fields, never a page of them, because an idea
+ * that only needs a time should cost one line of typing and an idea that
+ * needs nothing should cost none.
+ *
+ * Money is asked once, on the idea, rather than on whichever record happened
+ * to exist, so a number can never be counted twice.
  */
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
-
-const DESTINATIONS: Array<{ key: PlanDestination; label: string; hint: string }> = [
-  { key: "schedule", label: "Schedule", hint: "It happens at the event" },
-  { key: "action", label: "Action", hint: "Someone does something" },
-  { key: "need", label: "Need", hint: "Something is needed" },
-];
+type Quick = "time" | "action" | "cost" | "need";
 
 const DAYS = [
   { key: "wed", label: "Wednesday" },
@@ -36,14 +34,11 @@ const DAYPARTS = [
   { key: "anytime", label: "Anytime" },
 ];
 
-const TRACKS = ["Program", "Meals", "Experience", "Hospitality", "Logistics", "Worship"];
-
-const KINDS = [
-  { key: "person", label: "Person" },
-  { key: "vendor", label: "Vendor" },
-  { key: "equipment", label: "Equipment" },
-  { key: "supply", label: "Supply" },
-  { key: "deliverable", label: "Deliverable" },
+const QUICKS: Array<{ key: Quick; label: string }> = [
+  { key: "time", label: "Add time" },
+  { key: "action", label: "Add action" },
+  { key: "cost", label: "Add cost" },
+  { key: "need", label: "Add requirement" },
 ];
 
 export function AddToPlan({
@@ -52,120 +47,138 @@ export function AddToPlan({
   ideaTitle,
   day,
   daypart,
-  onDone,
+  costDollars,
+  done,
 }: {
   route: Route;
   ideaId: string;
   ideaTitle: string;
   day: string | null;
   daypart: string | null;
-  onDone?: () => void;
+  costDollars: number | null;
+  done: Quick[];
 }) {
-  const [destination, setDestination] = useState<PlanDestination | null>(null);
-  const [added, setAdded] = useState<PlanDestination[]>([]);
+  const [open, setOpen] = useState<Quick | null>(null);
+  const [added, setAdded] = useState<Quick[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  if (!destination) {
-    return (
-      <div className="ws-dests">
-        {DESTINATIONS.map((dest) => (
+  const complete = new Set<Quick>([...done, ...added]);
+
+  const send = (destination: PlanDestination, formData: FormData) =>
+    startTransition(async () => {
+      const outcome = await addToPlan(
+        route.clientSlug, route.eventSlug, route.edition, ideaId, destination, formData,
+      );
+      if (outcome.ok) {
+        setAdded((prev) => [...prev, open as Quick]);
+        setOpen(null);
+        setMessage(null);
+      } else setMessage(outcome.message ?? "That did not save.");
+    });
+
+  return (
+    <div className="ws-quick">
+      <div className="ws-quick-row">
+        {QUICKS.map((quick) => (
           <button
-            key={dest.key}
+            key={quick.key}
             type="button"
-            className="ws-dest"
-            onClick={() => { setDestination(dest.key); setMessage(null); }}
+            className={`ws-quick-btn ${complete.has(quick.key) ? "ws-quick-done" : ""} ${
+              open === quick.key ? "ws-quick-on" : ""
+            }`}
+            onClick={() => { setOpen(open === quick.key ? null : quick.key); setMessage(null); }}
           >
-            <b>{dest.label}</b>
-            <span>{added.includes(dest.key) ? "Added" : dest.hint}</span>
+            {complete.has(quick.key) ? "✓ " : "+ "}
+            {quick.label.replace("Add ", "")}
           </button>
         ))}
       </div>
-    );
-  }
 
-  const field = (label: string, input: React.ReactNode) => (
-    <label className="ws-field">
-      <span>{label}</span>
-      {input}
-    </label>
-  );
-
-  return (
-    <form
-      className="ws-form"
-      action={(formData) =>
-        startTransition(async () => {
-          const outcome = await addToPlan(
-            route.clientSlug, route.eventSlug, route.edition, ideaId, destination, formData,
-          );
-          if (outcome.ok) {
-            setAdded((prev) => [...prev, destination]);
-            setDestination(null);
-            onDone?.();
-          } else setMessage(outcome.message ?? "That did not save.");
-        })
-      }
-    >
-      {field("Title", <input name="title" defaultValue={ideaTitle} maxLength={200} />)}
-
-      {destination === "schedule" ? (
-        <>
-          <div className="ws-form-row">
-            {field("Day", (
-              <select name="day" defaultValue={day ?? "sat"}>
-                {DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-              </select>
-            ))}
-            {field("Starts", <input name="starts" placeholder="2:00 pm" />)}
-            {field("Ends", <input name="ends" placeholder="2:45 pm" />)}
-          </div>
-          <div className="ws-form-row">
-            {field("Or just", (
-              <select name="daypart" defaultValue={daypart ?? "afternoon"}>
-                {DAYPARTS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-              </select>
-            ))}
-            {field("Track", (
-              <select name="track" defaultValue="Experience">
-                {TRACKS.map((track) => <option key={track}>{track}</option>)}
-              </select>
-            ))}
-            {field("Where", <input name="location" maxLength={120} />)}
-          </div>
-          <p className="ws-hint">Leave the time empty and it sits in that part of the day.</p>
-        </>
+      {open === "time" ? (
+        <form
+          className="ws-quick-form"
+          action={(formData) => {
+            formData.set("title", ideaTitle);
+            send("schedule", formData);
+          }}
+        >
+          <select name="day" defaultValue={day ?? "sat"} aria-label="Day">
+            {DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+          </select>
+          <input name="starts" placeholder="2:00 pm" aria-label="Starts" autoFocus />
+          <select name="daypart" defaultValue={daypart ?? "afternoon"} aria-label="Or part of day">
+            {DAYPARTS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+          </select>
+          <button type="submit" className="ws-btn" disabled={pending}>Add</button>
+        </form>
       ) : null}
 
-      {destination === "action" ? (
-        <div className="ws-form-row">
-          {field("Owner", <input name="owner" maxLength={80} placeholder="Who" />)}
-          {field("Due", <input name="due" type="date" />)}
-          {field("Cost", <input name="cost" inputMode="decimal" placeholder="0" />)}
-        </div>
+      {open === "action" ? (
+        <form
+          className="ws-quick-form"
+          action={(formData) => {
+            formData.set("title", ideaTitle);
+            send("action", formData);
+          }}
+        >
+          <input name="owner" placeholder="Who owns it" maxLength={80} autoFocus aria-label="Owner" />
+          <input name="due" type="date" aria-label="Due" />
+          <button type="submit" className="ws-btn" disabled={pending}>Add</button>
+        </form>
       ) : null}
 
-      {destination === "need" ? (
-        <div className="ws-form-row">
-          {field("Kind", (
-            <select name="kind" defaultValue="supply">
-              {KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
-            </select>
-          ))}
-          {field("Who has it", <input name="owner" maxLength={80} />)}
-          {field("Cost", <input name="cost" inputMode="decimal" placeholder="0" />)}
-        </div>
+      {open === "cost" ? (
+        <form
+          className="ws-quick-form"
+          action={(formData) =>
+            startTransition(async () => {
+              const outcome = await setIdeaCost(
+                route.clientSlug, route.eventSlug, route.edition, ideaId,
+                String(formData.get("amount") ?? ""),
+              );
+              if (outcome.ok) {
+                setAdded((prev) => [...prev, "cost"]);
+                setOpen(null);
+                setMessage(null);
+              } else setMessage(outcome.message ?? "That did not save.");
+            })
+          }
+        >
+          <span className="ws-quick-prefix">$</span>
+          <input
+            name="amount"
+            inputMode="decimal"
+            defaultValue={costDollars ?? ""}
+            placeholder="0"
+            autoFocus
+            aria-label="Amount"
+          />
+          <button type="submit" className="ws-btn" disabled={pending}>Save</button>
+        </form>
       ) : null}
 
-      <div className="ws-form-actions">
-        <button type="submit" className="ws-btn" disabled={pending}>
-          {pending ? "Adding" : "Add"}
-        </button>
-        <button type="button" className="ws-btn-quiet" disabled={pending} onClick={() => setDestination(null)}>
-          Back
-        </button>
-      </div>
+      {open === "need" ? (
+        <form
+          className="ws-quick-form"
+          action={(formData) => {
+            if (!String(formData.get("title") ?? "").trim()) formData.set("title", ideaTitle);
+            send("need", formData);
+          }}
+        >
+          <input name="title" placeholder="What is needed" maxLength={200} autoFocus aria-label="Requirement" />
+          <select name="kind" defaultValue="supply" aria-label="Kind">
+            <option value="person">Person</option>
+            <option value="vendor">Vendor</option>
+            <option value="equipment">Equipment</option>
+            <option value="supply">Supply</option>
+            <option value="deliverable">Deliverable</option>
+          </select>
+          <button type="submit" className="ws-btn" disabled={pending}>Add</button>
+        </form>
+      ) : null}
+
       {message ? <p className="ws-msg" role="status">{message}</p> : null}
-    </form>
+    </div>
   );
 }

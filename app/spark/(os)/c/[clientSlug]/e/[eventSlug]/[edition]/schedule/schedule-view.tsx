@@ -175,11 +175,12 @@ function MomentDrawer({
   });
   const planner = role === "planner";
 
-  const tabs: Array<{ key: DrawerTab; label: string }> = [
-    { key: "details", label: "Details" },
-    { key: "ros", label: `Run of show${cues.length ? ` · ${cues.length}` : ""}` },
-    { key: "actions", label: `Actions${related.length ? ` · ${related.length}` : ""}` },
-  ];
+  /* Not tabs. A moment opens, and its run of show and its actions expand
+     underneath it, because they are parts of the moment rather than other
+     places to be. */
+  const [expanded, setExpanded] = useState<"ros" | "actions" | null>(
+    tab === "ros" ? "ros" : tab === "actions" ? "actions" : null,
+  );
 
   return (
     <div className="ev-drawer-wrap" role="dialog" aria-modal="true" aria-label={moment.title}>
@@ -196,29 +197,6 @@ function MomentDrawer({
         </div>
 
         {planner ? (
-          <div className="ev-drawer-tabs" role="tablist" aria-label="Moment">
-            {tabs.map((entry) => (
-              <button
-                key={entry.key}
-                type="button"
-                role="tab"
-                aria-selected={tab === entry.key}
-                onClick={() => setTab(entry.key)}
-              >
-                {entry.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {planner && tab === "ros" ? (
-          <RosEditor moment={moment} cues={cues} route={route} />
-        ) : null}
-        {planner && tab === "actions" ? (
-          <MomentRecords moment={moment} rows={related} route={route} />
-        ) : null}
-
-        {planner && tab === "details" ? (
           <form
             className="ev-drawer-body"
             action={(formData) =>
@@ -300,6 +278,39 @@ function MomentDrawer({
             {message ? <p className="ev-drawer-msg" role="status">{message}</p> : null}
           </form>
         ) : null}
+
+        {planner ? (
+          <div className="ev-expanders">
+            <button
+              type="button"
+              className="ev-expander"
+              aria-expanded={expanded === "ros"}
+              onClick={() => setExpanded(expanded === "ros" ? null : "ros")}
+            >
+              <b>Run of show</b>
+              <span>{cues.length > 0 ? `${cues.length} cues` : "Add the first cue"}</span>
+              <i aria-hidden="true">{expanded === "ros" ? "−" : "+"}</i>
+            </button>
+            {expanded === "ros" ? (
+              <RosEditor moment={moment} cues={cues} route={route} />
+            ) : null}
+
+            <button
+              type="button"
+              className="ev-expander"
+              aria-expanded={expanded === "actions"}
+              onClick={() => setExpanded(expanded === "actions" ? null : "actions")}
+            >
+              <b>Actions and needs</b>
+              <span>{related.length > 0 ? `${related.length} attached` : "Nothing yet"}</span>
+              <i aria-hidden="true">{expanded === "actions" ? "−" : "+"}</i>
+            </button>
+            {expanded === "actions" ? (
+              <MomentRecords moment={moment} rows={related} route={route} />
+            ) : null}
+          </div>
+        ) : null}
+
         {!planner ? (
           <div className="ev-drawer-body">
             <h3 className="ev-drawer-title">{moment.title}</h3>

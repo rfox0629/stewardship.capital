@@ -31,6 +31,8 @@ export type Idea = {
   daypart: string | null;
   decision: string | null;
   decidedBy: string | null;
+  /** Dollars already attached to this idea, if any. */
+  costDollars: number | null;
   links: Array<{ kind: string; label: string; href: string }>;
   notes: Array<{ author: string | null; body: string; at: string }>;
 };
@@ -467,6 +469,13 @@ function IdeaPanel({
               ideaTitle={idea.title}
               day={idea.day}
               daypart={idea.daypart}
+              costDollars={idea.costDollars}
+              done={[
+                ...(idea.links.some((l) => l.kind === "Schedule") ? (["time"] as const) : []),
+                ...(idea.links.some((l) => l.kind === "Action") ? (["action"] as const) : []),
+                ...(idea.costDollars !== null ? (["cost"] as const) : []),
+                ...(idea.links.some((l) => l.kind === "Need") ? (["need"] as const) : []),
+              ]}
             />
           </div>
         </>
