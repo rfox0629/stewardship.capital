@@ -1148,3 +1148,18 @@
 }
 
 .ev-block-tight .ev-block-where { display: none; }
+
+/* An idea drawn the instant it is typed, still on its way to the database. */
+.ws-card-pending {
+  opacity: 0.62;
+  border-style: dashed;
+  cursor: default;
+}
+
+/* The column a dragged card would land in. */
+.ws-day-over,
+.ws-tray.ws-day-over {
+  border-color: var(--ws-accent);
+  background: var(--ws-accent-soft);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}

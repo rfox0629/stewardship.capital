@@ -87,6 +87,10 @@ export function IdeaBoard({
   >(new Map());
   const [showAside, setShowAside] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  /* Ideas typed but not yet acknowledged by the database. They are drawn
+     immediately, because in a meeting the next sentence is already coming. */
+  const [pending, setPending] = useState<Array<{ key: string; title: string; day: string | null }>>([]);
+  const [overDay, setOverDay] = useState<string | null | undefined>(undefined);
   const dragId = useRef<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -142,11 +146,44 @@ export function IdeaBoard({
     });
   };
 
+  /* Typing an idea draws it at once and saves behind the typing.
+     
+     A drawn card is only taken down when the real one arrives, not when the
+     server action returns: the action resolves before the refreshed page data
+     does, and removing it any earlier makes the card blink out and back. */
+  const settled = new Set(
+    ideas.map((idea) => `${idea.title}|${idea.day ?? ""}`),
+  );
+  const inFlight = pending.filter(
+    (entry) => !settled.has(`${entry.title}|${entry.day ?? ""}`),
+  );
+
+  const add = (title: string, day: string | null) => {
+    const key = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    /* Entries the board has caught up with are dropped here rather than in an
+       effect, which keeps the list from growing across a long meeting. */
+    setPending((prev) => [
+      ...prev.filter((entry) => !settled.has(`${entry.title}|${entry.day ?? ""}`)),
+      { key, title, day },
+    ]);
+    setFailure(null);
+    startTransition(async () => {
+      const outcome = await addIdea(
+        route.clientSlug, route.eventSlug, route.edition, title, { day },
+      );
+      if (!outcome.ok) {
+        setPending((prev) => prev.filter((entry) => entry.key !== key));
+        setFailure(outcome.message ?? "That idea did not save.");
+      }
+    });
+  };
+
   const onDropDay = (day: string | null) => (event: React.DragEvent) => {
     event.preventDefault();
     const id = dragId.current;
     dragId.current = null;
     if (!id) return;
+    setOverDay(undefined);
     const idea = merged.find((candidate) => candidate.id === id);
     if (idea) place(idea, day, day ? idea.daypart : null);
   };
@@ -155,6 +192,13 @@ export function IdeaBoard({
   const aside = merged.filter((idea) => idea.state === "aside");
   const unplaced = live.filter((idea) => !idea.day);
   const open = hydrated ? merged.find((idea) => idea.id === openId) ?? null : null;
+
+  const pendingCard = (entry: { key: string; title: string }) => (
+    <span key={entry.key} className="ws-card ws-card-pending" aria-live="polite">
+      <span className="ws-card-title">{entry.title}</span>
+      <span className="ws-card-meta"><em className="ws-tag">Saving</em></span>
+    </span>
+  );
 
   const card = (idea: Card) => (
     <button
@@ -204,34 +248,42 @@ export function IdeaBoard({
           return (
             <section
               key={day.key}
-              className="ws-day"
+              className={`ws-day ${overDay === day.key ? "ws-day-over" : ""}`}
               aria-label={day.label}
-              onDragOver={planner ? (event) => event.preventDefault() : undefined}
+              onDragOver={planner ? (event) => { event.preventDefault(); setOverDay(day.key); } : undefined}
+              onDragLeave={planner ? () => setOverDay((current) => (current === day.key ? undefined : current)) : undefined}
               onDrop={planner ? onDropDay(day.key) : undefined}
             >
               <header className="ws-day-head">
                 <h3>{day.label}</h3>
-                <span>{mine.length}</span>
+                <span>{mine.length + inFlight.filter((entry) => entry.day === day.key).length}</span>
               </header>
-              {planner ? <QuickAdd route={route} day={day.key} /> : null}
-              <div className="ws-day-cards">{mine.map(card)}</div>
+              {planner ? <QuickAdd day={day.key} onAdd={add} /> : null}
+              <div className="ws-day-cards">
+                {mine.map(card)}
+                {inFlight.filter((entry) => entry.day === day.key).map(pendingCard)}
+              </div>
             </section>
           );
         })}
       </div>
 
       <section
-        className="ws-tray"
+        className={`ws-tray ${overDay === null ? "ws-day-over" : ""}`}
         aria-label="Unscheduled ideas"
-        onDragOver={planner ? (event) => event.preventDefault() : undefined}
+        onDragOver={planner ? (event) => { event.preventDefault(); setOverDay(null); } : undefined}
+        onDragLeave={planner ? () => setOverDay(undefined) : undefined}
         onDrop={planner ? onDropDay(null) : undefined}
       >
         <header className="ws-day-head">
           <h3>Unscheduled</h3>
-          <span>{unplaced.length}</span>
+          <span>{unplaced.length + inFlight.filter((entry) => entry.day === null).length}</span>
         </header>
-        {planner ? <QuickAdd route={route} day={null} /> : null}
-        <div className="ws-tray-cards">{unplaced.map(card)}</div>
+        {planner ? <QuickAdd day={null} onAdd={add} /> : null}
+        <div className="ws-tray-cards">
+          {unplaced.map(card)}
+          {inFlight.filter((entry) => entry.day === null).map(pendingCard)}
+        </div>
       </section>
 
       {showAside ? (
@@ -271,28 +323,33 @@ export function IdeaBoard({
 
 /* ------------------------------------------------- one line, one idea */
 
-function QuickAdd({ route, day }: { route: Route; day: string | null }) {
+function QuickAdd({
+  day,
+  onAdd,
+}: {
+  day: string | null;
+  onAdd: (title: string, day: string | null) => void;
+}) {
   const [value, setValue] = useState("");
-  const [pending, startTransition] = useTransition();
 
+  /* The field never disables and never loses the caret, so a run of ideas
+     can be typed straight through without waiting for any of them. */
   return (
     <form
       className="ws-quickadd"
-      action={() =>
-        startTransition(async () => {
-          const title = value.trim();
-          if (!title) return;
-          setValue("");
-          await addIdea(route.clientSlug, route.eventSlug, route.edition, title, { day });
-        })
-      }
+      onSubmit={(event) => {
+        event.preventDefault();
+        const title = value.trim();
+        if (!title) return;
+        setValue("");
+        onAdd(title, day);
+      }}
     >
       <input
         value={value}
         placeholder="Add an idea"
         maxLength={200}
         onChange={(event) => setValue(event.target.value)}
-        disabled={pending}
       />
     </form>
   );
@@ -340,7 +397,6 @@ function IdeaPanel({
 }) {
   const [note, setNote] = useState("");
   const [detail, setDetail] = useState(idea.detail ?? "");
-  const [adding, setAdding] = useState(false);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -405,19 +461,13 @@ function IdeaPanel({
 
           <div className="ws-panel-section">
             <p className="ws-panel-sub">Add to plan</p>
-            {adding || idea.links.length === 0 ? (
-              <AddToPlan
-                route={route}
-                ideaId={idea.id}
-                ideaTitle={idea.title}
-                day={idea.day}
-                daypart={idea.daypart}
-              />
-            ) : (
-              <button type="button" className="ws-btn" onClick={() => setAdding(true)}>
-                Add something else
-              </button>
-            )}
+            <AddToPlan
+              route={route}
+              ideaId={idea.id}
+              ideaTitle={idea.title}
+              day={idea.day}
+              daypart={idea.daypart}
+            />
           </div>
         </>
       ) : null}
