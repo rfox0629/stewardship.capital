@@ -36,7 +36,7 @@ export default async function WeekendPage({ params }: PageProps) {
   const { engagement, supabase } = context;
   const planner = context.role === "planner" || context.staff;
 
-  const [ideasQ, scheduleQ, actionsQ, budgetQ, needsQ] = await Promise.all([
+  const [ideasQ, scheduleQ, actionsQ, budgetQ, needsQ, planLinksQ] = await Promise.all([
     supabase.from("sparks").select("id, title, detail, status, tentative_day, tentative_daypart")
       .eq("engagement_id", engagement.id),
     supabase.from("schedule_items").select("day_key, starts_label, daypart, title, track")
@@ -44,6 +44,12 @@ export default async function WeekendPage({ params }: PageProps) {
     supabase.from("tasks").select("status, estimated_cents").eq("engagement_id", engagement.id),
     supabase.from("budget_lines").select("planned_cents").eq("engagement_id", engagement.id),
     supabase.from("resources").select("estimated_cents").eq("engagement_id", engagement.id),
+    /* What the approved ideas have so far, so the gaps can be counted. */
+    Promise.all([
+      supabase.from("schedule_items").select("spark_id").eq("engagement_id", engagement.id).not("spark_id", "is", null),
+      supabase.from("tasks").select("spark_id").eq("engagement_id", engagement.id).not("spark_id", "is", null),
+      supabase.from("resources").select("spark_id, status").eq("engagement_id", engagement.id).not("spark_id", "is", null),
+    ]),
   ]);
 
   const ideas = ideasQ.data ?? [];
@@ -56,6 +62,23 @@ export default async function WeekendPage({ params }: PageProps) {
     (actionsQ.data ?? []).reduce((total, row) => total + (row.estimated_cents ?? 0), 0) +
     (needsQ.data ?? []).reduce((total, row) => total + (row.estimated_cents ?? 0), 0);
   const available = engagement.budgetTotalCents - working;
+
+  /* Approved ideas that are not yet carried out. Not a stage, just the
+     count of loose ends after a fast round of decisions. */
+  const [schedLinks, actionLinks, needLinks] = planLinksQ;
+  const scheduled = new Set((schedLinks.data ?? []).map((row) => row.spark_id));
+  const owned = new Set((actionLinks.data ?? []).map((row) => row.spark_id));
+  const openNeed = new Set(
+    (needLinks.data ?? []).filter((row) => row.status === "needed").map((row) => row.spark_id),
+  );
+  const approved = ideas.filter((row) => row.status === "approved");
+  const planning = {
+    total: approved.length,
+    noTime: approved.filter((row) => !scheduled.has(row.id)).length,
+    noOwner: approved.filter((row) => !owned.has(row.id)).length,
+    openNeed: approved.filter((row) => openNeed.has(row.id)).length,
+  };
+  const looseEnds = planning.noTime + planning.noOwner + planning.openNeed;
 
   const figures = [
     { value: String(live.length), label: "Ideas", href: `${base}/plan` },
@@ -102,6 +125,19 @@ export default async function WeekendPage({ params }: PageProps) {
         base={base}
         planner={planner}
       />
+
+      {planning.total > 0 && looseEnds > 0 ? (
+        <Link href={`${base}/plan?shelf=planning`} className="wk-loose" aria-label="Needs planning">
+          <b>Needs planning</b>
+          <span>{planning.total} in the plan</span>
+          {planning.noTime > 0 ? <em>{planning.noTime} without a time</em> : null}
+          {planning.noOwner > 0 ? <em>{planning.noOwner} without an owner</em> : null}
+          {planning.openNeed > 0 ? (
+            <em>{planning.openNeed} requirement{planning.openNeed === 1 ? "" : "s"} open</em>
+          ) : null}
+          <i aria-hidden="true">→</i>
+        </Link>
+      ) : null}
 
       <section className="wk-snapshot" aria-label="The weekend as it stands">
         <header className="wk-sec-head">

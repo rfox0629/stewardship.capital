@@ -33,6 +33,8 @@ export type Idea = {
   decidedBy: string | null;
   /** Dollars already attached to this idea, if any. */
   costDollars: number | null;
+  /** A requirement of this idea is recorded but not yet settled. */
+  needsUnresolved: boolean;
   links: Array<{ kind: string; label: string; href: string }>;
   notes: Array<{ author: string | null; body: string; at: string }>;
 };
@@ -82,7 +84,13 @@ export function IdeaBoard({
     Map<string, { day: string | null; daypart: string | null }>
   >(new Map());
   const [pending, setPending] = useState<Array<{ key: string; title: string }>>([]);
-  const [shelf, setShelf] = useState<"aside" | "planned" | null>(null);
+  const [shelf, setShelf] = useState<"aside" | "planned" | null>(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("shelf") === "planning"
+      ? "planned"
+      : null,
+  );
+  const [onlyGaps, setOnlyGaps] = useState(true);
   const [overLane, setOverLane] = useState<IdeaState | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const dragId = useRef<string | null>(null);
@@ -170,6 +178,20 @@ export function IdeaBoard({
   const aside = merged.filter((idea) => idea.state === "aside");
   const planned = merged.filter((idea) => idea.state === "planned");
   const open = hydrated ? merged.find((idea) => idea.id === openId) ?? null : null;
+  const shownShelf = hydrated ? shelf : null;
+
+  /* What an idea in the plan is still missing. Absence, stated plainly: an
+     idea with no time is genuinely unscheduled, and one with no owner has
+     nobody carrying it. Nothing here says an idea must have all four. */
+  const gapsOf = (idea: Card) => {
+    const kinds = new Set(idea.links.map((link) => link.kind));
+    return [
+      ...(kinds.has("Schedule") ? [] : ["No time yet"]),
+      ...(kinds.has("Action") ? [] : ["No owner yet"]),
+      ...(idea.needsUnresolved ? ["Requirement open"] : []),
+    ];
+  };
+  const needsPlanning = planned.filter((idea) => gapsOf(idea).length > 0);
 
   const dayChip = (idea: Card) => {
     if (!idea.day) return null;
@@ -249,8 +271,14 @@ export function IdeaBoard({
         </div>
         <div className="ws-bar-right">
           {planned.length > 0 ? (
-            <button type="button" className="ws-btn-quiet" onClick={() => setShelf("planned")}>
-              In the plan · {planned.length}
+            <button
+              type="button"
+              className={`ws-btn-quiet ${needsPlanning.length > 0 ? "ws-btn-attention" : ""}`}
+              onClick={() => setShelf("planned")}
+            >
+              {needsPlanning.length > 0
+                ? `Needs planning · ${needsPlanning.length}`
+                : `In the plan · ${planned.length}`}
             </button>
           ) : null}
           {aside.length > 0 ? (
@@ -266,12 +294,28 @@ export function IdeaBoard({
         {lane("discuss", "Needs decision", deciding, "warm")}
       </div>
 
-      {shelf ? (
+      {shownShelf ? (
         <Panel
-          title={shelf === "aside" ? "Set aside" : "In the plan"}
+          title={shownShelf === "aside" ? "Set aside" : "Needs planning"}
           onClose={() => setShelf(null)}
         >
-          {(shelf === "aside" ? aside : planned).map((idea) => (
+          {shownShelf === "planned" ? (
+            <div className="ws-shelf-filter" role="group" aria-label="Show">
+              <button type="button" aria-pressed={onlyGaps} onClick={() => setOnlyGaps(true)}>
+                Still needs something · {needsPlanning.length}
+              </button>
+              <button type="button" aria-pressed={!onlyGaps} onClick={() => setOnlyGaps(false)}>
+                All in the plan · {planned.length}
+              </button>
+            </div>
+          ) : null}
+
+          {(shownShelf === "aside"
+            ? aside
+            : onlyGaps
+              ? needsPlanning
+              : planned
+          ).map((idea) => (
             <div key={idea.id} className="ws-shelf-row">
               <button
                 type="button"
@@ -281,7 +325,17 @@ export function IdeaBoard({
                 {idea.title}
               </button>
               {idea.decision ? <p className="ws-note">{idea.decision}</p> : null}
-              {shelf === "aside" && planner ? (
+              {shownShelf === "planned" ? (
+                <span className="ws-card-meta">
+                  {[...new Set(idea.links.map((l) => l.kind))].map((kind) => (
+                    <em key={kind} className="ws-chip ws-chip-mark">{MARK[kind] ?? kind}</em>
+                  ))}
+                  {gapsOf(idea).map((gap) => (
+                    <em key={gap} className="ws-chip ws-chip-gap">{gap}</em>
+                  ))}
+                </span>
+              ) : null}
+              {shownShelf === "aside" && planner ? (
                 <button
                   type="button"
                   className="ws-btn-quiet"
@@ -290,15 +344,14 @@ export function IdeaBoard({
                   Bring back
                 </button>
               ) : null}
-              {shelf === "planned" && idea.links.length > 0 ? (
-                <span className="ws-card-meta">
-                  {[...new Set(idea.links.map((l) => l.kind))].map((kind) => (
-                    <em key={kind} className="ws-chip ws-chip-mark">{MARK[kind] ?? kind}</em>
-                  ))}
-                </span>
-              ) : null}
             </div>
           ))}
+
+          {shownShelf === "planned" && onlyGaps && needsPlanning.length === 0 ? (
+            <p className="ws-lane-empty">
+              Everything in the plan has a time and an owner. Nothing is waiting.
+            </p>
+          ) : null}
         </Panel>
       ) : null}
 

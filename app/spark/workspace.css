@@ -1983,3 +1983,58 @@ input.ws-row-owner {
 
 .wk-dayempty { color: var(--ws-ink-2); font-weight: 500; }
 .ws-lane-empty { color: var(--ws-ink-2); font-weight: 500; }
+
+/* Loose ends after a fast round of decisions. A line, not a stage. */
+.wk-loose {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-line);
+  border-left: 4px solid var(--ws-accent);
+  border-radius: 11px;
+  padding: 13px 16px;
+  margin-bottom: 22px;
+  box-shadow: var(--ws-shadow);
+}
+
+.wk-loose:hover { border-color: var(--ws-accent); background: #fbfcff; }
+.wk-loose b { font-size: 0.9rem; font-weight: 700; color: var(--ws-ink); }
+.wk-loose span { font-size: 0.83rem; font-weight: 600; color: var(--ws-ink-2); }
+
+.wk-loose em {
+  font-style: normal;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #16346f;
+  background: var(--ws-accent-soft);
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+
+.wk-loose i { margin-left: auto; font-style: normal; color: var(--ws-accent); font-weight: 700; }
+
+.ws-btn-attention { border-color: var(--ws-accent); color: #16346f; background: var(--ws-accent-soft); }
+
+.ws-shelf-filter { display: flex; gap: 6px; margin-bottom: 14px; }
+
+.ws-shelf-filter button {
+  border: 1px solid var(--ws-line);
+  background: var(--ws-card);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ws-ink-2);
+  cursor: pointer;
+}
+
+.ws-shelf-filter button[aria-pressed="true"] {
+  background: var(--ws-ink);
+  color: #fff;
+  border-color: var(--ws-ink);
+}
+
+.ws-chip-gap { color: #16346f; background: var(--ws-accent-soft); }

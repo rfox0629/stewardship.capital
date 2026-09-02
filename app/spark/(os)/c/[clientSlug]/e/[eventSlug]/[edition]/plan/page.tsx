@@ -74,6 +74,11 @@ export default async function PlanPage({ params }: PageProps) {
       .not("spark_id", "is", null),
   ]);
 
+  /* A requirement that is still only "needed" is an open loose end. */
+  const unresolved = new Set(
+    (needsQ.data ?? []).filter((row) => row.status === "needed").map((row) => row.spark_id),
+  );
+
   const cost = new Map<string, number>();
   for (const row of costQ.data ?? []) {
     if (row.spark_id) cost.set(row.spark_id, row.planned_cents);
@@ -119,6 +124,7 @@ export default async function PlanPage({ params }: PageProps) {
     decision: row.decision,
     decidedBy: row.decided_by_name,
     costDollars: cost.has(row.id) ? Math.round((cost.get(row.id) as number) / 100) : null,
+    needsUnresolved: unresolved.has(row.id),
     links: links.get(row.id) ?? [],
     notes: notes.get(row.id) ?? [],
   }));
