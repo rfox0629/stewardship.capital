@@ -161,7 +161,7 @@ export default async function SchedulePage({ params }: PageProps) {
 
   const present = new Set(moments.map((moment) => moment.day));
   const days: DayLane[] = DAY_ORDER.filter(
-    (key) => key !== "wed" || present.has("wed"),
+    (key) => key !== "wed" || present.has("wed") || planner,
   ).map((key) => ({
     key,
     name: DAY_NAMES[key],
@@ -171,7 +171,7 @@ export default async function SchedulePage({ params }: PageProps) {
   return (
     <>
       <h2 className="ws-title">{role === "stakeholder" ? "Schedule" : "Plan"}</h2>
-      {role !== "stakeholder" ? <PlanTabs base={base} active="schedule" /> : null}
+      {role !== "stakeholder" ? <PlanTabs base={base} active="weekend" /> : null}
       <ScheduleView
         moments={moments}
         days={days}

@@ -322,3 +322,52 @@ export async function addToPlan(
   revalidate(clientSlug, eventSlug, edition);
   return { ok: true };
 }
+
+/* ------------------------------------------------- ideas from reference */
+
+/**
+ * A reference item becomes an idea.
+ *
+ * The venue's amenities, the weekend's theme concepts, and the drink list are
+ * reference: they sit under the plan and are never ideas by themselves. This
+ * is the one door between them, taken deliberately, one item at a time, by
+ * someone who has decided the thing is worth considering.
+ */
+export async function ideaFromReference(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  title: string,
+  detail?: string,
+): Promise<Outcome> {
+  const context = await resolveEngagement(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+  if (context.role !== "planner" && !context.staff) return { ok: false };
+
+  const clean = title.trim().slice(0, 200);
+  if (!clean) return { ok: false, message: "An idea needs a name." };
+
+  /* The same reference item twice is a mistake, not a second idea. */
+  const { data: existing } = await context.supabase
+    .from("sparks")
+    .select("id")
+    .eq("engagement_id", context.engagement.id)
+    .eq("title", clean)
+    .maybeSingle();
+  if (existing) return { ok: false, message: "That is already an idea." };
+
+  const { data, error } = await context.supabase
+    .from("sparks")
+    .insert({
+      engagement_id: context.engagement.id,
+      title: clean,
+      detail: detail?.trim().slice(0, 600) || null,
+      status: "captured",
+    })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false, message: "That did not save." };
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}

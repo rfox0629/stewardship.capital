@@ -1,11 +1,12 @@
 import Link from "next/link";
 
 /**
- * One Plan, two sides. Ideas is what the team is considering; Schedule is
- * what is actually happening. Two routes underneath, one surface to the
- * reader.
+ * One plan, two views of the same ideas. Ideas asks what we are considering
+ * and what needs an answer; Weekend asks where any of it sits in time. They
+ * stopped duplicating each other when the first one stopped being a second
+ * calendar.
  */
-export function PlanTabs({ base, active }: { base: string; active: "ideas" | "schedule" }) {
+export function PlanTabs({ base, active }: { base: string; active: "ideas" | "weekend" }) {
   return (
     <div className="ev-plan-tabs" role="tablist" aria-label="Plan">
       <Link
@@ -19,10 +20,10 @@ export function PlanTabs({ base, active }: { base: string; active: "ideas" | "sc
       <Link
         href={`${base}/schedule`}
         role="tab"
-        aria-selected={active === "schedule"}
-        className={active === "schedule" ? "ev-plan-tab-on" : ""}
+        aria-selected={active === "weekend"}
+        className={active === "weekend" ? "ev-plan-tab-on" : ""}
       >
-        Schedule
+        Weekend
       </Link>
     </div>
   );
