@@ -20,24 +20,43 @@ import { createClient } from "../supabase/server.ts";
  */
 
 /**
- * Vision, venue, and drink material an engagement carries for reading. Every
- * part is optional: an engagement that has none simply shows none, and a
- * "needs" line is how a sheet says which of its columns did not come across.
+ * Vision, venue, and drink material an engagement carries for reading.
+ *
+ * The shape follows the sheets these came from: an element of the weekend
+ * carries its Scripture, the passage quoted beside it, why it belongs to the
+ * weekend, and what to actually do; an amenity carries its category, whether
+ * it is built in, rented, or confirmed by review, and what still has to be
+ * confirmed. Every part is optional, so an engagement with none shows none.
  */
+export type VisionElement = {
+  name: string;
+  scripture?: string;
+  passage?: string;
+  connection?: string;
+  practical?: string;
+};
+
 export type EngagementReference = {
   vision?: {
     theme?: string;
     scripture?: string;
-    elements?: Array<{ name: string; scripture?: string; connection?: string; practical?: string }>;
-    needs?: string;
+    passage?: string;
+    connection?: string;
+    practical?: string;
+    elements?: VisionElement[];
   };
   venue?: {
     name?: string;
-    needs?: string;
-    amenities?: Array<{ name: string; standing?: string }>;
+    takeaway?: string;
+    amenities?: Array<{
+      name: string;
+      category?: string;
+      availability?: string;
+      confirm?: string;
+    }>;
   };
   drinks?: {
-    needs?: string;
+    note?: string;
     options?: Array<{ name: string; ingredients?: string; feel?: string }>;
   };
 };

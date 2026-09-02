@@ -70,17 +70,27 @@ export default async function WeekendPage({ params }: PageProps) {
             <h3>{reference.vision.theme ?? "Vision"}</h3>
             {reference.vision.scripture ? <span>{reference.vision.scripture}</span> : null}
           </header>
+          {reference.vision.passage ? (
+            <p className="wk-passage">{reference.vision.passage}</p>
+          ) : null}
+          {reference.vision.connection ? <p className="wk-body">{reference.vision.connection}</p> : null}
+          {reference.vision.practical ? (
+            <p className="wk-practical"><b>Practical ideas</b> {reference.vision.practical}</p>
+          ) : null}
+
           <ul className="wk-elements">
             {(reference.vision.elements ?? []).map((element) => (
               <li key={element.name}>
                 <b>{element.name}</b>
                 {element.scripture ? <span className="wk-ref">{element.scripture}</span> : null}
-                {element.connection ? <p>{element.connection}</p> : null}
-                {element.practical ? <p className="wk-practical">{element.practical}</p> : null}
+                {element.passage ? <p className="wk-passage">{element.passage}</p> : null}
+                {element.connection ? <p className="wk-body">{element.connection}</p> : null}
+                {element.practical ? (
+                  <p className="wk-practical"><b>Practical ideas</b> {element.practical}</p>
+                ) : null}
               </li>
             ))}
           </ul>
-          {reference.vision.needs ? <p className="wk-needs">{reference.vision.needs}</p> : null}
         </section>
       ) : null}
 
@@ -90,20 +100,37 @@ export default async function WeekendPage({ params }: PageProps) {
             <h3>{reference.venue.name ?? engagement.venue ?? "Venue"}</h3>
             {engagement.location ? <span>{engagement.location}</span> : null}
           </header>
-          <ul className="wk-amenities">
-            {(reference.venue.amenities ?? []).map((amenity) => (
-              <li key={amenity.name}>
-                {amenity.name}
-                <em className={`wk-standing wk-standing-${amenity.standing ?? "unconfirmed"}`}>
-                  {amenity.standing === "rental" ? "Rental"
-                    : amenity.standing === "built in" ? "Built in"
-                    : amenity.standing === "review confirmed" ? "Confirmed"
-                    : "Confirm"}
-                </em>
-              </li>
-            ))}
-          </ul>
-          {reference.venue.needs ? <p className="wk-needs">{reference.venue.needs}</p> : null}
+          {reference.venue.takeaway ? (
+            <p className="wk-takeaway">{reference.venue.takeaway}</p>
+          ) : null}
+          {[...new Set((reference.venue.amenities ?? []).map((a) => a.category ?? "Other"))].map(
+            (category) => (
+              <div key={category} className="wk-amenity-group">
+                <p className="wk-amenity-cat">{category}</p>
+                <ul className="wk-amenities">
+                  {(reference.venue?.amenities ?? [])
+                    .filter((amenity) => (amenity.category ?? "Other") === category)
+                    .map((amenity) => (
+                      <li key={amenity.name}>
+                        <span className="wk-amenity-name">
+                          {amenity.name}
+                          <em className={`wk-standing wk-avail-${(amenity.availability ?? "").replace(/[^a-z]/gi, "").toLowerCase()}`}>
+                            {amenity.availability}
+                          </em>
+                        </span>
+                        {amenity.confirm ? (
+                          <span
+                            className={`wk-confirm ${amenity.confirm === "Available" ? "wk-confirm-none" : ""}`}
+                          >
+                            {amenity.confirm}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ),
+          )}
         </section>
       ) : null}
 
@@ -113,6 +140,7 @@ export default async function WeekendPage({ params }: PageProps) {
             <h3>SHINE specialty drink</h3>
             <span>Nothing chosen yet</span>
           </header>
+          {reference.drinks.note ? <p className="wk-takeaway">{reference.drinks.note}</p> : null}
           <ul className="wk-drinks">
             {(reference.drinks.options ?? []).map((drink) => (
               <li key={drink.name}>
@@ -122,7 +150,6 @@ export default async function WeekendPage({ params }: PageProps) {
               </li>
             ))}
           </ul>
-          {reference.drinks.needs ? <p className="wk-needs">{reference.drinks.needs}</p> : null}
         </section>
       ) : null}
     </div>

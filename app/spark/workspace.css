@@ -767,6 +767,7 @@
 .wk-elements li {
   border-left: 3px solid var(--ws-line);
   padding-left: 12px;
+  padding-bottom: 2px;
 }
 
 .wk-elements b { display: block; font-size: 0.92rem; color: var(--ws-ink); }
@@ -1162,4 +1163,100 @@
   border-color: var(--ws-accent);
   background: var(--ws-accent-soft);
   box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+
+/* ------------------------------------------- the weekend, fully sourced */
+
+.wk-passage {
+  margin: 4px 0 6px;
+  padding-left: 10px;
+  border-left: 2px solid var(--ws-accent);
+  font-size: 0.87rem;
+  line-height: 1.5;
+  color: var(--ws-ink);
+}
+
+.wk-body {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ws-ink-2);
+}
+
+.wk-practical {
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--ws-ink-2);
+}
+
+.wk-practical b {
+  display: inline;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ws-ink);
+  margin-right: 6px;
+}
+
+.wk-takeaway {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  background: var(--ws-accent-soft);
+  border: 1px solid #cddafa;
+  border-radius: 7px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #16346f;
+}
+
+.wk-amenity-group { margin-bottom: 14px; }
+
+.wk-amenity-cat {
+  margin: 0 0 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ws-ink-2);
+}
+
+.wk-amenities li {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.wk-amenity-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.wk-confirm {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: #8a5205;
+}
+
+.wk-confirm-none { color: var(--ws-ink-2); }
+
+.wk-avail-builtin { color: #0d5238; background: #dff3e8; }
+.wk-avail-rental { color: #1d3f8a; background: #e6ecfb; }
+.wk-avail-reviewconfirmed { color: #8a5205; background: #fdf0d8; }
+
+.wk-drinks li { display: flex; flex-direction: column; gap: 3px; }
+.wk-drinks span { font-size: 0.8rem; color: var(--ws-ink-2); line-height: 1.4; }
+
+.wk-drinks em {
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ws-accent);
 }
