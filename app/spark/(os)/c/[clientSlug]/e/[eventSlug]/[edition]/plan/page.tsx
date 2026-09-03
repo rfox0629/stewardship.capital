@@ -165,11 +165,12 @@ export default async function PlanPage({ params }: PageProps) {
     .map((row) => ({ id: row.id, label: `${when(row)} · ${row.title}` }));
 
   return (
-    <>
-      <h2 className="ws-title">Plan</h2>
-      <PlanTabs base={base} active="ideas" />
-      <IdeaBoard ideas={ideas} route={{ clientSlug, eventSlug, edition }}
-        planner={planner} moments={momentOptions} />
-    </>
+    <IdeaBoard
+      ideas={ideas}
+      route={{ clientSlug, eventSlug, edition }}
+      planner={planner}
+      moments={momentOptions}
+      tabs={<PlanTabs base={base} active="ideas" />}
+    />
   );
 }

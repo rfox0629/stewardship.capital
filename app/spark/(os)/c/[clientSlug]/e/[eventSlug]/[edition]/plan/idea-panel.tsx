@@ -24,8 +24,18 @@ import type { Idea } from "./board";
 type Route = { clientSlug: string; eventSlug: string; edition: string };
 type Sheet = "schedule" | "action" | "cost" | "requirement" | "note" | null;
 
+/* Rough placement, editable from the idea. Unplaced and event-wide are
+   different answers, so they are different options. */
+const PLACEMENTS = [
+  { value: "", label: "Unplaced" },
+  { value: "all", label: "Event-wide" },
+  { value: "wed", label: "Wednesday" }, { value: "thu", label: "Thursday" },
+  { value: "fri", label: "Friday" }, { value: "sat", label: "Saturday" },
+  { value: "sun", label: "Sunday" },
+];
+
+/* Scheduling asks for a real day, so event-wide and unplaced are not offered. */
 const DAYS = [
-  { value: "", label: "Whole weekend" },
   { value: "wed", label: "Wednesday" }, { value: "thu", label: "Thursday" },
   { value: "fri", label: "Friday" }, { value: "sat", label: "Saturday" },
   { value: "sun", label: "Sunday" },
@@ -88,7 +98,7 @@ export function IdeaPanel({
               <div className="ws-daychip">
                 <Select label="Where it might fit" compact
                   value={idea.day ?? ""}
-                  options={DAYS}
+                  options={PLACEMENTS}
                   onChange={(value) =>
                     startTransition(async () => {
                       await placeIdea(...r, idea.id, value || null, value ? idea.daypart : null);
@@ -358,7 +368,9 @@ function ScheduleSheet({
 }) {
   const r = [route.clientSlug, route.eventSlug, route.edition] as const;
   const [mode, setMode] = useState<"own" | "inside">("own");
-  const [day, setDay] = useState(idea.day ?? "sat");
+  const [day, setDay] = useState(
+    idea.day && idea.day !== "all" ? idea.day : "sat",
+  );
   const [daypart, setDaypart] = useState(idea.daypart ?? "afternoon");
   const [track, setTrack] = useState("Experience");
   const [momentId, setMomentId] = useState(moments[0]?.id ?? "");
@@ -376,8 +388,7 @@ function ScheduleSheet({
           day, starts: loose ? "" : String(f.get("starts") ?? ""),
           minutes: String(f.get("minutes") ?? ""), daypart, track,
         }))}>
-          <Select label="Day" value={day} onChange={setDay}
-            options={DAYS.filter((d) => d.value)} compact />
+          <Select label="Day" value={day} onChange={setDay} options={DAYS} compact />
           {loose ? (
             <Select label="Part of day" value={daypart} onChange={setDaypart} options={DAYPARTS} compact />
           ) : (
