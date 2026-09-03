@@ -55,6 +55,8 @@ export type Cue = {
   cue: string;
   who: string | null;
   note: string | null;
+  /** Some cues are ideas placed inside this moment rather than plain beats. */
+  ideaId: string | null;
 };
 
 export type RelatedRecord = {
@@ -352,6 +354,7 @@ function RosEditor({
   const length =
     start !== null && moment.endMinutes !== null ? moment.endMinutes - start : null;
   const ordered = [...cues].sort((a, b) => a.offset - b.offset);
+  const base = `/spark/c/${route.clientSlug}/e/${route.eventSlug}/${route.edition}`;
 
   const cueForm = (cue: Cue | null) => (
     <form
@@ -444,6 +447,7 @@ function RosEditor({
             </span>
             <span className="ev-cue-text">
               {cue.cue}
+              {cue.ideaId ? <small className="ev-cue-idea">From an idea</small> : null}
               {cue.note ? <small>{cue.note}</small> : null}
               {length !== null && cue.offset > length ? (
                 <small className="ev-cue-warn">past the end of this moment</small>
@@ -453,6 +457,15 @@ function RosEditor({
           </button>
         ),
       )}
+      {ordered.some((cue) => cue.ideaId) ? (
+        <div className="ev-cue-ideas">
+          {ordered.filter((cue) => cue.ideaId).map((cue) => (
+            <Link key={`idea-${cue.id}`} className="ws-link" href={`${base}/plan?open=${cue.ideaId}`}>
+              <b>Idea</b> {cue.cue}
+            </Link>
+          ))}
+        </div>
+      ) : null}
       {editing === null || editing === "new" ? cueForm(null) : null}
       {message ? <p className="ev-drawer-msg" role="status">{message}</p> : null}
     </div>

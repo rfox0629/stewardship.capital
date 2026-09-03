@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { DAY_NAMES, DAY_ORDER, parseTimeLabel } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
-import { DecisionQueue, type Decision } from "./decisions";
+import { QuestionQueue, type Question } from "./questions";
 import { Reference } from "./reference";
 
 export const metadata = { title: "The weekend" };
@@ -37,7 +37,7 @@ export default async function WeekendPage({ params }: PageProps) {
   const planner = context.role === "planner" || context.staff;
 
   const [ideasQ, scheduleQ, actionsQ, budgetQ, needsQ, planLinksQ] = await Promise.all([
-    supabase.from("sparks").select("id, title, detail, status, tentative_day, tentative_daypart")
+    supabase.from("sparks").select("id, title, detail, open_question, status, tentative_day, tentative_daypart")
       .eq("engagement_id", engagement.id),
     supabase.from("schedule_items").select("day_key, starts_label, daypart, title, track")
       .eq("engagement_id", engagement.id),
@@ -54,7 +54,7 @@ export default async function WeekendPage({ params }: PageProps) {
 
   const ideas = ideasQ.data ?? [];
   const live = ideas.filter((row) => row.status !== "parked" && row.status !== "declined");
-  const deciding = ideas.filter((row) => row.status === "discussing");
+  const carrying = ideas.filter((row) => row.open_question && row.status !== "parked");
   const openActions = (actionsQ.data ?? []).filter((row) => row.status !== "done");
 
   const working =
@@ -71,18 +71,22 @@ export default async function WeekendPage({ params }: PageProps) {
   const openNeed = new Set(
     (needLinks.data ?? []).filter((row) => row.status === "needed").map((row) => row.spark_id),
   );
-  const approved = ideas.filter((row) => row.status === "approved");
+  /* An idea is in the plan when something has come of it. Loose ends are
+     the parts it is still missing, counted over exactly those ideas. */
+  const inPlan = ideas.filter(
+    (row) => row.status !== "parked" && (scheduled.has(row.id) || owned.has(row.id) || openNeed.has(row.id)),
+  );
   const planning = {
-    total: approved.length,
-    noTime: approved.filter((row) => !scheduled.has(row.id)).length,
-    noOwner: approved.filter((row) => !owned.has(row.id)).length,
-    openNeed: approved.filter((row) => openNeed.has(row.id)).length,
+    total: inPlan.length,
+    noTime: inPlan.filter((row) => !scheduled.has(row.id)).length,
+    noOwner: inPlan.filter((row) => !owned.has(row.id)).length,
+    openNeed: inPlan.filter((row) => openNeed.has(row.id)).length,
   };
   const looseEnds = planning.noTime + planning.noOwner + planning.openNeed;
 
   const figures = [
     { value: String(live.length), label: "Ideas", href: `${base}/plan` },
-    { value: String(deciding.length), label: "Need decision", href: `${base}/plan`, warm: deciding.length > 0 },
+    { value: String(carrying.length), label: "Need an answer", href: `${base}/plan?show=question`, warm: carrying.length > 0 },
     { value: String(openActions.length), label: "Open actions", href: `${base}/actions` },
     { value: money(available), label: "Available", href: `${base}/budget`, over: available < 0 },
   ];
@@ -114,12 +118,11 @@ export default async function WeekendPage({ params }: PageProps) {
         ))}
       </div>
 
-      <DecisionQueue
-        decisions={deciding.map((row): Decision => ({
+      <QuestionQueue
+        questions={carrying.map((row): Question => ({
           id: row.id,
           title: row.title,
-          detail: row.detail,
-          day: row.tentative_day,
+          question: row.open_question as string,
         }))}
         route={{ clientSlug, eventSlug, edition }}
         base={base}
@@ -127,7 +130,7 @@ export default async function WeekendPage({ params }: PageProps) {
       />
 
       {planning.total > 0 && looseEnds > 0 ? (
-        <Link href={`${base}/plan?shelf=planning`} className="wk-loose" aria-label="Needs planning">
+        <Link href={`${base}/plan?show=planned`} className="wk-loose" aria-label="Needs planning">
           <b>Needs planning</b>
           <span>{planning.total} in the plan</span>
           {planning.noTime > 0 ? <em>{planning.noTime} without a time</em> : null}
