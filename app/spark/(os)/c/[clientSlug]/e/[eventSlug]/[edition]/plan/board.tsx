@@ -1,22 +1,23 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 
-import { addIdea } from "./actions";
+import { addIdea, placeIdea } from "./actions";
 import { toIdeaState, type IdeaState } from "./idea-state";
 import { IdeaPanel } from "./idea-panel";
 
 /**
- * The weekend, left to right, as loose ideas.
+ * The workbench.
  *
- * The same five columns the calendar uses, holding what might happen rather
- * than what will. Ideas and Weekend are deliberately siblings: one asks what
- * could happen each day, the other what actually happens and when, and the
- * eye moves between them without relearning the shape of the week.
+ * Everything under consideration, laid out the way the weekend runs, and
+ * loose enough to pick up. A card is dragged from one day to another and the
+ * movement is the edit: no drawer, no form, no save. Placement is a guess
+ * about where something belongs, never a time, so nothing here creates a
+ * scheduled moment. That happens on the Weekend, by dropping an idea onto
+ * an actual hour.
  *
- * The columns are the day navigation, so there is no day filter above them
- * repeating what the layout already says. A card carries no day chip for the
- * same reason: the column it sits in has already told you.
+ * Dragging is never the only way. The same move exists as a plain control
+ * inside the idea, which is what a keyboard and a phone use.
  */
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
@@ -54,6 +55,11 @@ const ADD_PLACEMENTS = [
   ...DAYS.map((d) => ({ key: d.key, label: d.short })),
 ];
 
+/* A drop zone is addressed by the placement it means. Unplaced is a real
+   answer, so it gets a name of its own rather than an empty string. */
+const UNPLACED = "unplaced";
+const zoneToDay = (zone: string) => (zone === UNPLACED ? null : zone);
+
 const noopSubscribe = () => () => {};
 const useHydrated = () => useSyncExternalStore(noopSubscribe, () => true, () => false);
 
@@ -79,16 +85,37 @@ export function IdeaBoard({
   const hydrated = useHydrated();
   const [openId, setOpenId] = useState<string | null>(() =>
     typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("open") : null);
+  /* A link from the Weekend can ask for the scheduling sheet directly, so
+     one scheduling engine serves both the drag and the click. */
+  const [openSheet, setOpenSheet] = useState<"schedule" | null>(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("sheet") === "schedule" ? "schedule" : null);
   const [lens, setLens] = useState<Lens>(() =>
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("show") === "question" ? "question" : "open");
   const [adding, setAdding] = useState(false);
+  const [menu, setMenu] = useState(false);
   const [pending, setPending] = useState<Array<{ key: string; title: string; day: string | null }>>([]);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [failure, setFailure] = useState<string | null>(null);
+  /* A moved card holds its new column while the server catches up. Each
+     entry remembers every column the card has passed through, which is what
+     lets it expire on its own: while the server still reports one of those,
+     the move is in flight; the moment it reports anything else it has either
+     accepted the move or somebody else has moved the card, and either way
+     the server is now the better answer. No effect, no cleanup pass. */
+  const [moved, setMoved] = useState<Map<string, { was: Array<string | null>; to: string | null }>>(
+    new Map());
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overZone, setOverZone] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const live = useMemo(() => ideas.filter((idea) => !removed.has(idea.id)), [ideas, removed]);
+  const live = ideas
+    .filter((idea) => !removed.has(idea.id))
+    .map((idea) => {
+      const over = moved.get(idea.id);
+      return over && over.was.includes(idea.day) ? { ...idea, day: over.to } : idea;
+    });
   const shownLens = hydrated ? lens : "open";
 
   const open = live.filter((idea) => idea.state === "open");
@@ -125,7 +152,63 @@ export function IdeaBoard({
     });
   };
 
+  /* The movement is the edit. The card lands first and the row follows; if
+     the row refuses, the card goes back where it came from and says so. */
+  const move = (id: string, day: string | null) => {
+    const idea = live.find((entry) => entry.id === id);
+    if (!idea || !planner) return;
+    if ((idea.day ?? null) === day) return;
+
+    setMoved((prev) => {
+      const before = prev.get(id);
+      /* Moving a card twice before the first move lands: both columns it
+         passed through still count as in flight. */
+      const was = before ? [...before.was, before.to] : [idea.day ?? null];
+      return new Map(prev).set(id, { was, to: day });
+    });
+    setFailure(null);
+    startTransition(async () => {
+      const outcome = await placeIdea(
+        route.clientSlug, route.eventSlug, route.edition, id, day, day ? idea.daypart : null);
+      if (!outcome.ok) {
+        setMoved((prev) => {
+          const next = new Map(prev);
+          next.delete(id);
+          return next;
+        });
+        setFailure("That move did not save, so the card went back.");
+      }
+    });
+  };
+
   const opened = hydrated ? live.find((idea) => idea.id === openId) ?? null : null;
+
+  const closePanel = () => { setOpenId(null); setOpenSheet(null); };
+
+  /* Everything a zone needs to accept a card. Held in one place so the two
+     trays and the five columns behave identically. */
+  const zone = (key: string) =>
+    !planner || !hydrated
+      ? {}
+      : {
+          onDragOver: (event: React.DragEvent) => {
+            if (!dragId) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            if (overZone !== key) setOverZone(key);
+          },
+          onDragLeave: (event: React.DragEvent) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+            setOverZone((current) => (current === key ? null : current));
+          },
+          onDrop: (event: React.DragEvent) => {
+            event.preventDefault();
+            const id = dragId;
+            setOverZone(null);
+            setDragId(null);
+            if (id) move(id, zoneToDay(key));
+          },
+        };
 
   const card = (idea: Idea) => {
     const cost = idea.costs.reduce((sum, row) => sum + row.cents, 0);
@@ -134,6 +217,9 @@ export function IdeaBoard({
     if (idea.question) marks.push(<em key="q" className="ws-mark ws-mark-q">Needs answer</em>);
     if (at) marks.push(<em key="at" className="ws-mark ws-mark-when">{at}</em>);
     else if (idea.schedule.length > 0) marks.push(<em key="s" className="ws-mark ws-mark-when">Scheduled</em>);
+    if (idea.schedule.length > 1) {
+      marks.push(<em key="n" className="ws-mark ws-mark-when">×{idea.schedule.length}</em>);
+    }
     if (idea.inMoments.length > 0) marks.push(<em key="m" className="ws-mark ws-mark-when">In run of show</em>);
     if (idea.actions.length > 0) {
       marks.push(<em key="a" className="ws-mark">{idea.actions.length} action{idea.actions.length === 1 ? "" : "s"}</em>);
@@ -142,9 +228,19 @@ export function IdeaBoard({
     if (cost > 0) marks.push(<em key="c" className="ws-mark">{money(cost)}</em>);
     if (idea.answer) marks.push(<em key="d" className="ws-mark ws-mark-ok">Decided</em>);
 
+    const grabbable = planner && hydrated;
+
     return (
       <button key={idea.id} type="button"
-        className={`ws-idea ${idea.question ? "ws-idea-q" : ""} ${isPlanned(idea) ? "ws-idea-real" : ""}`}
+        className={`ws-idea ${idea.question ? "ws-idea-q" : ""} ${grabbable ? "ws-idea-grab" : ""} ${
+          dragId === idea.id ? "ws-idea-lift" : ""}`}
+        draggable={grabbable}
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/plain", idea.id);
+          event.dataTransfer.effectAllowed = "move";
+          setDragId(idea.id);
+        }}
+        onDragEnd={() => { setDragId(null); setOverZone(null); }}
         onClick={() => setOpenId(idea.id)}>
         <span className="ws-idea-title">{idea.title}</span>
         {marks.length > 0 ? <span className="ws-idea-marks">{marks}</span> : null}
@@ -155,6 +251,12 @@ export function IdeaBoard({
   const flightFor = (key: string | null) =>
     inFlight.filter((entry) => (entry.day ?? null) === key);
 
+  /* A tray is absent when it is empty, because an empty tray is a question
+     nobody asked. While a card is in the air it appears anyway: you cannot
+     drop something into a place that is not there. */
+  const showUnplaced = unplaced.length > 0 || flightFor(null).length > 0 || dragId !== null;
+  const showWide = eventWide.length > 0 || flightFor("all").length > 0 || dragId !== null;
+
   return (
     <>
       <div className="ws-plan-top">
@@ -163,33 +265,43 @@ export function IdeaBoard({
           {tabs}
         </div>
         {planner ? (
-          <button type="button" className="ws-add-btn" onClick={() => setAdding(true)}>
-            <span aria-hidden="true">+</span> Add idea
-          </button>
+          <div className="ws-plan-tools">
+            <button type="button" className="ws-add-btn" onClick={() => setAdding(true)}>
+              <span aria-hidden="true">+</span> Add idea
+            </button>
+            <div className="ws-menu">
+              <button type="button" className="ws-menu-btn" aria-label="Views"
+                aria-expanded={menu} onClick={() => setMenu((v) => !v)}>•••</button>
+              {menu ? (
+                <div className="ws-menu-list" role="menu">
+                  <button type="button" role="menuitem"
+                    onClick={() => { setMenu(false); setLens(shownLens === "question" ? "open" : "question"); }}>
+                    {shownLens === "question" ? "Show everything" : `Only what needs an answer (${withQuestion.length})`}
+                  </button>
+                  <button type="button" role="menuitem"
+                    onClick={() => { setMenu(false); setLens(shownLens === "aside" ? "open" : "aside"); }}>
+                    {shownLens === "aside" ? "Back to the plan" : `View set aside (${aside.length})`}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
         ) : null}
       </div>
 
-      {(withQuestion.length > 0 || aside.length > 0) ? (
-        <div className="ws-lenses ws-lenses-quiet">
-          {withQuestion.length > 0 ? (
-            <button type="button" className={shownLens === "question" ? "ws-lens-on" : ""}
-              onClick={() => setLens(shownLens === "question" ? "open" : "question")}>
-              Needs answer <em>{withQuestion.length}</em>
-            </button>
-          ) : null}
-          {aside.length > 0 ? (
-            <button type="button" className={shownLens === "aside" ? "ws-lens-on" : ""}
-              onClick={() => setLens(shownLens === "aside" ? "open" : "aside")}>
-              Set aside <em>{aside.length}</em>
-            </button>
-          ) : null}
-        </div>
+      {shownLens !== "open" ? (
+        <p className="ws-filtered" role="status">
+          {shownLens === "question" ? "Showing only ideas with an open question" : "Showing ideas set aside"}
+          <button type="button" onClick={() => setLens("open")}>Show everything</button>
+        </p>
       ) : null}
 
       {failure ? <p className="ws-msg" role="status">{failure}</p> : null}
 
-      {unplaced.length > 0 || flightFor(null).length > 0 ? (
-        <section className="ws-tray ws-tray-unplaced" aria-label="Unplaced ideas">
+      {showUnplaced ? (
+        <section
+          className={`ws-tray ws-tray-unplaced ${overZone === UNPLACED ? "ws-zone-on" : ""}`}
+          aria-label="Unplaced ideas" {...zone(UNPLACED)}>
           <p className="ws-tray-label">
             Unplaced <span>{unplaced.length + flightFor(null).length}</span>
           </p>
@@ -200,12 +312,17 @@ export function IdeaBoard({
                 <span className="ws-idea-title">{entry.title}</span>
               </span>
             ))}
+            {unplaced.length === 0 && flightFor(null).length === 0 ? (
+              <p className="ws-zone-hint">Drop here to unplace</p>
+            ) : null}
           </div>
         </section>
       ) : null}
 
-      {eventWide.length > 0 || flightFor("all").length > 0 ? (
-        <section className="ws-tray ws-tray-wide" aria-label="Event-wide ideas">
+      {showWide ? (
+        <section
+          className={`ws-tray ws-tray-wide ${overZone === "all" ? "ws-zone-on" : ""}`}
+          aria-label="Event-wide ideas" {...zone("all")}>
           <p className="ws-tray-label">
             Event-wide <span>{eventWide.length + flightFor("all").length}</span>
           </p>
@@ -216,6 +333,9 @@ export function IdeaBoard({
                 <span className="ws-idea-title">{entry.title}</span>
               </span>
             ))}
+            {eventWide.length === 0 && flightFor("all").length === 0 ? (
+              <p className="ws-zone-hint">Drop here for the whole event</p>
+            ) : null}
           </div>
         </section>
       ) : null}
@@ -237,8 +357,9 @@ export function IdeaBoard({
           const flight = flightFor(d.key);
           return (
             <section key={d.key}
-              className={`ws-col ${shownMobileDay === d.key ? "ws-col-active" : ""}`}
-              aria-label={d.label}>
+              className={`ws-col ${shownMobileDay === d.key ? "ws-col-active" : ""} ${
+                overZone === d.key ? "ws-zone-on" : ""}`}
+              aria-label={d.label} {...zone(d.key)}>
               <header className="ws-col-head">
                 <h3>{d.label}</h3>
                 <span>{rows.length + flight.length}</span>
@@ -251,7 +372,7 @@ export function IdeaBoard({
                   </span>
                 ))}
                 {rows.length === 0 && flight.length === 0 ? (
-                  <p className="ws-col-empty">Nothing yet</p>
+                  <p className="ws-col-empty">{dragId ? "Drop here" : "Nothing yet"}</p>
                 ) : null}
               </div>
             </section>
@@ -263,8 +384,10 @@ export function IdeaBoard({
 
       {opened ? (
         <IdeaPanel idea={opened} route={route} planner={planner} moments={moments}
-          onClose={() => setOpenId(null)}
-          onDeleted={(id) => { setRemoved((prev) => new Set(prev).add(id)); setOpenId(null); }} />
+          initialSheet={openSheet}
+          onClose={closePanel}
+          onPlace={(day) => move(opened.id, day)}
+          onDeleted={(id) => { setRemoved((prev) => new Set(prev).add(id)); closePanel(); }} />
       ) : null}
     </>
   );

@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 import { Select } from "@spark/_components/select";
 import {
   addIdeaAction, addIdeaCost, addIdeaNote, addIdeaRequirement, answerIdeaQuestion,
-  deleteIdea, describeIdea, placeIdea, placeIdeaInMoment, renameIdea, scheduleIdea,
+  deleteIdea, describeIdea, placeIdeaInMoment, renameIdea, scheduleIdea,
   setIdeaQuestion, setIdeaState,
 } from "./actions";
 import type { Idea } from "./board";
@@ -57,16 +57,20 @@ const money = (cents: number) =>
     .format(cents / 100);
 
 export function IdeaPanel({
-  idea, route, planner, moments, onClose, onDeleted,
+  idea, route, planner, moments, initialSheet = null, onClose, onDeleted, onPlace,
 }: {
   idea: Idea;
   route: Route;
   planner: boolean;
   moments: Array<{ id: string; label: string }>;
+  /** The Weekend can open an idea already asking to schedule it. */
+  initialSheet?: Sheet;
   onClose: () => void;
   onDeleted: (id: string) => void;
+  /** The same move a drag makes, so both paths land at the same moment. */
+  onPlace: (day: string | null) => void;
 }) {
-  const [sheet, setSheet] = useState<Sheet>(null);
+  const [sheet, setSheet] = useState<Sheet>(initialSheet);
   const [answering, setAnswering] = useState(false);
   const [asking, setAsking] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -96,13 +100,10 @@ export function IdeaPanel({
           <div className="ws-head-left">
             {planner ? (
               <div className="ws-daychip">
-                <Select label="Where it might fit" compact
+                <Select label="Move to" compact
                   value={idea.day ?? ""}
                   options={PLACEMENTS}
-                  onChange={(value) =>
-                    startTransition(async () => {
-                      await placeIdea(...r, idea.id, value || null, value ? idea.daypart : null);
-                    })} />
+                  onChange={(value) => onPlace(value || null)} />
               </div>
             ) : idea.day ? (
               <span className="ws-chip ws-chip-day">{idea.day}</span>

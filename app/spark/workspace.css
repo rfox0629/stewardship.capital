@@ -49,32 +49,36 @@
   margin: 0 0 8px;
 }
 
-/* The Plan's two sides. */
-.ev-plan-tabs {
-  display: flex;
-  gap: 6px;
-  margin: 0 0 14px;
-  border-bottom: 1px solid var(--ws-line);
+/* The Plan's two sides, as one control. Ideas is the workbench and Weekend
+   is the canvas; switching between them is a lens change, not a journey, so
+   it is a segmented control and not two links. */
+.ws-lens-seg {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--ws-ground);
+  border: 1px solid var(--ws-line);
+  border-radius: 9px;
+  padding: 2px;
 }
 
-.ev-plan-tabs a {
-  padding: 9px 2px 11px;
-  margin-right: 20px;
+.ws-lens-seg a {
+  border-radius: 7px;
+  padding: 6px 16px;
   font-family: var(--ev-body), system-ui, sans-serif;
-  font-size: 0.92rem;
-  font-weight: 600;
-  letter-spacing: 0;
+  font-size: 0.83rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   text-transform: none;
   color: var(--ws-ink-2);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
-.ev-plan-tabs a:hover { color: var(--ws-ink); }
+.ws-lens-seg a:hover { color: var(--ws-ink); }
 
-.ev-plan-tabs a.ev-plan-tab-on {
-  color: var(--ws-ink);
-  border-bottom-color: var(--ws-ink);
+.ws-lens-seg a.ws-seg-on {
+  background: var(--ws-ink);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(16, 20, 28, 0.24);
 }
 
 /* ------------------------------------------------------------ the bar */
@@ -812,21 +816,28 @@
 .ev-untimed-cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   padding: 0 3px;
   border-left: 1px solid var(--ws-line-soft);
 }
 
+/* A moment the sheet gives a part of the day rather than a time. It sits
+   above the clock because it has no place on it, and it stays small so the
+   clock keeps the room. */
 .ev-untimed {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
   text-align: left;
   border: 1px solid var(--ws-line);
   border-left: 3px solid var(--ws-ink-2);
   border-radius: 6px;
   background: var(--ws-card);
-  padding: 5px 7px;
+  padding: 3px 7px;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.73rem;
   font-weight: 600;
+  line-height: 1.3;
   color: var(--ws-ink);
   cursor: pointer;
 }
@@ -834,10 +845,10 @@
 .ev-untimed:hover { border-color: var(--ws-ink); background: var(--ws-ground); }
 
 .ev-untimed span {
-  display: block;
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  flex: 0 0 auto;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ws-ink-2);
 }
@@ -978,9 +989,9 @@
   display: flex;
   flex-direction: row;
   align-items: baseline;
-  gap: 7px;
-  padding-top: 3px;
-  padding-bottom: 3px;
+  gap: 6px;
+  padding-top: 0;
+  padding-bottom: 0;
   overflow: hidden;
 }
 
@@ -993,7 +1004,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.71rem;
+  line-height: 1.15;
 }
+
+.ev-block-tight .ev-block-time { font-size: 0.57rem; line-height: 1.15; }
 
 .ev-block-tight .ev-block-where { display: none; }
 
@@ -2389,24 +2404,6 @@ input.ws-row-owner {
   opacity: 0.72;
 }
 
-.ws-lenses { display: flex; gap: 6px; }
-
-.ws-lenses button {
-  border: 1px solid var(--ws-line);
-  background: var(--ws-card);
-  border-radius: 999px;
-  padding: 6px 13px;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--ws-ink-2);
-  cursor: pointer;
-}
-
-.ws-lenses button:hover { border-color: var(--ws-ink-2); }
-.ws-lenses em { font-style: normal; font-weight: 700; margin-left: 5px; }
-.ws-lenses .ws-lens-on { background: #fffdf7; border-color: #e6bf7a; color: #8a5205; }
-
 /* ------------------------------------------------------------ day groups */
 
 .ws-daygroup { margin-bottom: 22px; }
@@ -2467,9 +2464,21 @@ input.ws-row-owner {
   transform: translateY(-1px);
 }
 
-.ws-idea-q { border-left-color: #c2790f; background: #fffdf8; }
-.ws-idea-real { border-left-color: #12694a; }
+/* A card is neutral. What it has become is said by its chips, never by
+   painting the whole card, because one idea can be scheduled and costed and
+   owned all at once and a card cannot be four colours. The single exception
+   is a question, which is a state of the idea rather than an attachment. */
+.ws-idea-q { border-left-color: #c2790f; }
 .ws-idea-pending { opacity: 0.6; border-style: dashed; cursor: default; }
+.ws-idea-grab { cursor: grab; }
+.ws-idea-grab:active { cursor: grabbing; }
+
+.ws-idea-lift {
+  opacity: 0.5;
+  border-style: dashed;
+  box-shadow: none;
+  transform: none;
+}
 
 .ws-idea-title {
   font-size: 0.93rem;
@@ -2735,16 +2744,37 @@ input.ws-row-owner {
 
 .ws-plan-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
 }
 
 .ws-plan-titles { min-width: 0; }
-.ws-plan-titles .ws-title { margin: 0 0 6px; }
-.ws-plan-titles .ev-plan-tabs { margin: 0; border-bottom: 0; }
-.ws-plan-titles .ev-plan-tabs a { padding: 4px 2px 6px; margin-right: 18px; }
+.ws-plan-titles .ws-title { margin: 0 0 9px; font-size: 1.55rem; }
+.ws-plan-tools { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+
+/* A filter is a state, not furniture: it appears only while one is on. */
+.ev-main .ws-filtered {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-size: 0.84rem;
+  color: var(--ws-ink-2);
+}
+
+.ws-filtered button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ws-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 
 .ws-add-btn {
   flex: 0 0 auto;
@@ -2765,9 +2795,6 @@ input.ws-row-owner {
 
 .ws-add-btn:hover { background: #000; transform: translateY(-1px); }
 .ws-add-btn span { font-size: 1.05rem; line-height: 1; }
-
-.ws-lenses-quiet { margin-bottom: 12px; }
-.ws-lenses-quiet button { padding: 5px 11px; font-size: 0.78rem; }
 
 /* ---------------------------------------------------- whole weekend strip */
 
@@ -3002,3 +3029,34 @@ input.ws-row-owner {
   .ws-tray { flex-direction: column; gap: 7px; }
   .ws-tray-cards .ws-idea { flex: 1 1 100%; }
 }
+
+/* ================================================ a board you can pick up
+
+   A column and a tray are the same kind of thing to a card in the air: a
+   place it can land. Both light up the same way, so the board reads as one
+   surface rather than two mechanisms.
+   ========================================================================= */
+
+.ws-col, .ws-tray {
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.ws-zone-on {
+  border-color: var(--ws-accent) !important;
+  background: var(--ws-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--ws-accent);
+}
+
+.ws-zone-on .ws-col-head { border-bottom-color: var(--ws-accent); }
+
+.ev-main .ws-zone-hint {
+  margin: 0;
+  padding: 4px 2px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #16346f;
+}
+
+/* An empty column while something is in the air is an invitation, not a
+   report, so it keeps a landable shape instead of collapsing. */
+.ws-col-cards { min-height: 26px; }

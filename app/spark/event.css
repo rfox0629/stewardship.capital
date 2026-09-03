@@ -128,7 +128,7 @@
 
 .ev-nav-inner {
   display: flex;
-  gap: clamp(20px, 4vw, 36px);
+  gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -139,19 +139,22 @@
 
 .ev-nav a {
   font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: rgba(250, 246, 241, 0.68);
-  padding: 14px 0 12px;
+  padding: 11px 14px 9px;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, background 0.2s ease;
 }
+
+.ev-nav a:first-child { margin-left: -14px; }
 
 .ev-nav a:hover {
   color: #faf6f1;
+  background: rgba(250, 246, 241, 0.07);
 }
 
 .ev-nav a[aria-current="page"] {
@@ -163,7 +166,8 @@
 
 .ev-main {
   flex: 1;
-  padding: clamp(36px, 6vw, 64px) 0 clamp(48px, 7vw, 80px);
+  /* Whitespace is not hierarchy. The plan begins just under the nav. */
+  padding: clamp(18px, 2.4vw, 26px) 0 clamp(40px, 6vw, 72px);
 }
 
 .ev-page-title {
@@ -1840,17 +1844,24 @@
 
 .ev-block {
   position: absolute;
-  left: 4px;
-  right: 4px;
+  left: 2px;
+  right: 2px;
   border-radius: 4px;
   background: #fffdf9;
   border: 1px solid rgba(58, 58, 59, 0.18);
   border-left-width: 3px;
-  padding: 4px 8px;
+  padding: 2px 6px;
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   user-select: none;
   box-shadow: 0 1px 2px rgba(30, 30, 30, 0.06);
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.ev-block:hover {
+  border-color: rgba(58, 58, 59, 0.4);
+  box-shadow: 0 3px 10px rgba(30, 30, 30, 0.13);
+  z-index: 3;
 }
 
 .ev-b-program { border-left-color: var(--ev-primary); }
@@ -1885,15 +1896,16 @@
 }
 
 .ev-block-dragging {
-  opacity: 0.85;
-  box-shadow: 0 6px 18px rgba(30, 30, 30, 0.22);
+  cursor: grabbing;
+  box-shadow: 0 8px 22px rgba(30, 30, 30, 0.26);
+  border-color: var(--ev-accent);
   z-index: 5;
 }
 
 .ev-block-time {
   display: block;
   font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--ev-secondary);
@@ -1920,10 +1932,10 @@
 
 .ev-block-title {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 600;
   color: #2c2d2f;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .ev-block-where {
@@ -1938,9 +1950,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 7px;
+  height: 6px;
   cursor: ns-resize;
+  opacity: 0;
+  transition: opacity 0.12s ease;
 }
+
+.ev-block:hover .ev-block-grip { opacity: 1; }
 
 .ev-block-grip::after {
   content: "";
@@ -2071,64 +2087,184 @@
 
 /* --------------------------------------------- tentative sparks, ghosts */
 
-.ev-ghosts {
-  position: absolute;
-  right: 2px;
-  width: 46%;
-  display: grid;
-  gap: 3px;
-  z-index: 4;
-  pointer-events: auto;
+/* ================================================== the day's loose ideas
+
+   A strip above each day holding what somebody thinks belongs there and has
+   not yet put in an hour. These are the only things on this screen that are
+   not yet real, so they are drawn as chips rather than blocks, and they are
+   draggable because dropping one on the grid is what makes it real.
+   ========================================================================= */
+
+.ev-idea-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 0 8px;
+  border-bottom: 1px dashed rgba(58, 58, 59, 0.22);
 }
 
-.ev-ghost {
-  display: block;
+.ev-idea-rowlabel {
+  flex: 0 0 44px;
+  margin: 3px 0 0;
   font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.25;
-  color: #6b5510;
-  background: rgba(233, 185, 73, 0.16);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a8c90;
+  text-align: right;
+}
+
+.ev-idea-cells {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+
+.ev-idea-cell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.ev-idea-chip {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
   border: 1px dashed rgba(157, 122, 28, 0.6);
-  border-radius: 3px;
-  padding: 3px 6px;
+  background: rgba(233, 185, 73, 0.16);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font: inherit;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  color: #6b5510;
+  cursor: grab;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+/* The chip is a pill, so the title is what gets clipped, not the pill. */
+.ev-idea-chip > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.9;
 }
 
-.ev-ghost:hover {
-  white-space: normal;
-  opacity: 1;
+.ev-idea-chip:hover {
+  background: rgba(233, 185, 73, 0.3);
+  border-color: #9d7a1c;
+  transform: translateY(-1px);
 }
 
-.ev-ghost-captured { border-left: 3px solid #9a9c9f; }
-.ev-ghost-discussing { border-left: 3px solid var(--ev-secondary); }
-.ev-ghost-approved { border-left: 3px solid var(--ev-primary); }
-
-.ev-ghost-day {
-  margin-top: 16px;
-  border-top: 1px dashed rgba(58, 58, 59, 0.25);
-  padding-top: 10px;
-  display: grid;
-  gap: 5px;
-}
-
-.ev-ghost-day .ev-ghost {
-  white-space: normal;
-  font-size: 0.74rem;
-  padding: 6px 9px;
-}
-
-.ev-ghost-day .ev-ghost i {
+.ev-idea-chip i {
   font-style: normal;
-  color: #9a7a1c;
-  margin-left: 8px;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  color: #0d5238;
+}
+
+.ev-idea-carried {
+  cursor: grabbing;
+  opacity: 0.45;
+  border-style: solid;
+}
+
+.ev-idea-more {
+  border: 0;
+  background: none;
+  padding: 1px 4px;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #8a8c90;
+  cursor: pointer;
+}
+
+.ev-idea-more:hover { color: var(--ev-accent); text-decoration: underline; }
+
+/* Where a carried idea would land, and the column it would land in. */
+.ev-grid-landing {
+  background: rgba(68, 124, 157, 0.07);
+}
+
+.ev-drop-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px solid var(--ev-accent);
+  z-index: 6;
+  pointer-events: none;
+}
+
+.ev-drop-line span {
+  position: absolute;
+  left: 2px;
+  top: -8px;
+  background: var(--ev-accent);
+  color: #faf6f1;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* A moment drawn the instant it is dropped, still on its way to the row. */
+.ev-block-landing {
+  border-style: dashed;
+  opacity: 0.72;
+  cursor: default;
+}
+
+/* The phone gets the same ideas without the precision. */
+.ev-idea-day {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed rgba(58, 58, 59, 0.22);
+}
+
+.ev-idea-day .ev-idea-rowlabel { flex: 0 0 100%; text-align: left; }
+.ev-idea-day .ev-idea-chip > span { white-space: normal; overflow: visible; }
+.ev-idea-daycards { display: flex; flex-wrap: wrap; gap: 6px; }
+.ev-idea-day .ev-idea-chip { cursor: pointer; white-space: normal; font-size: 0.72rem; padding: 6px 11px; }
+
+/* The one question a dropped idea has to answer. */
+.ev-howlong-title {
+  margin: 0 0 2px;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--ws-ink, #14171c);
+}
+
+.ev-howlong-when {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ev-accent);
+}
+
+.ev-howlong-note {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #5b5d62;
 }
 
 /* ------------------------------------------------- the plan, two lenses */
