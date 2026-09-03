@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
+
+import { scheduleIdea } from "../plan/actions";
 
 import {
   addCue,
@@ -16,14 +19,20 @@ import {
 } from "./actions";
 
 /**
+ * The canvas.
+ *
  * The weekend as a working calendar: time down, days across, moments as
  * compact blocks a planner can pick up and move.
  *
  * Dragging a block vertically changes its time; across, its day; the handle
- * at its foot, its length. Every commit is one deliberate release, applied
- * optimistically and reverted with a message if the database refuses. A drag
- * is never the only way: every block opens a drawer where the same fields
- * are plain inputs.
+ * at its foot, its length. Above each day sits that day's loose ideas, and
+ * dropping one onto an hour is what turns a guess into a moment: the idea
+ * stays where it is and gains a scheduled moment pointing back at it.
+ *
+ * Every commit is one deliberate release, applied optimistically and
+ * reverted with a message if the database refuses. A drag is never the only
+ * way: a block opens a drawer with the same fields as plain inputs, and an
+ * idea opens with its scheduling sheet already asking.
  */
 
 export type Moment = {
@@ -76,15 +85,9 @@ export type TentativeIdea = {
   status: string;
   day: string;
   daypart: string;
-};
-
-/** Where each daypart's ghosts sit on the time axis. Approximate on
- *  purpose: a tentative idea has a neighbourhood, not a time. */
-const DAYPART_BAND: Record<string, number> = {
-  morning: 8 * 60 + 15,
-  afternoon: 13 * 60 + 30,
-  evening: 18 * 60 + 45,
-  anytime: 21 * 60 + 30,
+  /** How many moments this idea has already become. One idea may become
+   *  several: coffee on Friday morning is coffee again on Saturday. */
+  scheduled: number;
 };
 
 type Role = "planner" | "client" | "stakeholder";
@@ -101,9 +104,20 @@ const TRACK_CLASS: Record<string, string> = {
 };
 const OPEN_SPACE = /^(free|open)\b|^rest\b|family time/i;
 
-const PX_PER_MIN = 2.2;
+/* An itinerary, not an office calendar. An hour is 75px rather than 132, so
+   the shape of a day (a dense morning, a protected afternoon) is legible in
+   one look. Low enough for that, high enough that this weekend's shortest
+   real moment, a ten minute devotional, still holds a line of type. */
+const PX_PER_MIN = 1.25;
 const SNAP = 15;
 const DEFAULT_LEN = 60;
+const MIN_BLOCK_PX = 14;
+/* Below this a block is one line: time and title, nothing else. */
+const TIGHT_PX = 40;
+const DURATIONS = [15, 30, 45, 60, 90, 120];
+/* How many of a day's ideas the strip shows before it offers the rest. */
+const TRAY_CHIPS = 3;
+const TRAY_CHIPS_DAY = 4;
 
 const fmt = (minutes: number) => {
   const clamped = Math.max(0, Math.min(24 * 60 - 5, minutes));
@@ -640,9 +654,11 @@ export function ScheduleView({
       : null,
   );
   const [addDay, setAddDay] = useState<string | null>(null);
+  /* The day's loose ideas are the point of the tray, so they are there by
+     default and can be put away. */
   const [showSparks, setShowSparks] = useState<boolean>(() =>
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("sparks") === "1",
+    typeof window === "undefined" ||
+    new URLSearchParams(window.location.search).get("sparks") !== "0",
   );
   /* Two lenses over the same schedule: the calendar, and its cues. */
   const [lens, setLens] = useState<"schedule" | "ros">(() =>
@@ -654,7 +670,19 @@ export function ScheduleView({
   const [overrides, setOverrides] = useState<Map<string, Override>>(new Map());
   const [failure, setFailure] = useState<string | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  /* An idea in the air, where it would land, and what is asking for its
+     length. Separate from the block drag above: that moves something that
+     already exists, this brings something into existence. */
+  const [carrying, setCarrying] = useState<TentativeIdea | null>(null);
+  const [landing, setLanding] = useState<{ day: string; minutes: number } | null>(null);
+  const [asking, setAsking] = useState<{ idea: TentativeIdea; day: string; minutes: number } | null>(null);
+  const [placed, setPlaced] = useState<
+    Array<{ key: string; ideaId: string; title: string; day: string; minutes: number; length: number }>
+  >([]);
+  /* A busy day holds more ideas than a compact strip should show at once. */
+  const [openTray, setOpenTray] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const [, startTransition] = useTransition();
 
   /* Overrides sit on top of the server's truth, so a committed drag holds
@@ -693,7 +721,7 @@ export function ScheduleView({
       .map((moment) => moment.endMinutes ?? moment.minutes)
       .filter((value): value is number => value !== null);
     if (ends.length === 0) return 22 * 60;
-    return Math.min(24 * 60, Math.ceil((Math.max(...ends) + 90) / 60) * 60);
+    return Math.min(24 * 60, Math.ceil((Math.max(...ends) + 45) / 60) * 60);
   }, [merged]);
   const gridHeight = (dayEnd - dayStart) * PX_PER_MIN;
   const hours = useMemo(() => {
@@ -840,7 +868,7 @@ export function ScheduleView({
     const length =
       (shown.endMinutes ?? impliedEnd.get(moment.id) ?? start + DEFAULT_LEN) - start;
     /* Short moments read on one line, which is most of this weekend. */
-    const tight = length < 26;
+    const tight = length * PX_PER_MIN < TIGHT_PX;
     const marker = markers.get(moment.id);
     const open = OPEN_SPACE.test(moment.title);
 
@@ -858,7 +886,7 @@ export function ScheduleView({
       ? undefined
       : {
           top: (start - dayStart) * PX_PER_MIN,
-          height: Math.max(22, length * PX_PER_MIN - 2),
+          height: Math.max(MIN_BLOCK_PX, length * PX_PER_MIN - 1),
         };
 
     return (
@@ -888,7 +916,7 @@ export function ScheduleView({
           ) : null}
         </span>
         <span className="ev-block-title">{moment.title}</span>
-        {!inTimeline && length >= 45 && moment.location ? (
+        {!inTimeline && length * PX_PER_MIN >= 52 && moment.location ? (
           <span className="ev-block-where">{moment.location}</span>
         ) : null}
         {inTimeline && moment.location ? (
@@ -912,15 +940,61 @@ export function ScheduleView({
   const shownView = hydrated ? view : "weekend";
   const shownSparks = hydrated ? showSparks : false;
   const shownLens = hydrated && planner ? lens : "schedule";
-  const ghostsFor = (dayKey: string) => {
-    if (!shownSparks || !planner) return [];
-    const grouped = new Map<string, TentativeIdea[]>();
-    for (const spark of tentative.filter((candidate) => candidate.day === dayKey)) {
-      const band = spark.daypart in DAYPART_BAND ? spark.daypart : "anytime";
-      grouped.set(band, [...(grouped.get(band) ?? []), spark]);
-    }
-    return [...grouped.entries()];
+  /* A day's loose ideas. Placement is a guess about the day, so these are
+     exactly the ideas somebody thinks belong here and has not yet put in an
+     hour. Unplaced and event-wide ideas are not shown: they have no day to
+     sit above, and they are one click away in the Plan. */
+  const ideasFor = (dayKey: string) =>
+    shownSparks && planner ? tentative.filter((idea) => idea.day === dayKey) : [];
+
+  /* ------------------------------------------- an idea dropped onto an hour */
+
+  /** Where a pointer sits on the grid, in a day and a snapped minute. */
+  const landingAt = (event: React.DragEvent) => {
+    const grid = gridRef.current;
+    if (!grid) return null;
+    const rect = grid.getBoundingClientRect();
+    const laneWidth = rect.width / laneDays.length;
+    const laneIndex = Math.max(
+      0,
+      Math.min(laneDays.length - 1, Math.floor((event.clientX - rect.left) / laneWidth)),
+    );
+    const minutes = Math.max(
+      dayStart,
+      Math.min(dayEnd - SNAP, snap(dayStart + (event.clientY - rect.top) / PX_PER_MIN)),
+    );
+    return { day: laneDays[laneIndex].key, minutes };
   };
+
+  /* One scheduling engine. The drag arrives here with a day and an hour, and
+     so does the sheet inside the idea; neither duplicates the idea, and an
+     idea that already has a moment simply gains another. */
+  const schedule = (idea: TentativeIdea, day: string, minutes: number, length: number) => {
+    const key = `${idea.id}-${day}-${minutes}`;
+    setPlaced((prev) => [...prev.filter((entry) => entry.key !== key),
+      { key, ideaId: idea.id, title: idea.title, day, minutes, length }]);
+    setAsking(null);
+    setFailure(null);
+    startTransition(async () => {
+      const outcome = await scheduleIdea(
+        route.clientSlug, route.eventSlug, route.edition, idea.id,
+        { day, starts: fmt(minutes), minutes: String(length), track: "Experience" },
+      );
+      if (!outcome.ok) {
+        setPlaced((prev) => prev.filter((entry) => entry.key !== key));
+        setFailure(outcome.message ?? "That did not schedule, so nothing was added.");
+      }
+    });
+  };
+
+  /* A moment drawn the instant it is dropped stops being drawn the instant
+     the real row arrives carrying the same answer. */
+  const already = new Set(
+    merged.filter((moment) => moment.sparkId).map((m) => `${m.sparkId}|${m.day}|${m.starts}`),
+  );
+  const landed = placed.filter(
+    (entry) => !already.has(`${entry.ideaId}|${entry.day}|${fmt(entry.minutes)}`),
+  );
   /* The sheet says "Afternoon: free time" and means it. Those moments carry
      a part of day rather than a start, so they sit in their own band. */
   const untimedFor = (key: string) =>
@@ -986,7 +1060,7 @@ export function ScheduleView({
               aria-pressed={shownSparks}
               onClick={() => setShowSparks((current) => !current)}
             >
-              {shownSparks ? "Ideas shown" : "Show ideas"}
+              {shownSparks ? "Hide ideas" : "Show ideas"}
             </button>
           ) : null}
           {planner ? (
@@ -1021,6 +1095,50 @@ export function ScheduleView({
               </div>
             ))}
           </div>
+          {laneDays.some((day) => ideasFor(day.key).length > 0) ? (
+            <div className="ev-idea-row">
+              <p className="ev-idea-rowlabel">Ideas</p>
+              <div className="ev-idea-cells">
+                {laneDays.map((day) => {
+                  const all = ideasFor(day.key);
+                  const expanded = openTray === day.key;
+                  const shown = expanded ? all : all.slice(0, TRAY_CHIPS);
+                  return (
+                    <div key={day.key} className="ev-idea-cell">
+                      {shown.map((idea) => (
+                        <button
+                          key={idea.id}
+                          type="button"
+                          className={`ev-idea-chip ${carrying?.id === idea.id ? "ev-idea-carried" : ""}`}
+                          draggable={hydrated}
+                          title="Drag onto an hour, or click to schedule it"
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData("text/plain", idea.id);
+                            event.dataTransfer.effectAllowed = "copy";
+                            setCarrying(idea);
+                          }}
+                          onDragEnd={() => { setCarrying(null); setLanding(null); }}
+                          onClick={() => router.push(`${base}/plan?open=${idea.id}&sheet=schedule`)}
+                        >
+                          <span>{idea.title}</span>
+                          {idea.scheduled > 0 ? <i aria-label="already scheduled">✓</i> : null}
+                        </button>
+                      ))}
+                      {all.length > TRAY_CHIPS ? (
+                        <button
+                          type="button"
+                          className="ev-idea-more"
+                          onClick={() => setOpenTray(expanded ? null : day.key)}
+                        >
+                          {expanded ? "Fewer" : `+${all.length - TRAY_CHIPS}`}
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           {laneDays.some((day) => untimedFor(day.key).length > 0) ? (
             <div className="ev-untimed-row" style={{ marginLeft: 52 }}>
               {laneDays.map((day) => (
@@ -1055,30 +1173,59 @@ export function ScheduleView({
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={() => setDrag(null)}
+              onDragOver={(event) => {
+                if (!carrying) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+                const at = landingAt(event);
+                if (at && (at.day !== landing?.day || at.minutes !== landing?.minutes)) setLanding(at);
+              }}
+              onDragLeave={(event) => {
+                if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+                setLanding(null);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const idea = carrying;
+                const at = landingAt(event) ?? landing;
+                setCarrying(null);
+                setLanding(null);
+                if (idea && at) setAsking({ idea, day: at.day, minutes: at.minutes });
+              }}
             >
               {hours.map((minute) => (
                 <div key={minute} className="ev-grid-hourline" style={{ top: (minute - dayStart) * PX_PER_MIN }} />
               ))}
               {laneDays.map((day) => (
-                <div key={day.key} className={`ev-grid-col ${day.key === today ? "ev-grid-today" : ""}`}>
-                  {ghostsFor(day.key).map(([band, sparks]) => (
+                <div
+                  key={day.key}
+                  className={`ev-grid-col ${day.key === today ? "ev-grid-today" : ""} ${
+                    landing?.day === day.key ? "ev-grid-landing" : ""
+                  }`}
+                >
+                  {landing?.day === day.key ? (
                     <div
-                      key={band}
-                      className="ev-ghosts"
-                      style={{ top: (DAYPART_BAND[band] - dayStart) * PX_PER_MIN }}
+                      className="ev-drop-line"
+                      style={{ top: (landing.minutes - dayStart) * PX_PER_MIN }}
                     >
-                      {sparks.map((spark) => (
-                        <Link
-                          key={spark.id}
-                          className={`ev-ghost ev-ghost-${spark.status}`}
-                          href={`${base}/plan?open=${spark.id}`}
-                          title={`Idea: ${spark.title}`}
-                        >
-                          {spark.title}
-                        </Link>
-                      ))}
+                      <span>{fmt(landing.minutes)}</span>
                     </div>
-                  ))}
+                  ) : null}
+                  {landed
+                    .filter((entry) => entry.day === day.key)
+                    .map((entry) => (
+                      <div
+                        key={entry.key}
+                        className="ev-block ev-b-experience ev-block-landing"
+                        style={{
+                          top: (entry.minutes - dayStart) * PX_PER_MIN,
+                          height: Math.max(MIN_BLOCK_PX, entry.length * PX_PER_MIN - 1),
+                        }}
+                      >
+                        <span className="ev-block-time">{fmt(entry.minutes)}</span>
+                        <span className="ev-block-title">{entry.title}</span>
+                      </div>
+                    ))}
                   {merged
                     .filter((moment) => {
                       if (moment.minutes === null) return false;
@@ -1109,6 +1256,40 @@ export function ScheduleView({
             ))}
           </div>
           <div className="ev-timeline">
+            {ideasFor(activeDay?.key ?? "").length > 0 ? (
+              (() => {
+                const all = ideasFor(activeDay?.key ?? "");
+                const expanded = openTray === activeDay?.key;
+                const shown = expanded ? all : all.slice(0, TRAY_CHIPS_DAY);
+                return (
+                  <div className="ev-idea-day">
+                    <p className="ev-idea-rowlabel">Ideas for this day</p>
+                    <div className="ev-idea-daycards">
+                      {shown.map((idea) => (
+                        <button
+                          key={idea.id}
+                          type="button"
+                          className="ev-idea-chip"
+                          onClick={() => router.push(`${base}/plan?open=${idea.id}&sheet=schedule`)}
+                        >
+                          <span>{idea.title}</span>
+                          {idea.scheduled > 0 ? <i aria-label="already scheduled">✓</i> : null}
+                        </button>
+                      ))}
+                      {all.length > TRAY_CHIPS_DAY ? (
+                        <button
+                          type="button"
+                          className="ev-idea-more"
+                          onClick={() => setOpenTray(expanded ? null : (activeDay?.key ?? null))}
+                        >
+                          {expanded ? "Fewer" : `+${all.length - TRAY_CHIPS_DAY} more`}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })()
+            ) : null}
             {timeline.map((moment) => (
               <button
                 key={moment.id}
@@ -1119,23 +1300,6 @@ export function ScheduleView({
                 {block(moment, true)}
               </button>
             ))}
-            {ghostsFor(activeDay?.key ?? "").length > 0 ? (
-              <div className="ev-ghost-day">
-                <span className="ev-drawer-sub">Ideas that might land here</span>
-                {ghostsFor(activeDay?.key ?? "").flatMap(([band, sparks]) =>
-                  sparks.map((spark) => (
-                    <Link
-                      key={spark.id}
-                      className={`ev-ghost ev-ghost-${spark.status}`}
-                      href={`${base}/plan?open=${spark.id}`}
-                    >
-                      {spark.title}
-                      <i>{band}</i>
-                    </Link>
-                  )),
-                )}
-              </div>
-            ) : null}
           </div>
         </>
       )}
@@ -1156,6 +1320,15 @@ export function ScheduleView({
               return next;
             });
           }}
+        />
+      ) : null}
+
+      {asking ? (
+        <HowLong
+          idea={asking.idea}
+          when={`${laneDays.find((day) => day.key === asking.day)?.name ?? ""} · ${fmt(asking.minutes)}`}
+          onPick={(length) => schedule(asking.idea, asking.day, asking.minutes, length)}
+          onClose={() => setAsking(null)}
         />
       ) : null}
 
@@ -1356,6 +1529,52 @@ function RosLens({
           No cues yet. Open a scheduled moment and add its run of show.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The only question a dropped idea has to answer.
+ *
+ * It landed on a day and an hour, so the one thing left is how long it runs.
+ * Nothing is approved, nothing is categorised, and the idea it came from is
+ * untouched: an idea that already has a moment simply gains another.
+ */
+function HowLong({
+  idea,
+  when,
+  onPick,
+  onClose,
+}: {
+  idea: TentativeIdea;
+  when: string;
+  onPick: (length: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="ws-panel-wrap ws-modal-wrap" role="dialog" aria-modal="true" aria-label="How long">
+      <button type="button" className="ws-scrim" aria-label="Close" onClick={onClose} />
+      <div className="ws-modal-card">
+        <p className="ev-howlong-title">{idea.title}</p>
+        <p className="ev-howlong-when">{when}</p>
+        {idea.scheduled > 0 ? (
+          <p className="ev-howlong-note">
+            Already happening {idea.scheduled === 1 ? "once" : `${idea.scheduled} times`}. This adds
+            another moment and keeps one idea.
+          </p>
+        ) : null}
+        <p className="ws-modal-label">How long?</p>
+        <div className="ws-modal-days">
+          {DURATIONS.map((length) => (
+            <button key={length} type="button" autoFocus={length === 30} onClick={() => onPick(length)}>
+              {length < 60 ? `${length} min` : length === 60 ? "1 hour" : `${length / 60} hours`}
+            </button>
+          ))}
+        </div>
+        <div className="ws-modal-actions">
+          <button type="button" className="ws-btn-quiet" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -172,8 +172,12 @@ export default async function SchedulePage({ params }: PageProps) {
 
   return (
     <>
-      <h2 className="ws-title">{role === "stakeholder" ? "Schedule" : "Plan"}</h2>
-      {role !== "stakeholder" ? <PlanTabs base={base} active="weekend" /> : null}
+      <div className="ws-plan-top">
+        <div className="ws-plan-titles">
+          <h2 className="ws-title">{role === "stakeholder" ? "Schedule" : "Plan"}</h2>
+          {role !== "stakeholder" ? <PlanTabs base={base} active="weekend" /> : null}
+        </div>
+      </div>
       <ScheduleView
         moments={moments}
         days={days}
@@ -195,6 +199,10 @@ export default async function SchedulePage({ params }: PageProps) {
           status: row.status,
           day: row.tentative_day ?? "",
           daypart: row.tentative_daypart ?? "anytime",
+          /* An idea stays in its day's tray after it is scheduled, because
+             one idea may become several moments. The count is what makes a
+             second one deliberate rather than accidental. */
+          scheduled: moments.filter((moment) => moment.sparkId === row.id).length,
         }))}
       />
     </>
