@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
-import { addIdea, addIdeaNote, describeIdea, placeIdea, setIdeaState } from "./actions";
+import { addIdea, addIdeaNote, deleteIdea, describeIdea, placeIdea, setIdeaState } from "./actions";
 import { toIdeaState, type IdeaState } from "./idea-state";
 import { AddToPlan } from "./add-to-plan";
 
@@ -92,13 +92,17 @@ export function IdeaBoard({
   );
   const [onlyGaps, setOnlyGaps] = useState(true);
   const [overLane, setOverLane] = useState<IdeaState | null>(null);
+  /* Ideas deleted here, hidden at once rather than after the round trip. */
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [failure, setFailure] = useState<string | null>(null);
   const dragId = useRef<string | null>(null);
   const [, startTransition] = useTransition();
 
   const merged = useMemo(
     () =>
-      ideas.map((idea) => {
+      ideas
+        .filter((idea) => !removed.has(idea.id))
+        .map((idea) => {
         const placed = placeOverride.get(idea.id);
         return {
           ...idea,
@@ -106,8 +110,8 @@ export function IdeaBoard({
           day: placed ? placed.day : idea.day,
           daypart: placed ? placed.daypart : idea.daypart,
         };
-      }),
-    [ideas, stateOverride, placeOverride],
+        }),
+    [ideas, stateOverride, placeOverride, removed],
   );
 
   type Card = (typeof merged)[number];
@@ -363,6 +367,10 @@ export function IdeaBoard({
           onClose={() => setOpenId(null)}
           onMove={move}
           onPlace={place}
+          onDeleted={(id) => {
+            setRemoved((prev) => new Set(prev).add(id));
+            setOpenId(null);
+          }}
         />
       ) : null}
     </>
@@ -427,6 +435,7 @@ function IdeaPanel({
   onClose,
   onMove,
   onPlace,
+  onDeleted,
 }: {
   idea: Idea & { state: IdeaState };
   route: Route;
@@ -434,10 +443,17 @@ function IdeaPanel({
   onClose: () => void;
   onMove: (idea: Idea & { state: IdeaState }, state: IdeaState, reason?: string) => void;
   onPlace: (idea: Idea & { state: IdeaState }, day: string | null, daypart: string | null) => void;
+  onDeleted: (id: string) => void;
 }) {
   const [note, setNote] = useState("");
   const [detail, setDetail] = useState(idea.detail ?? "");
+  const [confirming, setConfirming] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  /* Deleting orphans rather than destroys: the foreign keys are SET NULL, so
+     whatever the idea became outlives it. Say so before the button. */
+  const survives = [...new Set(idea.links.map((link) => link.kind.toLowerCase()))];
 
   const decided = idea.state === "planned";
 
@@ -542,6 +558,46 @@ function IdeaPanel({
               <b>{link.kind}</b> {link.label}
             </Link>
           ))}
+        </div>
+      ) : null}
+
+      {planner ? (
+        <div className="ws-panel-section ws-danger">
+          {confirming ? (
+            <>
+              <p className="ws-note">
+                {survives.length > 0
+                  ? `Delete this idea? The ${survives.join(" and ")} it created will stay, no longer linked to any idea.`
+                  : "Delete this idea? Its notes go with it."}
+              </p>
+              <div className="ws-danger-row">
+                <button
+                  type="button"
+                  className="ws-btn-danger"
+                  disabled={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      const outcome = await deleteIdea(
+                        route.clientSlug, route.eventSlug, route.edition, idea.id,
+                      );
+                      if (outcome.ok) onDeleted(idea.id);
+                      else setFailed(outcome.message ?? "That did not delete.");
+                    })
+                  }
+                >
+                  Delete it
+                </button>
+                <button type="button" className="ws-btn-quiet" onClick={() => setConfirming(false)}>
+                  Keep it
+                </button>
+              </div>
+              {failed ? <p className="ws-msg" role="status">{failed}</p> : null}
+            </>
+          ) : (
+            <button type="button" className="ws-delete" onClick={() => setConfirming(true)}>
+              Delete this idea
+            </button>
+          )}
         </div>
       ) : null}
 

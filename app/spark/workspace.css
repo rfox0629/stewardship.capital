@@ -2088,3 +2088,38 @@ input.ws-row-owner {
 @media (max-width: 900px) {
   .ws-lane-warm { order: -1; }
 }
+
+/* Deleting an idea. Quiet until asked for, then unmistakable. */
+.ws-danger { border-top-color: var(--ws-line); }
+
+.ws-delete {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--ws-ink-2);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ws-delete:hover { color: #a3231b; }
+
+.ws-danger-row { display: flex; gap: 8px; margin-top: 4px; }
+
+.ws-btn-danger {
+  border: 1px solid #a3231b;
+  background: #a3231b;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 15px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ws-btn-danger:hover { background: #861b14; border-color: #861b14; }
+.ws-btn-danger:disabled { opacity: 0.5; cursor: default; }

@@ -21,9 +21,9 @@ import { EventNav, type EventNavItem } from "./event-nav";
  * person's role decides which navigation exists at all: a surface a reader
  * cannot open is not rendered as a link they cannot use.
  *
- * Spark goes quiet here on purpose. It keeps exactly two marks: the
- * Stewardship.Capital wordmark top left, and the Powered by Spark line in the
- * footer, whose orange node is Spark's own and is not themable.
+ * Spark goes quiet here on purpose. It keeps one mark, the
+ * Stewardship.Capital wordmark top left. The footer carries the client's
+ * own event and nothing of the product's.
  */
 
 type LayoutProps = {
@@ -54,10 +54,6 @@ export default async function EngagementLayout({ children, params }: LayoutProps
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   const working = role === "planner" || role === "client";
 
-  /* Four doors: Plan, Tasks, Resources, Budget. Ideas and the Weekend live
-     inside Plan as two lenses of one surface, and the run of show lives
-     inside the Weekend as a lens on the schedule. Decisions live on the
-     sparks that were decided. A guest's only door is the schedule. */
   /* Four doors. Ideas and the Schedule are two sides of one Plan, and the
      run of show lives inside a scheduled moment. A guest's only door is the
      schedule, and a link a reader cannot open is never rendered for them. */
@@ -132,12 +128,6 @@ export default async function EngagementLayout({ children, params }: LayoutProps
             {engagement.location ? `, ${engagement.location}` : ""}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 20 }}>
-            {theme.poweredBySpark ? (
-              <span className="ev-powered">
-                <span className="ev-node" aria-hidden="true" />
-                Powered by Spark · Stewardship.Capital
-              </span>
-            ) : null}
             <form action="/spark/signout" method="post">
               <button className="ev-signout" type="submit">
                 Sign out

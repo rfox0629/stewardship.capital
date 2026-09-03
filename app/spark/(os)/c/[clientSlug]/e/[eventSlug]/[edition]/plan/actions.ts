@@ -438,3 +438,44 @@ export async function setIdeaCost(
   revalidate(clientSlug, eventSlug, edition);
   return { ok: true };
 }
+
+/* ------------------------------------------------------------- removal */
+
+/**
+ * An idea that should not have been captured.
+ *
+ * This is for the mis-typed and the duplicated, not for the rejected: an
+ * idea the team considered and declined belongs in Set aside, where its
+ * reason survives. Deleting is therefore deliberate and planner only.
+ *
+ * Anything the idea already became stays. The foreign keys are SET NULL, so
+ * a scheduled moment or an action outlives the idea it came from and simply
+ * stops naming it. The screen says so before the button is pressed, because
+ * a surprise orphan is worse than a refused delete.
+ */
+export async function deleteIdea(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  ideaId: string,
+): Promise<Outcome> {
+  const context = await resolveEngagement(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+  if (context.role !== "planner" && !context.staff) return { ok: false };
+
+  const { data, error } = await context.supabase
+    .from("sparks")
+    .delete()
+    .eq("id", ideaId)
+    .eq("engagement_id", context.engagement.id)
+    .select("id");
+
+  /* Row level security filters a delete silently, so absence of an error is
+     not success. Zero rows means refused. */
+  if (error || (data?.length ?? 0) === 0) {
+    return { ok: false, message: "That did not delete." };
+  }
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}
