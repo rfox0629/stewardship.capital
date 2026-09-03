@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore, useTransition } from "react";
 
 import { addIdea, placeIdea } from "./actions";
+import { AddIdea } from "./add-idea";
 import { toIdeaState, type IdeaState } from "./idea-state";
 import { IdeaPanel } from "./idea-panel";
 
@@ -46,13 +47,6 @@ const DAYS = [
   { key: "fri", label: "Friday", short: "Fri" },
   { key: "sat", label: "Saturday", short: "Sat" },
   { key: "sun", label: "Sunday", short: "Sun" },
-];
-
-/* Placement at capture is optional and defaults to not knowing. */
-const ADD_PLACEMENTS = [
-  { key: "", label: "Not sure yet" },
-  { key: "all", label: "Event-wide" },
-  ...DAYS.map((d) => ({ key: d.key, label: d.short })),
 ];
 
 /* A drop zone is addressed by the placement it means. Unplaced is a real
@@ -108,6 +102,13 @@ export function IdeaBoard({
     new Map());
   const [dragId, setDragId] = useState<string | null>(null);
   const [overZone, setOverZone] = useState<string | null>(null);
+  /* True while there are columns off the right edge to scroll to. Measured
+     from the element itself rather than guessed from a breakpoint. */
+  const [more, setMore] = useState(false);
+  const measure = (el: HTMLDivElement | null) => {
+    if (!el) return;
+    setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+  };
   const [, startTransition] = useTransition();
 
   const live = ideas
@@ -351,7 +352,13 @@ export function IdeaBoard({
         ))}
       </nav>
 
-      <div className="ws-board">
+      <div
+        className="ws-board-scroll"
+        ref={measure}
+        onScroll={(event) => measure(event.currentTarget)}
+      >
+        {more ? <span className="ws-board-fade" aria-hidden="true" /> : null}
+        <div className="ws-board">
         {DAYS.map((d) => {
           const rows = pool.filter((idea) => idea.day === d.key);
           const flight = flightFor(d.key);
@@ -378,6 +385,7 @@ export function IdeaBoard({
             </section>
           );
         })}
+        </div>
       </div>
 
       {adding ? <AddIdea onAdd={add} onClose={() => setAdding(false)} /> : null}
@@ -390,56 +398,6 @@ export function IdeaBoard({
           onDeleted={(id) => { setRemoved((prev) => new Set(prev).add(id)); closePanel(); }} />
       ) : null}
     </>
-  );
-}
-
-/** Capture first, plan later: a name, and roughly where it belongs. */
-function AddIdea({
-  onAdd, onClose,
-}: {
-  onAdd: (title: string, day: string | null) => void;
-  onClose: () => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [day, setDay] = useState("");
-  const [placing, setPlacing] = useState(false);
-
-  return (
-    <div className="ws-panel-wrap ws-modal-wrap" role="dialog" aria-modal="true" aria-label="Add an idea">
-      <button type="button" className="ws-scrim" aria-label="Close" onClick={onClose} />
-      <div className="ws-modal-card">
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          if (!title.trim()) return;
-          onAdd(title.trim(), day || null);
-        }}>
-          <label className="ws-modal-label" htmlFor="new-idea">What is the idea?</label>
-          <input id="new-idea" className="ws-modal-input" value={title} maxLength={200} autoFocus
-            placeholder="Glow run" onChange={(event) => setTitle(event.target.value)} />
-
-          {placing ? (
-            <>
-              <p className="ws-modal-label">Where might it fit? <em>Optional</em></p>
-              <div className="ws-modal-days">
-                {ADD_PLACEMENTS.map((d) => (
-                  <button key={d.key || "unplaced"} type="button" aria-pressed={day === d.key}
-                    onClick={() => setDay(d.key)}>{d.label}</button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <button type="button" className="ws-flag ws-place-toggle" onClick={() => setPlacing(true)}>
-              + Add placement
-            </button>
-          )}
-
-          <div className="ws-modal-actions">
-            <button type="submit" className="ws-btn" disabled={!title.trim()}>Add idea</button>
-            <button type="button" className="ws-btn-quiet" onClick={onClose}>Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
   );
 }
 

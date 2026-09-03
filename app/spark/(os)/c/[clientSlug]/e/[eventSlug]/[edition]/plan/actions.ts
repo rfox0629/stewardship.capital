@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { resolveEngagement } from "@lib/spark/engagement";
+import { shapeMoment } from "@lib/spark/schedule-moment";
 import { IDEA_STATE_TO_STATUS, type IdeaState } from "./idea-state";
 
 /**
@@ -26,7 +27,6 @@ const PLACEMENTS = ["all", "wed", "thu", "fri", "sat", "sun"];
 const DAYS = ["wed", "thu", "fri", "sat", "sun"];
 const DAYPARTS = ["morning", "afternoon", "evening", "anytime"];
 const KINDS = ["person", "vendor", "equipment", "supply", "deliverable"];
-const TIME = /^\d{1,2}(:\d{2})?\s*(am|pm)$/i;
 
 const revalidate = (clientSlug: string, eventSlug: string, edition: string) => {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
@@ -297,47 +297,22 @@ export async function scheduleIdea(
     .maybeSingle();
   if (!idea) return { ok: false };
 
-  const starts = (fields.starts ?? "").trim().toLowerCase();
-  if (starts && !TIME.test(starts)) {
-    return { ok: false, message: "A time like 10:45 am, or leave it open." };
-  }
-  if (!starts && !DAYPARTS.includes(fields.daypart ?? "")) {
-    return { ok: false, message: "A time, or a part of the day." };
-  }
-
-  /* A duration in minutes is easier to say than an end time, so the end is
-     computed from it and stored as the label the calendar already reads. */
-  let ends: string | null = null;
-  const minutes = Number((fields.minutes ?? "").trim());
-  if (starts && Number.isFinite(minutes) && minutes > 0) {
-    const match = starts.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i);
-    if (match) {
-      let hour = Number(match[1]) % 12;
-      if (match[3].toLowerCase() === "pm") hour += 12;
-      const total = hour * 60 + Number(match[2] ?? 0) + Math.round(minutes);
-      const h24 = Math.floor(total / 60) % 24;
-      const m = total % 60;
-      const period = h24 >= 12 ? "pm" : "am";
-      const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-      ends = `${h12}:${String(m).padStart(2, "0")} ${period}`;
-    }
-  }
+  /* Every door to the schedule shapes its row the same way. */
+  const shaped = shapeMoment({
+    title: idea.title,
+    day: fields.day,
+    starts: fields.starts,
+    minutes: fields.minutes,
+    daypart: fields.daypart,
+    track: fields.track,
+    location: fields.location,
+    sparkId: idea.id,
+  });
+  if (!shaped.ok) return { ok: false, message: shaped.message };
 
   const { data, error } = await context.supabase
     .from("schedule_items")
-    .insert({
-      engagement_id: context.engagement.id,
-      spark_id: idea.id,
-      day_key: fields.day,
-      starts_label: starts || null,
-      daypart: starts ? null : fields.daypart,
-      ends_label: ends,
-      title: idea.title,
-      track: fields.track || "Experience",
-      location: (fields.location ?? "").trim().slice(0, 120) || null,
-      status: "confirmed",
-      position: 99,
-    })
+    .insert({ engagement_id: context.engagement.id, ...shaped.row })
     .select("id");
 
   if (error || (data?.length ?? 0) === 0) return { ok: false, message: "That did not save." };

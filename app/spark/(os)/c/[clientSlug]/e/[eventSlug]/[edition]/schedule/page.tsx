@@ -61,12 +61,14 @@ export default async function SchedulePage({ params }: PageProps) {
         "id, day_key, starts_label, ends_label, daypart, title, track, location, status, note, spark_id, spark:sparks(title)",
       )
       .eq("engagement_id", engagementId),
+    /* Every live idea. The ones carrying a day become ghosts on their day;
+       all of them can be linked as a cue inside a moment, which is how an
+       idea takes part in the weekend without needing an hour of its own. */
     planner
       ? context.supabase
           .from("sparks")
           .select("id, title, status, tentative_day, tentative_daypart")
           .eq("engagement_id", engagementId)
-          .not("tentative_day", "is", null)
           .eq("status", "captured")
       : Promise.resolve({ data: [] }),
     planner

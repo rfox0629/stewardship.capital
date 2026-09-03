@@ -2087,110 +2087,136 @@
 
 /* --------------------------------------------- tentative sparks, ghosts */
 
-/* ================================================== the day's loose ideas
+/* ============================================== two layers, one calendar
 
-   A strip above each day holding what somebody thinks belongs there and has
-   not yet put in an hour. These are the only things on this screen that are
-   not yet real, so they are drawn as chips rather than blocks, and they are
-   draggable because dropping one on the grid is what makes it real.
+   What is happening is solid and sits at its hour. What is only being
+   considered is a ghost, and it sits at whatever precision it actually has:
+   a part of the day, or just the day. Neither is ever given a time it does
+   not have, and neither floats above the calendar in a tray of its own.
    ========================================================================= */
 
-.ev-idea-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 7px 0 8px;
-  border-bottom: 1px dashed rgba(58, 58, 59, 0.22);
-}
-
-.ev-idea-rowlabel {
-  flex: 0 0 44px;
-  margin: 3px 0 0;
-  font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #8a8c90;
-  text-align: right;
-}
-
-.ev-idea-cells {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 8px;
-}
-
-.ev-idea-cell {
-  min-width: 0;
+/* A moment the sheet gives a part of the day rather than a clock time. It is
+   real programming, so it belongs on the canvas, but it has no start, so it
+   is drawn as the region it covers rather than as a block at an invented
+   hour. It sits behind everything: a background the day happens inside. */
+.ev-band {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  z-index: 0;
+  border-radius: 5px;
+  background: rgba(58, 58, 59, 0.045);
+  border: 1px dashed rgba(58, 58, 59, 0.14);
+  padding: 3px 3px 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.ev-idea-chip {
-  max-width: 100%;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.ev-band-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: rgba(255, 253, 249, 0.86);
+  border-left: 3px solid var(--ev-deep);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 0.71rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #2c2d2f;
+  cursor: pointer;
+}
+
+.ev-band-item:hover { background: #fffdf9; }
+
+/* One line, so a band is exactly as tall as what it holds and the next one
+   starts where it should. The whole title is one click away. */
+.ev-band-item b {
   min-width: 0;
-  border: 1px dashed rgba(157, 122, 28, 0.6);
-  background: rgba(233, 185, 73, 0.16);
-  border-radius: 999px;
-  padding: 3px 9px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-band-item span {
+  flex: 0 0 auto;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.53rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #7c7e83;
+}
+
+/* When a day is showing ideas, the hours give up their right hand side so
+   the ghosts have somewhere to be that is still inside the day. */
+.ev-grid-shared .ev-block,
+.ev-grid-shared .ev-band { right: 41%; }
+
+.ev-ghost {
+  position: absolute;
+  left: 60%;
+  right: 1px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 21px;
+  border-radius: 4px;
+  border: 1px dashed rgba(157, 122, 28, 0.7);
+  background: rgba(233, 185, 73, 0.2);
+  padding: 0 6px;
   font: inherit;
   font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.63rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  line-height: 1.3;
   color: #6b5510;
   cursor: grab;
-  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+  text-align: left;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
-/* The chip is a pill, so the title is what gets clipped, not the pill. */
-.ev-idea-chip > span {
+.ev-ghost > span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ev-idea-chip:hover {
-  background: rgba(233, 185, 73, 0.3);
+.ev-ghost i { font-style: normal; color: #0d5238; }
+
+.ev-ghost:hover {
+  background: rgba(233, 185, 73, 0.36);
   border-color: #9d7a1c;
-  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(30, 30, 30, 0.14);
+  z-index: 6;
 }
 
-.ev-idea-chip i {
-  font-style: normal;
-  color: #0d5238;
-}
+.ev-ghost-carried { cursor: grabbing; opacity: 0.45; border-style: solid; }
 
-.ev-idea-carried {
-  cursor: grabbing;
-  opacity: 0.45;
-  border-style: solid;
-}
+/* The phone gets the same two layers in one list. */
+.ev-timeline-ghost { padding: 0; }
 
-.ev-idea-more {
-  border: 0;
-  background: none;
-  padding: 1px 4px;
-  font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #8a8c90;
+.ev-ghost-row {
+  position: static;
+  width: 100%;
+  height: auto;
+  padding: 7px 11px;
+  font-size: 0.76rem;
   cursor: pointer;
 }
 
-.ev-idea-more:hover { color: var(--ev-accent); text-decoration: underline; }
+.ev-ghost-row > span { white-space: normal; overflow: visible; }
 
 /* Where a carried idea would land, and the column it would land in. */
 .ev-grid-landing {
@@ -2203,7 +2229,7 @@
   right: 0;
   height: 0;
   border-top: 2px solid var(--ev-accent);
-  z-index: 6;
+  z-index: 7;
   pointer-events: none;
 }
 
@@ -2228,22 +2254,6 @@
   opacity: 0.72;
   cursor: default;
 }
-
-/* The phone gets the same ideas without the precision. */
-.ev-idea-day {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 0 0 12px;
-  margin-bottom: 12px;
-  border-bottom: 1px dashed rgba(58, 58, 59, 0.22);
-}
-
-.ev-idea-day .ev-idea-rowlabel { flex: 0 0 100%; text-align: left; }
-.ev-idea-day .ev-idea-chip > span { white-space: normal; overflow: visible; }
-.ev-idea-daycards { display: flex; flex-wrap: wrap; gap: 6px; }
-.ev-idea-day .ev-idea-chip { cursor: pointer; white-space: normal; font-size: 0.72rem; padding: 6px 11px; }
 
 /* The one question a dropped idea has to answer. */
 .ev-howlong-title {
@@ -2607,3 +2617,133 @@
     font-weight: 500;
   }
 }
+
+/* ============================================ the canvas's own controls
+
+   Two questions, two answers. Considering something and knowing it happens
+   are different acts, so the button that starts them says which is which
+   instead of opening a form and hoping you recognise it.
+   ========================================================================= */
+
+.ev-bar-menu { position: relative; }
+
+.ev-add-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 60;
+  min-width: 232px;
+  display: flex;
+  flex-direction: column;
+  background: #fffdf9;
+  border: 1px solid rgba(58, 58, 59, 0.18);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(30, 30, 30, 0.2);
+  padding: 5px;
+}
+
+.ev-add-menu button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: 0;
+  background: none;
+  border-radius: 7px;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #2c2d2f;
+  cursor: pointer;
+}
+
+.ev-add-menu button:hover { background: rgba(58, 58, 59, 0.06); }
+
+.ev-add-menu em {
+  font-style: normal;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #6b6d72;
+}
+
+/* Shown or not shown, in the product's own voice rather than the browser's. */
+.ev-bar-toggle {
+  border: 1px solid rgba(58, 58, 59, 0.22);
+  background: #fffdf9;
+  border-radius: 8px;
+  padding: 7px 13px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3a3a3b;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.ev-bar-toggle:hover { border-color: #3a3a3b; }
+
+.ev-bar-toggle-on {
+  background: rgba(233, 185, 73, 0.24);
+  border-color: #9d7a1c;
+  color: #6b5510;
+}
+
+/* When something happens: a day, a start, and a length. The end is
+   arithmetic, so nobody is asked for it. */
+.ev-when-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ev-when-time,
+.ev-when-track {
+  flex: 1 1 130px;
+  min-width: 0;
+  border: 1px solid var(--ws-line, rgba(58, 58, 59, 0.2));
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ws-ink, #14171c);
+}
+
+.ev-when-time:focus,
+.ev-when-track:focus {
+  outline: none;
+  border-color: var(--ws-accent, #1d4ed8);
+  box-shadow: 0 0 0 3px var(--ws-accent-soft, rgba(29, 78, 216, 0.14));
+}
+
+.ev-when-more { margin-top: 10px; }
+
+/* A beat, or an idea taking part without a block of its own. */
+.ev-cue-source {
+  display: inline-flex;
+  gap: 2px;
+  background: rgba(58, 58, 59, 0.07);
+  border-radius: 8px;
+  padding: 2px;
+  margin: 10px 0 8px;
+}
+
+.ev-cue-source button {
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #5b5d62;
+  cursor: pointer;
+}
+
+.ev-cue-source button[aria-pressed="true"] { background: #fffdf9; color: #2c2d2f; }
+.ev-cue-source button:disabled { opacity: 0.45; cursor: default; }
+
+.ev-cue-pick { grid-column: span 2; min-width: 0; }

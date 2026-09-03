@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { DAY_ORDER } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
+import { shapeMoment } from "@lib/spark/schedule-moment";
 
 /**
  * The planner's hands on the schedule: add a moment, change it, take it away.
@@ -78,23 +79,25 @@ export async function createMoment(
   const context = await plannerContext(clientSlug, eventSlug, edition);
   if (!context) return { ok: false };
 
-  const fields = readFields(formData);
-  if (!fields) return { ok: false, message: "A title, a day, a time like 3:00 pm, and a track." };
+  /* The same shaping every other door to the schedule uses. A moment added
+     here simply has no idea behind it, which is the honest answer for
+     breakfast: nobody needed to consider whether it happens. */
+  const shaped = shapeMoment({
+    title: String(formData.get("title") ?? ""),
+    day: String(formData.get("day") ?? ""),
+    starts: String(formData.get("starts") ?? ""),
+    minutes: String(formData.get("minutes") ?? ""),
+    ends: String(formData.get("ends") ?? ""),
+    daypart: String(formData.get("daypart") ?? ""),
+    track: String(formData.get("track") ?? ""),
+    location: String(formData.get("location") ?? ""),
+    sparkId: null,
+  });
+  if (!shaped.ok) return { ok: false, message: shaped.message };
 
   const { data, error } = await context.supabase
     .from("schedule_items")
-    .insert({
-      engagement_id: context.engagement.id,
-      day_key: fields.day,
-      starts_label: fields.starts,
-      ends_label: fields.ends,
-      title: fields.title,
-      track: fields.track,
-      location: fields.location,
-      status: fields.status,
-      note: fields.note,
-      position: 99,
-    })
+    .insert({ engagement_id: context.engagement.id, ...shaped.row })
     .select("id");
 
   if (error || (data?.length ?? 0) === 0) return { ok: false };
