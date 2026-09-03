@@ -2133,3 +2133,215 @@ input.ws-row-owner {
 }
 
 .ws-blocked-links { display: grid; gap: 5px; margin-top: 9px; }
+
+/* ==================================================== one select, everywhere
+
+   The native control is gone from the workspace. This is the listbox that
+   replaced it: our surface, our type, our focus ring, and an open menu that
+   belongs to the product rather than to the operating system.
+   ========================================================================= */
+
+.sel { position: relative; flex: 1 1 150px; min-width: 0; }
+.sel-compact { flex: 0 1 auto; }
+
+.sel-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--ws-line);
+  border-radius: 8px;
+  background: var(--ws-card);
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 550;
+  color: var(--ws-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.sel-button:hover { border-color: var(--ws-ink-2); }
+
+.sel-button:focus-visible {
+  outline: none;
+  border-color: var(--ws-accent);
+  box-shadow: 0 0 0 3px var(--ws-accent-soft);
+}
+
+.sel-placeholder { color: var(--ws-ink-2); }
+.sel-chevron { width: 10px; height: 6px; flex: 0 0 auto; color: var(--ws-ink-2); }
+
+.sel-list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  min-width: 190px;
+  max-height: 262px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 5px;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-line);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(16, 20, 28, 0.16);
+}
+
+.sel-option {
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  color: var(--ws-ink);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sel-active { background: var(--ws-ground); }
+.sel-chosen { font-weight: 700; }
+.sel-chosen::after { content: " ✓"; color: var(--ws-good); }
+
+/* ============================================ the idea, as a command centre */
+
+.ws-title-edit {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 5px 8px;
+  margin: 0 0 8px -8px;
+  font: inherit;
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ws-ink);
+}
+
+.ws-title-edit:hover { border-color: var(--ws-line); }
+
+.ws-title-edit:focus {
+  outline: none;
+  border-color: var(--ws-accent);
+  background: var(--ws-card);
+  box-shadow: 0 0 0 3px var(--ws-accent-soft);
+}
+
+.ws-question {
+  border: 1px solid #e8c689;
+  border-left: 4px solid #c2790f;
+  background: #fffdf7;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.ws-question-label {
+  margin: 0 0 3px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #8a5205;
+}
+
+.ev-main .ws-question-text {
+  margin: 0 0 9px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ws-ink);
+}
+
+.ws-flag {
+  border: 1px dashed var(--ws-line);
+  background: none;
+  border-radius: 8px;
+  padding: 7px 12px;
+  margin: 10px 0;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ws-ink-2);
+  cursor: pointer;
+}
+
+.ws-flag:hover { border-color: #c2790f; color: #8a5205; }
+
+.ws-sheet { margin-top: 9px; }
+
+.ws-sub-list {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ws-line-soft);
+}
+
+.ev-main .ws-sub-head {
+  margin: 0 0 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ws-ink-2);
+}
+
+.ws-costline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 5px;
+  font-size: 0.88rem;
+  color: var(--ws-ink);
+}
+
+.ws-costline b { font-variant-numeric: tabular-nums; }
+
+.ws-costtotal {
+  border-top: 1px solid var(--ws-line);
+  padding-top: 6px;
+  margin-top: 7px;
+  font-weight: 700;
+}
+
+.ws-hint-inline { display: inline-flex; vertical-align: middle; margin-left: 6px; }
+
+/* ------------------------------------------------ one collection of ideas */
+
+.ws-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.ws-filters button {
+  border: 1px solid var(--ws-line);
+  background: var(--ws-card);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ws-ink-2);
+  cursor: pointer;
+}
+
+.ws-filters button:hover { border-color: var(--ws-ink); }
+.ws-filters button[aria-pressed="true"] { background: var(--ws-ink); color: #fff; border-color: var(--ws-ink); }
+.ws-filters em { font-style: normal; opacity: 0.8; margin-left: 5px; }
+
+.ws-collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  gap: 9px;
+  align-items: start;
+}
+
+.ws-quickadd-wide { max-width: 460px; margin-bottom: 14px; }
+.ws-quickadd-wide input { padding: 11px 13px; font-size: 0.92rem; }
+
+.ws-card-question { border-left-color: #c2790f; background: #fffdf8; }
+.ws-card-planned { border-left-color: #12694a; }
+.ws-chip-q { color: #8a5205; background: #fdf0d8; }
+
+.ev-cue-ideas { margin-top: 12px; display: grid; gap: 5px; }
+.ev-main .ev-cue-idea { color: var(--ws-accent); font-weight: 600; }

@@ -1,27 +1,32 @@
 /**
- * The four states an idea can be in, in the words the product uses.
+ * What an idea is, in the product's words.
  *
- * The stored vocabulary is older than the product's: an idea being
- * considered is 'captured', one the team is talking about is 'discussing',
- * one that reached the plan is 'approved', and one set aside is 'parked'.
- * Renaming the column would buy nothing and cost a migration, so the
- * translation lives here, in one place, shared by the server actions and the
- * board rather than copied into both.
+ * There are two states and no workflow. An idea is open, or it has been set
+ * aside. Everything else a person might want to know about it, whether it
+ * carries a question and whether anything has come of it, is read from the
+ * idea's own facts rather than from a lane it was dragged into.
+ *
+ * The stored column still says 'captured' and 'parked'. Renaming it would
+ * cost a migration and buy nothing, so the translation lives here.
  */
 
-export const IDEA_STATES = ["considering", "discuss", "planned", "aside"] as const;
+export type IdeaState = "open" | "aside";
 
-export type IdeaState = (typeof IDEA_STATES)[number];
+export const toIdeaState = (status: string): IdeaState =>
+  status === "parked" || status === "declined" ? "aside" : "open";
 
 export const IDEA_STATE_TO_STATUS: Record<IdeaState, string> = {
-  considering: "captured",
-  discuss: "discussing",
-  planned: "approved",
+  open: "captured",
   aside: "parked",
 };
 
-export const toIdeaState = (status: string): IdeaState =>
-  status === "discussing" ? "discuss"
-    : status === "approved" ? "planned"
-    : status === "parked" || status === "declined" ? "aside"
-    : "considering";
+/** The lenses over one collection. Filters, never columns. */
+export const IDEA_FILTERS = ["all", "question", "planned", "aside"] as const;
+export type IdeaFilter = (typeof IDEA_FILTERS)[number];
+
+export const FILTER_LABEL: Record<IdeaFilter, string> = {
+  all: "All",
+  question: "Needs answer",
+  planned: "In plan",
+  aside: "Set aside",
+};

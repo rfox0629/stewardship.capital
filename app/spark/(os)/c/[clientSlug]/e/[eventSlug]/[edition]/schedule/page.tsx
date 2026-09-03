@@ -41,6 +41,7 @@ type CueRow = {
   cue: string;
   who_name: string | null;
   note: string | null;
+  spark_id: string | null;
 };
 
 export default async function SchedulePage({ params }: PageProps) {
@@ -66,12 +67,12 @@ export default async function SchedulePage({ params }: PageProps) {
           .select("id, title, status, tentative_day, tentative_daypart")
           .eq("engagement_id", engagementId)
           .not("tentative_day", "is", null)
-          .in("status", ["captured", "discussing", "approved"])
+          .eq("status", "captured")
       : Promise.resolve({ data: [] }),
     planner
       ? context.supabase
           .from("run_of_show_cues")
-          .select("id, schedule_item_id, offset_minutes, cue, who_name, note")
+          .select("id, schedule_item_id, offset_minutes, cue, who_name, note, spark_id")
           .eq("engagement_id", engagementId)
       : Promise.resolve({ data: [] as CueRow[] }),
     planner
@@ -114,6 +115,7 @@ export default async function SchedulePage({ params }: PageProps) {
       cue: row.cue,
       who: row.who_name,
       note: row.note,
+      ideaId: row.spark_id,
     }));
 
   /* A task or resource belongs in a moment's drawer if it points at the

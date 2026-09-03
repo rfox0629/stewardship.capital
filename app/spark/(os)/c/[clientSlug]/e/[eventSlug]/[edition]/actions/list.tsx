@@ -100,7 +100,7 @@ export function ActionList({
         )}
         {action.from ? (
           <Link className="ws-row-from" href={action.from.href}>
-            From idea · {action.from.label}
+            For: {action.from.label}
           </Link>
         ) : null}
       </div>
@@ -175,7 +175,7 @@ export function ActionList({
                     <span className="ws-row-title">{need.name}</span>
                     {need.from ? (
                       <Link className="ws-row-from" href={need.from.href}>
-                        From idea · {need.from.label}
+                        For: {need.from.label}
                       </Link>
                     ) : null}
                   </div>

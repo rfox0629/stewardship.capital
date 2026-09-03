@@ -390,7 +390,8 @@ export async function addMomentResource(
   const moment = await momentOf(context, momentId);
   if (!moment) return { ok: false };
 
-  const dollars = Number(String(formData.get("cost") ?? "").trim());
+  /* No money here. Cost belongs to the idea, in one place, so the budget
+     never adds the same number twice. */
   const { data, error } = await context.supabase
     .from("resources")
     .insert({
@@ -399,8 +400,6 @@ export async function addMomentResource(
       kind,
       name,
       status: "needed",
-      estimated_cents:
-        Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0,
     })
     .select("id");
 

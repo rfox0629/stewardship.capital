@@ -8,10 +8,12 @@ export const metadata = { title: "Budget" };
 /**
  * The money, in the shape of the sheet it came from.
  *
- * Five figures across the top and then the lines themselves. Costs recorded
- * on a need or an action are counted here too, so a number typed once in the
- * plan shows up in the total without anyone entering it twice, and appears
- * under "From the plan" so it is obvious where it came from.
+ * Five figures across the top and then the lines themselves.
+ *
+ * Every cost in the product is a budget line, including the ones entered on
+ * an idea, which carry that idea's id. Nothing else in the plan holds money:
+ * an action can explain a cost and a requirement can be the reason for one,
+ * but neither carries the number, so the same money cannot be counted twice.
  */
 
 type PageProps = {
@@ -39,53 +41,27 @@ export default async function BudgetPage({ params }: PageProps) {
   if (context.role === "stakeholder") redirect(`${base}/schedule`);
 
   const engagementId = context.engagement.id;
-  const [linesQ, needsQ, actionsQ] = await Promise.all([
+  const [linesQ, ideasQ] = await Promise.all([
     context.supabase
       .from("budget_lines")
-      .select("id, category, label, planned_cents, committed_cents, actual_cents, status, note")
+      .select("id, category, label, planned_cents, committed_cents, actual_cents, status, note, spark_id")
       .eq("engagement_id", engagementId)
       .order("created_at", { ascending: true }),
     context.supabase
-      .from("resources")
-      .select("id, name, kind, estimated_cents, committed_cents, actual_cents")
-      .eq("engagement_id", engagementId)
-      .or("estimated_cents.gt.0,committed_cents.gt.0,actual_cents.gt.0"),
-    context.supabase
-      .from("tasks")
-      .select("id, title, estimated_cents, committed_cents, actual_cents")
-      .eq("engagement_id", engagementId)
-      .or("estimated_cents.gt.0,committed_cents.gt.0,actual_cents.gt.0"),
+      .from("sparks").select("id, title").eq("engagement_id", engagementId),
   ]);
 
   type Line = {
     id: string; category: string; label: string;
     planned_cents: number; committed_cents: number; actual_cents: number;
-    status: string | null; note: string | null;
+    status: string | null; note: string | null; spark_id: string | null;
   };
   const lines = (linesQ.data ?? []) as Line[];
+  const ideaTitle = new Map((ideasQ.data ?? []).map((row) => [row.id, row.title]));
 
-  const fromPlan = [
-    ...((needsQ.data ?? []) as Array<{ id: string; name: string; kind: string; estimated_cents: number; committed_cents: number; actual_cents: number }>)
-      .map((row) => ({
-        id: `n-${row.id}`, label: row.name, kind: `Need · ${row.kind}`,
-        estimated_cents: row.estimated_cents, committed_cents: row.committed_cents, actual_cents: row.actual_cents,
-      })),
-    ...((actionsQ.data ?? []) as Array<{ id: string; title: string; estimated_cents: number; committed_cents: number; actual_cents: number }>)
-      .map((row) => ({
-        id: `a-${row.id}`, label: row.title, kind: "Action",
-        estimated_cents: row.estimated_cents, committed_cents: row.committed_cents, actual_cents: row.actual_cents,
-      })),
-  ];
-
-  const working =
-    lines.reduce((total, row) => total + row.planned_cents, 0) +
-    fromPlan.reduce((total, row) => total + row.estimated_cents, 0);
-  const committed =
-    lines.reduce((total, row) => total + row.committed_cents, 0) +
-    fromPlan.reduce((total, row) => total + row.committed_cents, 0);
-  const spent =
-    lines.reduce((total, row) => total + row.actual_cents, 0) +
-    fromPlan.reduce((total, row) => total + row.actual_cents, 0);
+  const working = lines.reduce((total, row) => total + row.planned_cents, 0);
+  const committed = lines.reduce((total, row) => total + row.committed_cents, 0);
+  const spent = lines.reduce((total, row) => total + row.actual_cents, 0);
   const ceiling = context.engagement.budgetTotalCents;
   const remaining = ceiling - working;
 
@@ -123,6 +99,9 @@ export default async function BudgetPage({ params }: PageProps) {
                   <td className="ws-cat">{index === 0 ? category : ""}</td>
                   <td>
                     {row.label}
+                    {row.spark_id && ideaTitle.has(row.spark_id) ? (
+                      <span className="ws-cell-note">For: {ideaTitle.get(row.spark_id)}</span>
+                    ) : null}
                     {row.note ? <span className="ws-cell-note">{row.note}</span> : null}
                   </td>
                   <td className="ws-num">
@@ -136,14 +115,6 @@ export default async function BudgetPage({ params }: PageProps) {
                 </tr>
               ))}
             </Fragment>
-          ))}
-          {fromPlan.map((row) => (
-            <tr key={row.id}>
-              <td className="ws-cat">From the plan</td>
-              <td>{row.label}<span className="ws-cell-note">{row.kind}</span></td>
-              <td className="ws-num">{money(row.estimated_cents)}</td>
-              <td><span className="ws-standing ws-standing-estimate">Estimate</span></td>
-            </tr>
           ))}
         </tbody>
         <tfoot>
