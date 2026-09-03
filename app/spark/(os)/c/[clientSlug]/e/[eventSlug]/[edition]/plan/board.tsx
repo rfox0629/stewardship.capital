@@ -451,9 +451,9 @@ function IdeaPanel({
   const [failed, setFailed] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  /* Deleting orphans rather than destroys: the foreign keys are SET NULL, so
-     whatever the idea became outlives it. Say so before the button. */
-  const survives = [...new Set(idea.links.map((link) => link.kind.toLowerCase()))];
+  /* An idea that became part of the plan is not a mistake, so it cannot be
+     deleted: the planned items go first. The server refuses this too. */
+  const inThePlan = idea.links.length > 0;
 
   const decided = idea.state === "planned";
 
@@ -563,13 +563,24 @@ function IdeaPanel({
 
       {planner ? (
         <div className="ws-panel-section ws-danger">
-          {confirming ? (
+          {inThePlan ? (
             <>
+              <p className="ws-blocked-head">Already in the plan</p>
               <p className="ws-note">
-                {survives.length > 0
-                  ? `Delete this idea? The ${survives.join(" and ")} it created will stay, no longer linked to any idea.`
-                  : "Delete this idea? Its notes go with it."}
+                Remove its planned items before deleting this idea. Use Not now to set
+                aside an idea the team decided against.
               </p>
+              <div className="ws-blocked-links">
+                {idea.links.map((link, index) => (
+                  <Link key={index} className="ws-link" href={link.href}>
+                    <b>{link.kind}</b> {link.label}
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : confirming ? (
+            <>
+              <p className="ws-note">Delete this idea? Its notes go with it.</p>
               <div className="ws-danger-row">
                 <button
                   type="button"

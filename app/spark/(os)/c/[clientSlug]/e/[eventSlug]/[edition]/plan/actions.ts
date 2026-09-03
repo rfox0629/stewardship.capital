@@ -444,14 +444,15 @@ export async function setIdeaCost(
 /**
  * An idea that should not have been captured.
  *
- * This is for the mis-typed and the duplicated, not for the rejected: an
- * idea the team considered and declined belongs in Set aside, where its
- * reason survives. Deleting is therefore deliberate and planner only.
+ * This is for the mis-typed and the duplicated. An idea the team considered
+ * and declined belongs in Set aside, where its reason survives; an idea that
+ * already became part of the plan is not a mistake at all, so deleting it is
+ * refused here rather than allowed to orphan a scheduled moment or an action
+ * somebody is carrying.
  *
- * Anything the idea already became stays. The foreign keys are SET NULL, so
- * a scheduled moment or an action outlives the idea it came from and simply
- * stops naming it. The screen says so before the button is pressed, because
- * a surprise orphan is worse than a refused delete.
+ * The check runs on the server because that is the only place it can be
+ * trusted. The screen refuses first for the sake of the person, but a request
+ * that arrives anyway is refused again here.
  */
 export async function deleteIdea(
   clientSlug: string,
@@ -463,11 +464,30 @@ export async function deleteIdea(
   if (!context) return { ok: false };
   if (context.role !== "planner" && !context.staff) return { ok: false };
 
+  const engagementId = context.engagement.id;
+  const counts = await Promise.all(
+    (["schedule_items", "tasks", "resources", "budget_lines", "run_of_show_cues"] as const).map(
+      (table) =>
+        context.supabase
+          .from(table)
+          .select("id", { count: "exact", head: true })
+          .eq("engagement_id", engagementId)
+          .eq("spark_id", ideaId),
+    ),
+  );
+
+  if (counts.some((result) => (result.count ?? 0) > 0)) {
+    return {
+      ok: false,
+      message: "Already in the plan. Remove its planned items before deleting this idea.",
+    };
+  }
+
   const { data, error } = await context.supabase
     .from("sparks")
     .delete()
     .eq("id", ideaId)
-    .eq("engagement_id", context.engagement.id)
+    .eq("engagement_id", engagementId)
     .select("id");
 
   /* Row level security filters a delete silently, so absence of an error is

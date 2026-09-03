@@ -2123,3 +2123,13 @@ input.ws-row-owner {
 
 .ws-btn-danger:hover { background: #861b14; border-color: #861b14; }
 .ws-btn-danger:disabled { opacity: 0.5; cursor: default; }
+
+/* An idea that is already in the plan cannot be deleted, and says why. */
+.ws-blocked-head {
+  margin: 0 0 4px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ws-ink);
+}
+
+.ws-blocked-links { display: grid; gap: 5px; margin-top: 9px; }

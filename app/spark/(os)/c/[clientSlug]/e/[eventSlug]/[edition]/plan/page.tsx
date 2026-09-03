@@ -41,7 +41,7 @@ export default async function PlanPage({ params }: PageProps) {
   const engagementId = context.engagement.id;
   const supabase = context.supabase;
 
-  const [ideasQ, notesQ, scheduleQ, actionsQ, needsQ, costQ] = await Promise.all([
+  const [ideasQ, notesQ, scheduleQ, actionsQ, needsQ, costQ, cuesQ] = await Promise.all([
     supabase
       .from("sparks")
       .select("id, title, detail, status, decision, decided_by_name, tentative_day, tentative_daypart")
@@ -72,6 +72,13 @@ export default async function PlanPage({ params }: PageProps) {
       .select("spark_id, planned_cents")
       .eq("engagement_id", engagementId)
       .not("spark_id", "is", null),
+    planner
+      ? supabase
+          .from("run_of_show_cues")
+          .select("spark_id, cue, schedule_item_id")
+          .eq("engagement_id", engagementId)
+          .not("spark_id", "is", null)
+      : Promise.resolve({ data: [] as Array<{ spark_id: string; cue: string; schedule_item_id: string }> }),
   ]);
 
   /* A requirement that is still only "needed" is an open loose end. */
@@ -101,6 +108,8 @@ export default async function PlanPage({ params }: PageProps) {
     push(row.spark_id, "Need", row.name, `${base}/actions`);
   for (const row of costQ.data ?? [])
     push(row.spark_id, "Budget", `$${Math.round(row.planned_cents / 100).toLocaleString()}`, `${base}/budget`);
+  for (const row of (cuesQ.data ?? []) as Array<{ spark_id: string; cue: string; schedule_item_id: string }>)
+    push(row.spark_id, "Run of show", row.cue, `${base}/schedule?open=${row.schedule_item_id}&tab=ros`);
 
   const notes = new Map<string, Idea["notes"]>();
   for (const row of notesQ.data ?? []) {
