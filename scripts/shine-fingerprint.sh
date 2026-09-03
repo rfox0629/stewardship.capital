@@ -18,7 +18,8 @@ with eng as (
   where o.slug = 'shine' and e.slug = 'founders-weekend-2026'
 )
 select md5(string_agg(part, '|' order by part)) || ':' || count(*) from (
-  select 'spark:' || title || ':' || status || ':' || coalesce(decision,'') || ':' || coalesce(tentative_day,'') || coalesce(tentative_daypart,'') as part
+  select 'spark:' || title || ':' || status || ':' || coalesce(decision,'') || ':' || coalesce(tentative_day,'') || coalesce(tentative_daypart,'')
+         || ':' || coalesce(detail,'') || ':' || coalesce(open_question,'') || ':' || coalesce(question_answer,'') as part
     from public.sparks where engagement_id in (select id from eng)
   union all
   select 'sched:' || title || ':' || status || ':' || day_key || ':' || coalesce(starts_label, '~' || coalesce(daypart,''))

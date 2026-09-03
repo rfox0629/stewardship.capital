@@ -26,6 +26,7 @@ type Row = {
   title: string;
   detail: string | null;
   open_question: string | null;
+  question_answer: string | null;
   status: string;
   decision: string | null;
   tentative_day: string | null;
@@ -46,7 +47,7 @@ export default async function PlanPage({ params }: PageProps) {
 
   const [ideasQ, notesQ, momentsQ, actionsQ, needsQ, costsQ, cuesQ] = await Promise.all([
     supabase.from("sparks")
-      .select("id, title, detail, open_question, status, decision, tentative_day, tentative_daypart")
+      .select("id, title, detail, open_question, question_answer, status, decision, tentative_day, tentative_daypart")
       .eq("engagement_id", engagementId)
       .order("created_at", { ascending: true }),
     supabase.from("spark_notes")
@@ -91,7 +92,10 @@ export default async function PlanPage({ params }: PageProps) {
   const schedule = bucket<Idea["schedule"][number]>();
   for (const row of moments) {
     push(schedule, row.spark_id, {
-      id: row.id, label: `${when(row)}, ${row.title}`, href: `${base}/schedule?open=${row.id}`,
+      id: row.id,
+      label: `${when(row)}, ${row.title}`,
+      href: `${base}/schedule?open=${row.id}`,
+      at: row.starts_label,
     });
   }
 
@@ -139,6 +143,7 @@ export default async function PlanPage({ params }: PageProps) {
     title: row.title,
     detail: row.detail,
     question: row.open_question,
+    answer: row.question_answer,
     state: toIdeaState(row.status),
     reason: row.decision,
     day: row.tentative_day,
