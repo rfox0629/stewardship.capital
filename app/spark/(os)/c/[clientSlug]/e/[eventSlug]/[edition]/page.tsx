@@ -37,7 +37,7 @@ export default async function WeekendPage({ params }: PageProps) {
   const planner = context.role === "planner" || context.staff;
 
   const [ideasQ, scheduleQ, actionsQ, budgetQ, needsQ, planLinksQ] = await Promise.all([
-    supabase.from("sparks").select("id, title, detail, open_question, status, tentative_day, tentative_daypart")
+    supabase.from("sparks").select("id, title, detail, open_question, question_answer, status, tentative_day, tentative_daypart")
       .eq("engagement_id", engagement.id),
     supabase.from("schedule_items").select("day_key, starts_label, daypart, title, track")
       .eq("engagement_id", engagement.id),

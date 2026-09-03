@@ -46,6 +46,7 @@ export async function addIdea(
   eventSlug: string,
   edition: string,
   title: string,
+  day?: string | null,
 ): Promise<Outcome> {
   const context = await resolveEngagement(clientSlug, eventSlug, edition);
   if (!context) return { ok: false };
@@ -56,7 +57,12 @@ export async function addIdea(
 
   const { data, error } = await context.supabase
     .from("sparks")
-    .insert({ engagement_id: context.engagement.id, title: clean, status: "captured" })
+    .insert({
+      engagement_id: context.engagement.id,
+      title: clean,
+      status: "captured",
+      tentative_day: day && DAYS.includes(day) ? day : null,
+    })
     .select("id");
 
   if (error || (data?.length ?? 0) === 0) return { ok: false, message: "That did not save." };
@@ -115,7 +121,7 @@ export async function describeIdea(
 
 /**
  * The open question. Attention, not a stage: an idea carrying one can still
- * be scheduled, costed and acted on, and answering it is one edit.
+ * be scheduled, costed and acted on.
  */
 export async function setIdeaQuestion(
   clientSlug: string,
@@ -130,6 +136,38 @@ export async function setIdeaQuestion(
   const { data, error } = await context.supabase
     .from("sparks")
     .update({ open_question: question.trim().slice(0, 400) || null })
+    .eq("id", ideaId)
+    .eq("engagement_id", context.engagement.id)
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}
+
+/**
+ * Answering the question.
+ *
+ * The flag comes off and the answer stays, because what a room decided is
+ * worth more than the fact that it once had to decide. A yes or a no is
+ * enough when it is enough; a sentence is there when it is not.
+ */
+export async function answerIdeaQuestion(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  ideaId: string,
+  answer: string,
+): Promise<Outcome> {
+  const context = await planner(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const clean = answer.trim().slice(0, 400);
+  if (!clean) return { ok: false, message: "What was decided?" };
+
+  const { data, error } = await context.supabase
+    .from("sparks")
+    .update({ question_answer: clean, open_question: null })
     .eq("id", ideaId)
     .eq("engagement_id", context.engagement.id)
     .select("id");
