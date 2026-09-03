@@ -22,8 +22,9 @@ type PageProps = {
 type Row = {
   id: string;
   day_key: string;
-  starts_label: string;
+  starts_label: string | null;
   ends_label: string | null;
+  daypart: string | null;
   title: string;
   track: string;
   location: string | null;
@@ -56,7 +57,7 @@ export default async function SchedulePage({ params }: PageProps) {
     context.supabase
       .from("schedule_items")
       .select(
-        "id, day_key, starts_label, ends_label, title, track, location, status, note, spark_id, spark:sparks(title)",
+        "id, day_key, starts_label, ends_label, daypart, title, track, location, status, note, spark_id, spark:sparks(title)",
       )
       .eq("engagement_id", engagementId),
     planner
@@ -97,6 +98,7 @@ export default async function SchedulePage({ params }: PageProps) {
     location: row.location,
     status: row.status,
     note: row.note,
+    daypart: row.daypart,
     sparkId: row.spark_id,
     sparkTitle: (Array.isArray(row.spark) ? row.spark[0] : row.spark)?.title ?? null,
     minutes: parseTimeLabel(row.starts_label),
@@ -159,7 +161,7 @@ export default async function SchedulePage({ params }: PageProps) {
 
   const present = new Set(moments.map((moment) => moment.day));
   const days: DayLane[] = DAY_ORDER.filter(
-    (key) => key !== "wed" || present.has("wed"),
+    (key) => key !== "wed" || present.has("wed") || planner,
   ).map((key) => ({
     key,
     name: DAY_NAMES[key],
@@ -168,7 +170,7 @@ export default async function SchedulePage({ params }: PageProps) {
 
   return (
     <>
-      <h2 className="ev-page-title">{role === "stakeholder" ? "Schedule" : "Plan"}</h2>
+      <h2 className="ws-title">{role === "stakeholder" ? "Schedule" : "Plan"}</h2>
       {role !== "stakeholder" ? <PlanTabs base={base} active="weekend" /> : null}
       <ScheduleView
         moments={moments}

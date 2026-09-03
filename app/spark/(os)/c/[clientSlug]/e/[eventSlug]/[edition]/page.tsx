@@ -1,17 +1,19 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { dateRangeLabel, resolveEngagement } from "@lib/spark/engagement";
+import { DAY_NAMES, DAY_ORDER, parseTimeLabel } from "@lib/spark/days";
+import { resolveEngagement } from "@lib/spark/engagement";
+import { DecisionQueue, type Decision } from "./decisions";
+import { Reference } from "./reference";
+
+export const metadata = { title: "The weekend" };
 
 /**
- * The weekend, at a glance.
+ * The screen a planning meeting opens on.
  *
- * A working surface: planners and clients land here. Guests are routed to the
- * schedule by the guard before this renders, and the redirect below is only
- * the belt to that suspender.
- *
- * Every number on this page is a live query under the reader's own session.
+ * Four numbers, then what is waiting on the room, then the weekend as it
+ * currently stands. Reference lives underneath as three doors, because a
+ * meeting needs it occasionally and never needs it shouting.
  */
 
 type PageProps = {
@@ -20,12 +22,10 @@ type PageProps = {
 
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
+    style: "currency", currency: "USD", maximumFractionDigits: 0,
   }).format(cents / 100);
 
-export default async function EngagementHomePage({ params }: PageProps) {
+export default async function WeekendPage({ params }: PageProps) {
   const { clientSlug, eventSlug, edition } = await params;
   const context = await resolveEngagement(clientSlug, eventSlug, edition);
   if (!context) notFound();
@@ -33,114 +33,144 @@ export default async function EngagementHomePage({ params }: PageProps) {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   if (context.role === "stakeholder") redirect(`${base}/schedule`);
 
-  const { engagement, theme, supabase } = context;
+  const { engagement, supabase } = context;
+  const planner = context.role === "planner" || context.staff;
 
-  const [{ data: sparkRows }, { count: confirmedCount }] = await Promise.all([
-    supabase
-      .from("sparks")
-      .select("status")
+  const [ideasQ, scheduleQ, actionsQ, budgetQ, needsQ, planLinksQ] = await Promise.all([
+    supabase.from("sparks").select("id, title, detail, status, tentative_day, tentative_daypart")
       .eq("engagement_id", engagement.id),
-    supabase
-      .from("schedule_items")
-      .select("*", { count: "exact", head: true })
-      .eq("engagement_id", engagement.id)
-      .eq("status", "confirmed"),
+    supabase.from("schedule_items").select("day_key, starts_label, daypart, title, track")
+      .eq("engagement_id", engagement.id),
+    supabase.from("tasks").select("status, estimated_cents").eq("engagement_id", engagement.id),
+    supabase.from("budget_lines").select("planned_cents").eq("engagement_id", engagement.id),
+    supabase.from("resources").select("estimated_cents").eq("engagement_id", engagement.id),
+    /* What the approved ideas have so far, so the gaps can be counted. */
+    Promise.all([
+      supabase.from("schedule_items").select("spark_id").eq("engagement_id", engagement.id).not("spark_id", "is", null),
+      supabase.from("tasks").select("spark_id").eq("engagement_id", engagement.id).not("spark_id", "is", null),
+      supabase.from("resources").select("spark_id, status").eq("engagement_id", engagement.id).not("spark_id", "is", null),
+    ]),
   ]);
 
-  const byStatus = (status: string) =>
-    (sparkRows ?? []).filter((row: { status: string }) => row.status === status).length;
+  const ideas = ideasQ.data ?? [];
+  const live = ideas.filter((row) => row.status !== "parked" && row.status !== "declined");
+  const deciding = ideas.filter((row) => row.status === "discussing");
+  const openActions = (actionsQ.data ?? []).filter((row) => row.status !== "done");
 
-  const captured = byStatus("captured");
-  const discussing = byStatus("discussing");
-  const approved = byStatus("approved");
+  const working =
+    (budgetQ.data ?? []).reduce((total, row) => total + row.planned_cents, 0) +
+    (actionsQ.data ?? []).reduce((total, row) => total + (row.estimated_cents ?? 0), 0) +
+    (needsQ.data ?? []).reduce((total, row) => total + (row.estimated_cents ?? 0), 0);
+  const available = engagement.budgetTotalCents - working;
 
-  const plural = (count: number, word: string) =>
-    `${count} ${word}${count === 1 ? "" : "s"}`;
+  /* Approved ideas that are not yet carried out. Not a stage, just the
+     count of loose ends after a fast round of decisions. */
+  const [schedLinks, actionLinks, needLinks] = planLinksQ;
+  const scheduled = new Set((schedLinks.data ?? []).map((row) => row.spark_id));
+  const owned = new Set((actionLinks.data ?? []).map((row) => row.spark_id));
+  const openNeed = new Set(
+    (needLinks.data ?? []).filter((row) => row.status === "needed").map((row) => row.spark_id),
+  );
+  const approved = ideas.filter((row) => row.status === "approved");
+  const planning = {
+    total: approved.length,
+    noTime: approved.filter((row) => !scheduled.has(row.id)).length,
+    noOwner: approved.filter((row) => !owned.has(row.id)).length,
+    openNeed: approved.filter((row) => openNeed.has(row.id)).length,
+  };
+  const looseEnds = planning.noTime + planning.noOwner + planning.openNeed;
 
-  const dates = dateRangeLabel(engagement.startsOn, engagement.endsOn);
+  const figures = [
+    { value: String(live.length), label: "Ideas", href: `${base}/plan` },
+    { value: String(deciding.length), label: "Need decision", href: `${base}/plan`, warm: deciding.length > 0 },
+    { value: String(openActions.length), label: "Open actions", href: `${base}/actions` },
+    { value: money(available), label: "Available", href: `${base}/budget`, over: available < 0 },
+  ];
+
+  /* The weekend as it stands, one column per day, titles only. An untimed
+     moment sorts into the part of the day it names rather than to the end,
+     so "Afternoon: free time" reads where the afternoon actually is. */
+  const BAND: Record<string, number> = {
+    morning: 8 * 60, afternoon: 13 * 60, evening: 18 * 60, anytime: 21 * 60,
+  };
+  const at = (row: { starts_label: string | null; daypart: string | null }) =>
+    parseTimeLabel(row.starts_label) ?? BAND[row.daypart ?? ""] ?? 9999;
+  const moments = (scheduleQ.data ?? []).slice().sort((a, b) => at(a) - at(b));
+  const present = new Set(moments.map((row) => row.day_key));
+  const days = DAY_ORDER.filter((key) => key !== "wed" || present.has("wed"));
 
   return (
-    <>
-      <h2 className="ev-page-title">
-        {theme.copy.welcome ? "Welcome" : engagement.name}
-      </h2>
-      {theme.copy.welcome ? <p className="ev-lede">{theme.copy.welcome}</p> : null}
+    <div className="wk">
+      <div className="wk-figures">
+        {figures.map((figure) => (
+          <Link
+            key={figure.label}
+            href={figure.href}
+            className={`wk-figure ${figure.warm ? "wk-figure-warm" : ""} ${figure.over ? "wk-figure-over" : ""}`}
+          >
+            <b>{figure.value}</b>
+            <span>{figure.label}</span>
+          </Link>
+        ))}
+      </div>
 
-      <section className="ev-section" aria-label="The weekend at a glance">
-        <div className="ev-section-head">
-          <h3 className="ev-section-title">At a glance</h3>
-        </div>
-        <dl className="ev-glance">
-          {dates ? (
-            <div>
-              <dt>Dates</dt>
-              <dd>{dates}</dd>
-            </div>
-          ) : null}
-          {engagement.venue ? (
-            <div>
-              <dt>Where</dt>
-              <dd>{engagement.venue}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>Guests</dt>
-            <dd>{engagement.guestsExpected} expected</dd>
-          </div>
-          <div>
-            <dt>Budget</dt>
-            <dd>{money(engagement.budgetTotalCents)} planned</dd>
-          </div>
-        </dl>
-      </section>
+      <DecisionQueue
+        decisions={deciding.map((row): Decision => ({
+          id: row.id,
+          title: row.title,
+          detail: row.detail,
+          day: row.tentative_day,
+        }))}
+        route={{ clientSlug, eventSlug, edition }}
+        base={base}
+        planner={planner}
+      />
 
-      {theme.images.gallery.length > 0 ? (
-        <section className="ev-section" aria-label="The place">
-          <div className="ev-section-head">
-            <h3 className="ev-section-title">The place</h3>
-            <span className="ev-section-note">
-              {engagement.venue ?? engagement.location ?? ""}
-            </span>
-          </div>
-          <div className="ev-gallery">
-            {theme.images.gallery.map((src) => (
-              <Image
-                key={src}
-                src={src}
-                alt=""
-                width={1200}
-                height={800}
-                sizes="(max-width: 720px) 100vw, 33vw"
-              />
-            ))}
-          </div>
-        </section>
+      {planning.total > 0 && looseEnds > 0 ? (
+        <Link href={`${base}/plan?shelf=planning`} className="wk-loose" aria-label="Needs planning">
+          <b>Needs planning</b>
+          <span>{planning.total} in the plan</span>
+          {planning.noTime > 0 ? <em>{planning.noTime} without a time</em> : null}
+          {planning.noOwner > 0 ? <em>{planning.noOwner} without an owner</em> : null}
+          {planning.openNeed > 0 ? (
+            <em>{planning.openNeed} requirement{planning.openNeed === 1 ? "" : "s"} open</em>
+          ) : null}
+          <i aria-hidden="true">→</i>
+        </Link>
       ) : null}
 
-      <section className="ev-section" aria-label="The path of an idea">
-        <div className="ev-section-head">
-          <h3 className="ev-section-title">The path of an idea</h3>
-          <span className="ev-section-note">
-            A spark is an idea, not an approval
-          </span>
-        </div>
-        <div className="ev-flow">
-          <Link href={`${base}/sparks`}>
-            <span className="ev-flow-verb">Capture freely.</span>
-            <span className="ev-flow-count">{plural(captured, "spark")} waiting</span>
-          </Link>
-          <Link href={`${base}/sparks`}>
-            <span className="ev-flow-verb">Discern carefully.</span>
-            <span className="ev-flow-count">{plural(discussing, "idea")} in discussion</span>
-          </Link>
-          <Link href={`${base}/schedule`}>
-            <span className="ev-flow-verb">Move intentionally.</span>
-            <span className="ev-flow-count">
-              {plural(approved, "approved spark")}, {confirmedCount ?? 0} confirmed moments
-            </span>
-          </Link>
+      <section className="wk-snapshot" aria-label="The weekend as it stands">
+        <header className="wk-sec-head">
+          <h3>The weekend</h3>
+          <Link href={`${base}/schedule`}>Open the calendar</Link>
+        </header>
+        <div className="wk-days">
+          {days.map((key) => {
+            const mine = moments.filter((row) => row.day_key === key);
+            return (
+              <div key={key} className="wk-daycol">
+                <p className="wk-dayname">{DAY_NAMES[key]}</p>
+                {mine.length === 0 ? (
+                  <p className="wk-dayempty">Nothing yet</p>
+                ) : (
+                  mine.map((row, index) => (
+                    <p key={index} className="wk-moment">
+                      <span>{row.starts_label ?? row.daypart}</span>
+                      {row.title}
+                    </p>
+                  ))
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
-    </>
+
+      <Reference
+        reference={engagement.reference ?? {}}
+        route={{ clientSlug, eventSlug, edition }}
+        planner={planner}
+      />
+    </div>
   );
 }

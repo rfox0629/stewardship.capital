@@ -19,6 +19,48 @@ import { createClient } from "../supabase/server.ts";
  * request instead of asking twice.
  */
 
+/**
+ * Vision, venue, and drink material an engagement carries for reading.
+ *
+ * The shape follows the sheets these came from: an element of the weekend
+ * carries its Scripture, the passage quoted beside it, why it belongs to the
+ * weekend, and what to actually do; an amenity carries its category, whether
+ * it is built in, rented, or confirmed by review, and what still has to be
+ * confirmed. Every part is optional, so an engagement with none shows none.
+ */
+export type VisionElement = {
+  name: string;
+  scripture?: string;
+  passage?: string;
+  connection?: string;
+  practical?: string;
+};
+
+export type EngagementReference = {
+  vision?: {
+    theme?: string;
+    scripture?: string;
+    passage?: string;
+    connection?: string;
+    practical?: string;
+    elements?: VisionElement[];
+  };
+  venue?: {
+    name?: string;
+    takeaway?: string;
+    amenities?: Array<{
+      name: string;
+      category?: string;
+      availability?: string;
+      confirm?: string;
+    }>;
+  };
+  drinks?: {
+    note?: string;
+    options?: Array<{ name: string; ingredients?: string; feel?: string }>;
+  };
+};
+
 export type EngagementContext = {
   /** This person's place in the engagement. Staff act as planners. */
   role: SparkRole;
@@ -39,6 +81,7 @@ export type EngagementContext = {
     budgetTotalCents: number;
     guestsExpected: number;
     organizationName: string;
+    reference: EngagementReference;
   };
   theme: EngagementTheme;
   supabase: Awaited<ReturnType<typeof createClient>>;
@@ -71,7 +114,7 @@ export const resolveEngagement = cache(
     const { data, error } = await supabase
       .from("engagements")
       .select(
-        "id, name, campaign, summary, status, starts_on, ends_on, location, venue, budget_total_cents, guests_expected, theme, organizations!inner(slug, name, theme)",
+        "id, name, campaign, summary, status, starts_on, ends_on, location, venue, budget_total_cents, guests_expected, theme, reference, organizations!inner(slug, name, theme)",
       )
       .eq("organizations.slug", clientSlug)
       .eq("series_slug", eventSlug)
@@ -122,6 +165,8 @@ export const resolveEngagement = cache(
         budgetTotalCents: data.budget_total_cents ?? 0,
         guestsExpected: data.guests_expected ?? 0,
         organizationName: organization?.name ?? clientSlug,
+        /* Vision, venue, and drinks: read only material the Weekend renders. */
+        reference: (data.reference ?? {}) as EngagementReference,
       },
       theme,
       supabase,
