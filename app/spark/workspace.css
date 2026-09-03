@@ -1599,7 +1599,7 @@
 .ws-decide-yes { color: #0d5238 !important; border-color: #a9dcc2 !important; background: #f2fbf6 !important; }
 .ws-decide-yes[aria-pressed="true"] { background: var(--ws-good) !important; color: #fff !important; border-color: var(--ws-good) !important; }
 .ws-decide-wait { color: #8a5205 !important; border-color: #e6bf7a !important; background: #fffdf7 !important; }
-.ws-decide-wait[aria-pressed="true"] { background: #c2790f !important; color: #fff !important; border-color: #c2790f !important; }
+.ws-decide-wait[aria-pressed="true"] { background: #8a5205 !important; color: #fff !important; border-color: #8a5205 !important; }
 
 .ws-shelf-row {
   display: flex;
@@ -2038,3 +2038,53 @@ input.ws-row-owner {
 }
 
 .ws-chip-gap { color: #16346f; background: var(--ws-accent-soft); }
+
+/* =================================================== the shell stops here
+
+   The Spark shell dims every paragraph inside .eo-frame, which is right for
+   the shell and wrong for the working canvas: .eo-frame p is (0,1,1) and
+   every .wk- and .ws- paragraph rule is (0,1,0), so the shell quietly won
+   and the whole snapshot rendered at 3.25 to 1. The canvas takes its ink
+   back here, and the paragraphs that genuinely mean to be secondary say so
+   at the same specificity so they still win on order.
+   ========================================================================= */
+
+.ev-main p { color: var(--ws-ink); }
+
+.ev-main .ws-note,
+.ev-main .ws-sub,
+.ev-main .ws-hint,
+.ev-main .ws-lane-empty,
+.ev-main .ws-noteline,
+.ev-main .ws-row-detail,
+.ev-main .ws-panel-sub,
+.ev-main .ws-panel-kicker,
+.ev-main .ev-row-detail,
+.ev-main .ev-drawer-note,
+.ev-main .ev-drawer-kicker,
+.ev-main .ev-ros-hint,
+.ev-main .wk-body,
+.ev-main .wk-practical,
+.ev-main .wk-dayempty {
+  color: var(--ws-ink-2);
+}
+
+.ev-main .wk-passage { color: var(--ws-ink); }
+.ev-main .ws-msg { color: var(--ws-warn); }
+.ev-main .wk-takeaway { color: #16346f; }
+.ev-main .wk-justdid p { color: #0d5238; }
+.ev-main .wk-queue-clear-line { color: #0d5238; }
+.ev-main .wk-confirm { color: #7a4a08; }
+.ev-main .ev-drawer-msg { color: var(--ws-warn); }
+
+/* Two more inherited from the event sheet: a drawer subheading and the
+   daypart label on an idea overlay, both too pale to read at size. */
+.ev-main .ev-drawer-sub { color: var(--ws-ink-2); }
+.ev-main .ev-ghost i { color: #7a4a08; font-weight: 700; }
+.ev-main .ev-ghost { color: var(--ws-ink); }
+
+/* On a phone the lanes stack, and scrolling past thirty six ideas to reach
+   five decisions is the wrong way round in a meeting. Decisions first. */
+@media (max-width: 900px) {
+  .ws-lane-warm { order: -1; }
+}
