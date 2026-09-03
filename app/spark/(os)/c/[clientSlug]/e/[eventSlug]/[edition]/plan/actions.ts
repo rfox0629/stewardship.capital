@@ -20,6 +20,9 @@ import { IDEA_STATE_TO_STATUS, type IdeaState } from "./idea-state";
 
 export type Outcome = { ok: boolean; message?: string };
 
+/* Rough placement. null is unplaced, 'all' spans the event, a day is a
+   guess about where it belongs. None of these is a schedule. */
+const PLACEMENTS = ["all", "wed", "thu", "fri", "sat", "sun"];
 const DAYS = ["wed", "thu", "fri", "sat", "sun"];
 const DAYPARTS = ["morning", "afternoon", "evening", "anytime"];
 const KINDS = ["person", "vendor", "equipment", "supply", "deliverable"];
@@ -61,7 +64,7 @@ export async function addIdea(
       engagement_id: context.engagement.id,
       title: clean,
       status: "captured",
-      tentative_day: day && DAYS.includes(day) ? day : null,
+      tentative_day: day && PLACEMENTS.includes(day) ? day : null,
     })
     .select("id");
 
@@ -218,7 +221,7 @@ export async function placeIdea(
 ): Promise<Outcome> {
   const context = await planner(clientSlug, eventSlug, edition);
   if (!context) return { ok: false };
-  if (day !== null && !DAYS.includes(day)) return { ok: false };
+  if (day !== null && !PLACEMENTS.includes(day)) return { ok: false };
   if (daypart !== null && !DAYPARTS.includes(daypart)) return { ok: false };
 
   const { data, error } = await context.supabase
