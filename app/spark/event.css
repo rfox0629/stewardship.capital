@@ -2095,73 +2095,6 @@
    not have, and neither floats above the calendar in a tray of its own.
    ========================================================================= */
 
-/* A moment the sheet gives a part of the day rather than a clock time. It is
-   real programming, so it belongs on the canvas, but it has no start, so it
-   is drawn as the region it covers rather than as a block at an invented
-   hour. It sits behind everything: a background the day happens inside. */
-.ev-band {
-  position: absolute;
-  left: 1px;
-  right: 1px;
-  z-index: 0;
-  border-radius: 5px;
-  background: rgba(58, 58, 59, 0.045);
-  border: 1px dashed rgba(58, 58, 59, 0.14);
-  padding: 3px 3px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.ev-band-item {
-  pointer-events: auto;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  width: 100%;
-  text-align: left;
-  border: 0;
-  background: rgba(255, 253, 249, 0.86);
-  border-left: 3px solid var(--ev-deep);
-  border-radius: 4px;
-  padding: 2px 6px;
-  font: inherit;
-  font-size: 0.71rem;
-  font-weight: 600;
-  line-height: 1.25;
-  color: #2c2d2f;
-  cursor: pointer;
-}
-
-.ev-band-item:hover { background: #fffdf9; }
-
-/* One line, so a band is exactly as tall as what it holds and the next one
-   starts where it should. The whole title is one click away. */
-.ev-band-item b {
-  min-width: 0;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ev-band-item span {
-  flex: 0 0 auto;
-  font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.53rem;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: #7c7e83;
-}
-
-/* When a day is showing ideas, the hours give up their right hand side so
-   the ghosts have somewhere to be that is still inside the day. */
-.ev-grid-shared .ev-block,
-.ev-grid-shared .ev-band { right: 41%; }
-
 .ev-ghost {
   position: absolute;
   left: 60%;
@@ -2747,3 +2680,172 @@
 .ev-cue-source button:disabled { opacity: 0.45; cursor: default; }
 
 .ev-cue-pick { grid-column: span 2; min-width: 0; }
+
+/* ============================================ what has no hour, and what
+   happens inside one
+
+   Three layers, and only one of them belongs on the clock. A moment with a
+   time is a block. A moment without one waits in a bank above the calendar,
+   because drawing it at six in the morning is a claim nobody made. An idea is
+   not a moment at all and stays tentative until somebody places it.
+   ========================================================================= */
+
+.ev-bank {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: #fffdf9;
+  border: 1px solid rgba(58, 58, 59, 0.16);
+  border-left: 3px solid var(--ev-deep);
+  border-radius: 9px;
+}
+
+.ev-bank-label {
+  flex: 0 0 auto;
+  margin: 3px 0 0;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #6b6d72;
+  white-space: nowrap;
+}
+
+.ev-bank-label span {
+  margin-left: 5px;
+  background: rgba(58, 58, 59, 0.09);
+  border-radius: 999px;
+  padding: 1px 6px;
+  color: #2c2d2f;
+}
+
+.ev-bank-days {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+
+.ev-bank-day-cell,
+.ev-bank-cards {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 4px;
+}
+
+.ev-bank-chip {
+  max-width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  border: 1px solid rgba(58, 58, 59, 0.22);
+  background: #fff;
+  border-left: 3px solid var(--ev-deep);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #2c2d2f;
+  cursor: grab;
+  text-align: left;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+
+.ev-bank-chip:hover {
+  border-color: #3a3a3b;
+  box-shadow: 0 2px 8px rgba(30, 30, 30, 0.13);
+  transform: translateY(-1px);
+}
+
+.ev-bank-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-bank-chip i {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8c90;
+}
+
+.ev-bank-carried { cursor: grabbing; opacity: 0.45; }
+
+/* An idea is a different thing and looks like one: dashed, warm, and never
+   sitting on the clock. */
+.ev-bank-ideas {
+  border-left-color: #9d7a1c;
+  background: rgba(233, 185, 73, 0.08);
+}
+
+.ev-bank-idea {
+  border-style: dashed;
+  border-left: 3px dashed #9d7a1c;
+  background: rgba(233, 185, 73, 0.16);
+  color: #6b5510;
+  cursor: pointer;
+}
+
+.ev-bank-idea:hover { border-color: #9d7a1c; }
+
+.ev-bank-day { margin-top: 10px; }
+.ev-bank-day .ev-bank-label { flex: 0 0 100%; }
+.ev-bank-day { flex-wrap: wrap; }
+
+/* What a block contains, riding along with it rather than claiming hours. */
+.ev-block-activities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.ev-block-activities em {
+  font-style: normal;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #4a4c50;
+  background: rgba(58, 58, 59, 0.08);
+  border-radius: 3px;
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Activities in the drawer. */
+.ev-activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(58, 58, 59, 0.1);
+}
+
+.ev-activity-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c2d2f;
+}

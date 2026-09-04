@@ -185,6 +185,10 @@ export async function rescheduleMoment(
   if (change.starts !== undefined) {
     if (!TIME.test(change.starts)) return { ok: false };
     patch.starts_label = change.starts.toLowerCase();
+    /* A moment that now has a clock time no longer has a part of the day.
+       Leaving both would make it two answers to one question, and the row
+       would keep showing up in the bank it just left. */
+    patch.daypart = null;
   }
   if (change.ends !== undefined) {
     if (change.ends !== null && !TIME.test(change.ends)) return { ok: false };
@@ -269,6 +273,49 @@ export async function addCue(
       cue: fields.cue,
       who_name: fields.who,
       note: fields.note,
+      position: 99,
+    })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidate(clientSlug, eventSlug, edition);
+  return { ok: true };
+}
+
+/**
+ * Something happening inside a moment that has no time of its own.
+ *
+ * Free time runs three hours and a boat ride happens during it. That is not a
+ * cue at plus forty minutes and it is not a moment of its own; it is a thing
+ * the block contains. The run of show already models "inside this moment",
+ * so an activity is the same row with the offset left empty, and nothing new
+ * had to be invented to hold it.
+ */
+export async function addActivity(
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+  momentId: string,
+  name: string,
+): Promise<MomentOutcome> {
+  const context = await plannerContext(clientSlug, eventSlug, edition);
+  if (!context) return { ok: false };
+
+  const label = name.trim().slice(0, 300);
+  if (!label) return { ok: false, message: "What is it?" };
+
+  const moment = await momentOf(context, momentId);
+  if (!moment) return { ok: false };
+
+  const { data, error } = await context.supabase
+    .from("run_of_show_cues")
+    .insert({
+      engagement_id: context.engagement.id,
+      schedule_item_id: momentId,
+      offset_minutes: null,
+      at_label: moment.starts_label ?? "",
+      cue: label,
       position: 99,
     })
     .select("id");

@@ -340,14 +340,18 @@ export async function placeIdeaInMoment(
   edition: string,
   ideaId: string,
   momentId: string,
+  /* A number of minutes puts the idea at a known point inside the moment.
+     Blank means it happens in there somewhere: boat rides during free time
+     do not start at 1:15 just because something had to be written down. */
   offsetMinutes: string,
 ): Promise<Outcome> {
   const context = await planner(clientSlug, eventSlug, edition);
   if (!context) return { ok: false };
 
-  const offset = Number((offsetMinutes ?? "").trim() || "0");
-  if (!Number.isInteger(offset) || offset < -120 || offset > 720) {
-    return { ok: false, message: "Minutes from the start of that moment." };
+  const raw = (offsetMinutes ?? "").trim();
+  const offset = raw === "" ? null : Number(raw);
+  if (offset !== null && (!Number.isInteger(offset) || offset < -120 || offset > 720)) {
+    return { ok: false, message: "Minutes from the start of that moment, or leave it blank." };
   }
 
   const [{ data: idea }, { data: moment }] = await Promise.all([
@@ -365,7 +369,7 @@ export async function placeIdeaInMoment(
       schedule_item_id: moment.id,
       spark_id: idea.id,
       offset_minutes: offset,
-      at_label: moment.starts_label,
+      at_label: moment.starts_label ?? "",
       cue: idea.title,
       position: 99,
     })

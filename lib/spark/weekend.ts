@@ -61,11 +61,14 @@ export const pendingBlocks = <T extends Placeholder>(
 /**
  * Which ideas still have nowhere to be.
  *
- * The overlay answers one question: what have we not put on the calendar yet.
- * An idea that has become a moment has an answer, so it stops being offered
- * as though it needed one. Only a scheduled moment counts: an idea with an
- * action, a cost or a requirement is still unscheduled, and hiding it because
- * somebody attached a receipt to it would lose it.
+ * The overlay answers one question: what have we not placed in the weekend
+ * yet. An idea that has become a moment of its own, or that happens inside
+ * somebody else's, has an answer either way and stops being offered as though
+ * it needed one.
+ *
+ * Placement is the only test. An idea with an action, a cost or a requirement
+ * is still unplaced, and hiding it because somebody attached a receipt to it
+ * would quietly lose it.
  *
  * The idea itself is untouched either way. This is about the overlay, and a
  * second occurrence is still available deliberately, from the idea.

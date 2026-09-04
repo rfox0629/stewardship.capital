@@ -103,7 +103,14 @@ test("an idea scheduled several times is not offered either", () => {
   assert.deepEqual(unscheduledIdeas([{ scheduled: 2 }]), []);
 });
 
-test("only a scheduled moment hides an idea, never an action or a cost", () => {
+test("an idea placed inside another moment is not offered either", () => {
+  /* A boat ride happening during free time has been placed. It has no moment
+     of its own and never will, and offering it as unplaced invites somebody
+     to place it twice. */
+  assert.deepEqual(unscheduledIdeas([{ scheduled: 1 }]), []);
+});
+
+test("only placement hides an idea, never an action or a cost", () => {
   /* Attaching a receipt to an idea does not place it in the weekend, so the
      overlay must keep offering it. Anything else quietly loses ideas. */
   const ideas = [
