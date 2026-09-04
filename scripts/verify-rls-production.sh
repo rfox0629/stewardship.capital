@@ -202,6 +202,57 @@ begin
      'select count(*)::text from public.run_of_show_cues where engagement_id=''$ALPHA_ENG'''));
 end \$\$;
 
+
+-- Moving a scheduled moment moves that moment.
+--
+-- A planner dropped an idea on the calendar, dragged the block it made to an
+-- earlier hour, and Spark looked like it had copied the moment. The screen was
+-- wrong and the database was right, but "the database was right" is a claim
+-- worth measuring rather than assuming. This drags one moment down an hour,
+-- across a day, and longer by the grip, then counts what is left. Scoped to
+-- this run's own engagement, like everything else here.
+do \$\$
+declare
+  target uuid;
+  spark uuid;
+  before_count integer;
+begin
+  select id into spark from public.sparks where engagement_id = '$ALPHA_ENG' limit 1;
+
+  insert into public.schedule_items
+    (engagement_id, spark_id, day_key, starts_label, ends_label, title, track, status)
+  values ('$ALPHA_ENG', spark, 'fri', '8:00 am', '9:00 am', '$RUN moving', 'Meals', 'confirmed')
+  returning id into target;
+
+  select count(*) into before_count
+    from public.schedule_items where engagement_id = '$ALPHA_ENG';
+
+  perform pg_temp.as_user('$STAFF', format(
+    'with u as (update public.schedule_items set starts_label=''7:00 am'', ends_label=''8:00 am'''
+    || ' where id=%L returning 1) select count(*)::text from u', target));
+  perform pg_temp.as_user('$STAFF', format(
+    'with u as (update public.schedule_items set day_key=''sat'''
+    || ' where id=%L returning 1) select count(*)::text from u', target));
+  perform pg_temp.as_user('$STAFF', format(
+    'with u as (update public.schedule_items set ends_label=''8:30 am'''
+    || ' where id=%L returning 1) select count(*)::text from u', target));
+
+  insert into results values
+    ('moving a moment adds no row', before_count::text,
+      (select count(*)::text from public.schedule_items where engagement_id='$ALPHA_ENG')),
+    ('a moved moment is still one row', '1',
+      (select count(*)::text from public.schedule_items
+        where engagement_id='$ALPHA_ENG' and title='$RUN moving')),
+    ('a moved moment keeps its id', target::text,
+      coalesce((select id::text from public.schedule_items
+                 where engagement_id='$ALPHA_ENG' and title='$RUN moving'), '(gone)')),
+    ('a moved moment keeps its idea', coalesce(spark::text,'(none)'),
+      coalesce((select spark_id::text from public.schedule_items where id=target), '(none)')),
+    ('a moved moment landed where it was dragged', 'sat 7:00 am to 8:30 am',
+      coalesce((select day_key||' '||starts_label||' to '||ends_label
+                 from public.schedule_items where id=target), '(gone)'));
+end \$\$;
+
 select case when actual=expected then 'PASS' else 'FAIL' end as result, name, expected, actual
 from results order by (actual=expected), name;
 

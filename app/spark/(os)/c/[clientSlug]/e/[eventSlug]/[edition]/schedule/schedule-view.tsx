@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
 import { parseTimeLabel } from "@lib/spark/days";
+import { pendingBlocks, unscheduledIdeas } from "@lib/spark/weekend";
 import { Select } from "@spark/_components/select";
 import { CaptureIdea } from "../plan/add-idea";
 
@@ -126,6 +127,12 @@ const MIN_BLOCK_PX = 14;
 /* Below this a block is one line: time and title, nothing else. */
 const TIGHT_PX = 40;
 const DURATIONS = [15, 30, 45, 60, 90, 120];
+
+/* Two drags exist on this screen and they mean opposite things. Carrying an
+   idea creates a moment; carrying a moment moves that exact row. They use
+   different machinery on purpose, and the one that creates says so in its own
+   payload type, so nothing can arrive at the create path by accident. */
+const IDEA_DRAG = "application/x-spark-idea";
 /* What a part of the day means on the clock. Wide on purpose: these bound a
    region, they never become a start time, and nothing is ever written back
    from them. A moment the sheet leaves untimed stays untimed. */
@@ -760,7 +767,11 @@ export function ScheduleView({
   const [asking, setAsking] =
     useState<{ idea: TentativeIdea; day: string; minutes: number | null } | null>(null);
   const [placed, setPlaced] = useState<
-    Array<{ key: string; ideaId: string; title: string; day: string; minutes: number; length: number }>
+    Array<{
+      key: string; ideaId: string; title: string; day: string; minutes: number; length: number;
+      /** The row this became, once the server says which one it is. */
+      id: string | null;
+    }>
   >([]);
   const gridRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
@@ -974,6 +985,10 @@ export function ScheduleView({
         key={moment.id}
         className={classes}
         style={style}
+        /* A moment moves by pointer, never by the browser's drag. Saying so
+           out loud is what keeps the moving path and the creating path from
+           ever meeting. */
+        draggable={false}
         onPointerDown={(event) => {
           if (inTimeline || !planner) return;
           beginDrag(event, moment, "move");
@@ -1025,7 +1040,9 @@ export function ScheduleView({
      hour. Unplaced and event-wide ideas are not shown: they belong to no day,
      and repeating them across five would make one idea look like five. */
   const ideasFor = (dayKey: string) =>
-    shownSparks && planner ? tentative.filter((idea) => idea.day === dayKey) : [];
+    shownSparks && planner
+      ? unscheduledIdeas(tentative.filter((idea) => idea.day === dayKey))
+      : [];
 
   /* A part of the day, clamped to the hours this weekend actually uses. */
   const regionOf = (daypart: string | null) => {
@@ -1117,10 +1134,10 @@ export function ScheduleView({
     length: number,
     daypart?: string,
   ) => {
-    const key = `${idea.id}-${day}-${minutes ?? daypart ?? "open"}`;
+    const key = `${idea.id}-${day}-${minutes ?? daypart ?? "open"}-${Date.now()}`;
     if (minutes !== null) {
-      setPlaced((prev) => [...prev.filter((entry) => entry.key !== key),
-        { key, ideaId: idea.id, title: idea.title, day, minutes, length }]);
+      setPlaced((prev) => [...prev,
+        { key, ideaId: idea.id, title: idea.title, day, minutes, length, id: null }]);
     }
     setAsking(null);
     setFailure(null);
@@ -1134,18 +1151,19 @@ export function ScheduleView({
       if (!outcome.ok) {
         setPlaced((prev) => prev.filter((entry) => entry.key !== key));
         setFailure(outcome.message ?? "That did not schedule, so nothing was added.");
+        return;
       }
+      setPlaced((prev) =>
+        prev.map((entry) => (entry.key === key ? { ...entry, id: outcome.id ?? null } : entry)));
     });
   };
 
   /* A moment drawn the instant it is dropped stops being drawn the instant
-     the real row arrives carrying the same answer. */
-  const already = new Set(
-    merged.filter((moment) => moment.sparkId).map((m) => `${m.sparkId}|${m.day}|${m.starts}`),
-  );
-  const landed = placed.filter(
-    (entry) => !already.has(`${entry.ideaId}|${entry.day}|${fmt(entry.minutes)}`),
-  );
+     its own row arrives. It is retired by identity, never by the hour it was
+     dropped on: the block can be moved a second later, and a placeholder that
+     asked "is anything still at eight?" would answer no and draw itself again
+     beside the moment it was standing in for. */
+  const landed = pendingBlocks(placed, moments, fmt);
   /* The sheet gives starts and no ends: a moment runs until the next one
      begins. Without this every block would claim a default hour and bury
      the three that follow it. */
@@ -1293,7 +1311,7 @@ export function ScheduleView({
               onPointerUp={onPointerUp}
               onPointerCancel={() => setDrag(null)}
               onDragOver={(event) => {
-                if (!carrying) return;
+                if (!carrying || !event.dataTransfer.types.includes(IDEA_DRAG)) return;
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
                 const at = landingAt(event);
@@ -1304,6 +1322,10 @@ export function ScheduleView({
                 setLanding(null);
               }}
               onDrop={(event) => {
+                /* Only an idea creates. A moment being moved never arrives
+                   here: it is a pointer drag on the block itself, and blocks
+                   are not draggable in the browser's sense at all. */
+                if (!event.dataTransfer.types.includes(IDEA_DRAG)) return;
                 event.preventDefault();
                 const idea = carrying;
                 const at = landingAt(event) ?? landing;
@@ -1380,7 +1402,8 @@ export function ScheduleView({
                       draggable={hydrated && planner}
                       title={`Idea: ${idea.title}. Drag onto an hour, or click to schedule it.`}
                       onDragStart={(event) => {
-                        event.dataTransfer.setData("text/plain", idea.id);
+                        event.dataTransfer.setData(IDEA_DRAG, idea.id);
+                        event.dataTransfer.setData("text/plain", idea.title);
                         event.dataTransfer.effectAllowed = "copy";
                         setCarrying(idea);
                       }}
