@@ -108,12 +108,14 @@ export default async function SchedulePage({ params }: PageProps) {
     endMinutes: parseTimeLabel(row.ends_label),
   }));
 
+  /* A cue with an offset is a beat in the run of show. A cue without one is
+     an activity: something the moment contains, with no time of its own. Both
+     are the same relationship, so both come through here. */
   const cues: Cue[] = ((cuesQ.data ?? []) as CueRow[])
-    .filter((row) => row.offset_minutes !== null)
     .map((row) => ({
       id: row.id,
       momentId: row.schedule_item_id,
-      offset: row.offset_minutes as number,
+      offset: row.offset_minutes,
       cue: row.cue,
       who: row.who_name,
       note: row.note,
@@ -201,10 +203,15 @@ export default async function SchedulePage({ params }: PageProps) {
           status: row.status,
           day: row.tentative_day ?? "",
           daypart: row.tentative_daypart ?? "anytime",
-          /* An idea stays in its day's tray after it is scheduled, because
-             one idea may become several moments. The count is what makes a
-             second one deliberate rather than accidental. */
-          scheduled: moments.filter((moment) => moment.sparkId === row.id).length,
+          /* Where this idea has already landed in the weekend: as a moment
+             of its own, or inside somebody else's. Both are placement, and
+             an idea that has been placed stops being offered as though it
+             still needed placing. An action, a cost or a requirement is not
+             placement, and deliberately does not count here: attaching a
+             receipt to an idea must never make it disappear. */
+          scheduled:
+            moments.filter((moment) => moment.sparkId === row.id).length +
+            cues.filter((cue) => cue.ideaId === row.id).length,
         }))}
       />
     </>
