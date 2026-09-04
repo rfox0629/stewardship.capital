@@ -30,6 +30,18 @@ worktree's local branch name differs from its remote branch, and a
 name-matched push once merged a stale tip. Verify ancestry with
 `git merge-base --is-ancestor` before reporting any merge complete.
 
+## Deployment
+
+`docs/deployment.md` is authoritative. In short: the app ships by pushing to
+`main`, which GitHub Actions checks and Vercel deploys. The database does not
+ship with it: migrations are applied deliberately by a person through
+`./scripts/apply-migrations.sh`.
+
+Supabase's own GitHub deploy, branching, and Vercel environment sync are all
+**off**, and turning one on is an architecture change rather than a
+convenience. Spark is project `wyesunnskufforgfaegq` in the
+Stewardship.Capital organization.
+
 ## Test suites
 
 ```
