@@ -5,8 +5,15 @@
  *   npm run auth:configure
  *
  * Needs SUPABASE_ACCESS_TOKEN in .env.local: a personal access token from
- * supabase.com/dashboard/account/tokens. That token can change project
+ * supabase.com/dashboard/account/tokens, belonging to an account with access
+ * to the Stewardship.Capital organization. That token can change project
  * configuration, which the service role key deliberately cannot.
+ *
+ * It is the only thing in this repository that needs one. Nothing the
+ * application does, and nothing any other script does, depends on it: if it
+ * is missing or stale, this one command is unavailable and everything else,
+ * including npm run audit:auth, is unaffected. The messages below say so,
+ * because an expired token that prints a bare 401 reads like a broken project.
  *
  * What it sets, matching docs/spark-access.md:
  *   - public signup off (invitations create accounts deliberately instead)
@@ -27,11 +34,59 @@ const API = `https://api.supabase.com/v1/projects/${PROJECT}/config/auth`;
 const token = process.env.SUPABASE_ACCESS_TOKEN?.trim();
 if (!token) {
   console.error(
-    "SUPABASE_ACCESS_TOKEN is blank in .env.local.\n" +
-      "Create one at supabase.com/dashboard/account/tokens and paste it there.",
+    "\nThis command needs a Supabase personal access token, and there is none.\n\n" +
+      "  Create one at supabase.com/dashboard/account/tokens, signed in as an\n" +
+      "  account with access to the Stewardship.Capital organization, and put it\n" +
+      `  in .env.local as SUPABASE_ACCESS_TOKEN. It is never committed.\n\n` +
+      "  Nothing else is affected. The site, the database and npm run audit:auth\n" +
+      "  do not use this token; only this command does.\n",
   );
   process.exit(1);
 }
+
+/**
+ * Why a Management API call failed, in words rather than a status code.
+ *
+ * The account that owned the previous token is not necessarily the account
+ * that owns the project now, so a stale token answers 401 and a token from
+ * the wrong organization answers 403 or 404. All three look identical to a
+ * stack trace and none of them means the project is unhealthy.
+ */
+const explain = (status, body) => {
+  if (status === 401) {
+    return (
+      "The access token was refused (401).\n\n" +
+      "  It has expired, been revoked, or belongs to an account that no longer\n" +
+      `  has access to ${PROJECT}. Issue a new one at\n` +
+      "  supabase.com/dashboard/account/tokens while signed in as an account\n" +
+      "  with access to the Stewardship.Capital organization, then put it in\n" +
+      "  .env.local as SUPABASE_ACCESS_TOKEN.\n\n" +
+      "  This says nothing about the health of the project. The site and the\n" +
+      "  database are reached with different credentials entirely."
+    );
+  }
+  if (status === 403) {
+    return (
+      "The access token is valid but not permitted to change this project (403).\n\n" +
+      "  Changing auth configuration needs Owner or Administrator on the\n" +
+      "  Stewardship.Capital organization. A reduced role can read the project\n" +
+      "  and still be refused here."
+    );
+  }
+  if (status === 404) {
+    return (
+      `Project ${PROJECT} is not visible to this token (404).\n\n` +
+      "  The token most likely belongs to an account outside the\n" +
+      "  Stewardship.Capital organization, which is where Spark now lives."
+    );
+  }
+  return `Supabase answered ${status}.\n\n  ${body.slice(0, 300)}`;
+};
+
+const stop = (message) => {
+  console.error(`\n${message}\n`);
+  process.exit(1);
+};
 
 const headers = {
   Authorization: `Bearer ${token}`,
@@ -39,10 +94,18 @@ const headers = {
 };
 
 const get = async () => {
-  const response = await fetch(API, { headers });
-  if (!response.ok) {
-    throw new Error(`GET config: ${response.status} ${await response.text()}`);
+  let response;
+  try {
+    response = await fetch(API, { headers });
+  } catch (error) {
+    stop(
+      "Could not reach api.supabase.com.\n\n" +
+        `  ${error instanceof Error ? error.message : String(error)}\n\n` +
+        "  This is a network problem between here and Supabase, not a problem\n" +
+        "  with the project.",
+    );
   }
+  if (!response.ok) stop(explain(response.status, await response.text()));
   return response.json();
 };
 
@@ -110,9 +173,7 @@ const patch = await fetch(API, {
   headers,
   body: JSON.stringify(payload),
 });
-if (!patch.ok) {
-  throw new Error(`PATCH config: ${patch.status} ${await patch.text()}`);
-}
+if (!patch.ok) stop(explain(patch.status, await patch.text()));
 
 const after = await get();
 
