@@ -20,6 +20,12 @@ import { IDEA_STATE_TO_STATUS, type IdeaState } from "./idea-state";
  */
 
 export type Outcome = { ok: boolean; message?: string };
+/* Scheduling hands back the row it made, so the caller can stop drawing its
+   own placeholder the moment that exact row arrives, rather than guessing
+   from the hour it was dropped on. An hour is not an identity: the block can
+   be moved a second later, and a placeholder keyed on where it landed comes
+   back from the dead looking like a copy. */
+export type ScheduleOutcome = Outcome & { id?: string };
 
 /* Rough placement. null is unplaced, 'all' spans the event, a day is a
    guess about where it belongs. None of these is a schedule. */
@@ -284,7 +290,7 @@ export async function scheduleIdea(
   edition: string,
   ideaId: string,
   fields: { day: string; starts?: string; minutes?: string; daypart?: string; track?: string; location?: string },
-): Promise<Outcome> {
+): Promise<ScheduleOutcome> {
   const context = await planner(clientSlug, eventSlug, edition);
   if (!context) return { ok: false };
   if (!DAYS.includes(fields.day)) return { ok: false, message: "Which day?" };
@@ -317,7 +323,7 @@ export async function scheduleIdea(
 
   if (error || (data?.length ?? 0) === 0) return { ok: false, message: "That did not save." };
   revalidate(clientSlug, eventSlug, edition);
-  return { ok: true };
+  return { ok: true, id: data?.[0]?.id as string | undefined };
 }
 
 /**
