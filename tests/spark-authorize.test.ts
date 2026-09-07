@@ -4,6 +4,7 @@ import test from "node:test";
 import { authorizeSparkPath, landingFor } from "../lib/spark/authorize.ts";
 import {
   SPARK_BASE,
+  PLATFORM_HOME,
   SPARK_PLATFORM,
   clientSlugOf,
   isOpenSparkPath,
@@ -313,8 +314,10 @@ test("several memberships offer a choice rather than picking one", () => {
   assert.deepEqual(landingFor(both), { kind: "choose" });
 });
 
-test("staff land on the platform home", () => {
-  assert.deepEqual(landingFor(staff), { kind: "platform", href: SPARK_PLATFORM });
+test("staff land on the platform home, which is Stewardship.Capital's own", () => {
+  assert.deepEqual(landingFor(staff), { kind: "platform", href: PLATFORM_HOME });
+  /* Outside Spark on purpose: the guard for it lives in the proxy, not here. */
+  assert.equal(isSparkPath(PLATFORM_HOME), false);
 });
 
 test("no memberships, and no session, are both a quiet refusal", () => {

@@ -43,7 +43,8 @@ const A_NAME = `Alpha ${RUN}`;
 const B_NAME = `Beta ${RUN}`;
 const A_HOME = `/spark/c/${A_SLUG}/e/check/2026`;
 const B_HOME = `/spark/c/${B_SLUG}/e/check/2027`;
-const PLATFORM = "/spark/platform";
+const PLATFORM = "/platform";
+const OLD_PLATFORM = "/spark/platform";
 const ENTRY = "/spark";
 
 const CLEAN = "authcheck";
@@ -222,11 +223,30 @@ test("Spark access model, end to end against production schema", async (t) => {
     /* ------------------------------------------------ anonymous refusal */
 
     await t.test("the public cannot enter Spark", async () => {
-      for (const path of [A_HOME, `${A_HOME}/budget`, B_HOME, PLATFORM, "/spark/c/shine"]) {
+      for (const path of [A_HOME, `${A_HOME}/budget`, B_HOME, OLD_PLATFORM, "/spark/c/shine"]) {
         const hit = await visit(newJar(), path);
         assert.equal(hit.status, 307, path);
-        assert.equal(hit.location, ENTRY, path);
+        assert.equal(hit.location, path === OLD_PLATFORM ? PLATFORM : ENTRY, path);
       }
+    });
+
+    await t.test("the platform home, signed out, is the door and nothing else", async () => {
+      const hit = await visit(newJar(), PLATFORM);
+      assert.equal(hit.status, 200);
+      assert.match(hit.body, /Sign in to continue/);
+      assert.match(hit.body, /id="entry-email"/);
+      /* Nothing the signed in page shows may leak through the door. */
+      assert.doesNotMatch(hit.body, /New client|New engagement|Platform staff/);
+      assert.doesNotMatch(
+        hit.body,
+        new RegExp(`SHINE|Founders Weekend|${A_NAME}|${B_NAME}`, "i"),
+      );
+    });
+
+    await t.test("the old platform address redirects to the new one", async () => {
+      const hit = await visit(newJar(), OLD_PLATFORM);
+      assert.ok(hit.status >= 300 && hit.status < 400, `answered ${hit.status}`);
+      assert.equal(hit.location, PLATFORM);
     });
 
     await t.test("the front door is reachable, and says only what it should", async () => {
@@ -259,11 +279,16 @@ test("Spark access model, end to end against production schema", async (t) => {
       }
     });
 
-    await t.test("the homepage sends people to Spark, not to /more", async () => {
+    await t.test("the homepage says three words and opens no door", async () => {
       const hit = await visit(newJar(), "/");
       assert.equal(hit.status, 200);
-      assert.match(hit.body, /href="\/spark"/);
       assert.match(hit.body, /Time\.|Talent\.|Treasure\./);
+      assert.match(hit.body, /Steward what you.{1,8}ve been entrusted with\./);
+      /* Word of mouth, on purpose. No link to Spark, no form, no login, no
+         call to action of any kind. */
+      assert.doesNotMatch(hit.body, /href="\/(spark|start|platform|login|signup|more)"/);
+      assert.doesNotMatch(hit.body, /Spark|Romans 14:12|>More<|Start a conversation/);
+      assert.equal((await visit(newJar(), "/start")).status, 404);
     });
 
     await t.test("anonymous callers see nothing in the database either", async () => {
@@ -390,7 +415,11 @@ test("Spark access model, end to end against production schema", async (t) => {
       const jar = newJar();
       const landed = await signIn(jar, w.staff.email);
       assert.equal(landed.location, PLATFORM);
-      assert.equal((await visit(jar, PLATFORM)).status, 200);
+      const home = await visit(jar, PLATFORM);
+      assert.equal(home.status, 200);
+      assert.match(home.body, /New client|Platform staff/);
+      /* Spark's front door no longer holds them either: it sends them home. */
+      assert.equal((await visit(jar, ENTRY)).location, PLATFORM);
     });
 
     /* --------------------------------------------- direct URLs and roles */
@@ -654,8 +683,17 @@ test("Spark access model, end to end against production schema", async (t) => {
       await signIn(jar, w.leaver.email);
       assert.equal((await visit(jar, A_HOME)).status, 200);
 
-      const out = await visit(jar, "/spark/signout", { method: "POST" });
-      assert.equal(out.location, ENTRY);
+      /* Leaving by the platform's door lands on the platform's door, which
+         signed out is the sign in and nothing more. */
+      const out = await visit(jar, "/spark/signout", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: "next=%2Fplatform",
+      });
+      assert.equal(out.location, PLATFORM);
+      const door = await visit(jar, PLATFORM);
+      assert.equal(door.status, 200);
+      assert.match(door.body, /Sign in to continue/);
 
       const after = await visit(jar, A_HOME);
       assert.equal(after.status, 307);
@@ -663,6 +701,15 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       /* And it does not come back by reopening the browser. */
       assert.equal((await visit(restartBrowser(jar), A_HOME)).location, ENTRY);
+
+      /* A door the form did not name is not a door. */
+      const jar2 = newJar();
+      const elsewhere = await visit(jar2, "/spark/signout", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: "next=%2Fdashboard",
+      });
+      assert.equal(elsewhere.location, ENTRY);
     });
 
     await t.test("revoking membership locks someone out while their session is still valid", async () => {

@@ -24,7 +24,8 @@ whole reason revocation is immediate.
 | `/spark/i/<token>` | anyone holding a live invitation |
 | `/spark/auth/callback` | anyone completing verification from an emailed link |
 | `/spark/signout` | anyone |
-| `/spark/platform` | explicit platform staff only |
+| `/platform` | explicit platform staff only. Stewardship.Capital's own home, signed out it is the same email and code door |
+| `/spark/platform` | redirects to `/platform` |
 | `/spark/c/<client>/…` | current members of that engagement, and staff |
 
 `/more` redirects to `/spark`. When Stewardship.Capital has more than one

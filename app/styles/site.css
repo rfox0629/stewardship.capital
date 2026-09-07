@@ -339,6 +339,13 @@ html:has(.www) body {
   font-variation-settings: "wdth" 104;
 }
 
+/* The full wordmark is a longer word than Spark's, so the platform door sets
+   it smaller to keep it on one line inside the same column. */
+.entry-mark-sc {
+  font-size: clamp(1.7rem, 4.6vw, 2.6rem);
+  letter-spacing: -0.035em;
+}
+
 .entry-sub {
   margin-top: clamp(14px, 2vw, 20px) !important;
   font-size: 1rem;

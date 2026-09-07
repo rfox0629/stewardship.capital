@@ -5,10 +5,10 @@ import { revalidatePath } from "next/cache";
 import { resolveAccess } from "@lib/spark/access";
 import { hashInvitationToken, randomInvitationToken } from "@lib/spark/tokens";
 import { isSparkRole } from "@lib/spark/types";
-import { createClient } from "../../../../lib/supabase/server";
+import { createClient } from "@lib/supabase/server";
 
 /**
- * Everything Stewardship.Capital staff may do to operate Spark.
+ * Everything Stewardship.Capital staff may do to operate the platform.
  *
  * Every action re-resolves access on its own request and refuses anyone
  * without the explicit platform_staff grant, then performs the change under
@@ -21,7 +21,7 @@ import { createClient } from "../../../../lib/supabase/server";
 
 type Outcome = { ok: boolean; message?: string };
 
-const PLATFORM = "/spark/platform";
+const PLATFORM = "/platform";
 const SLUG = /^[a-z0-9][a-z0-9-]{1,62}$/;
 
 const staffSession = async () => {
