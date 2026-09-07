@@ -1,12 +1,19 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import "@app/styles/site.css";
 import "./platform.css";
 
+import { MultiplierField } from "@app/(www)/_components/multiplier-field";
 import { SiteNav } from "@app/(www)/_components/site-nav";
+import { Wordmark } from "@app/(www)/_components/wordmark";
+import { SparkEntry } from "@spark/_components/spark-entry";
 import { resolveAccess } from "@lib/spark/access";
-import { createClient } from "../../../../lib/supabase/server";
+import { OTP_EMAIL_COOKIE } from "@lib/spark/cookies";
+import { maskEmail } from "@lib/spark/mask";
+import { SPARK_ENTRY } from "@lib/spark/paths";
+import { createClient } from "@lib/supabase/server";
 import {
   EngagementForm,
   InvitationForm,
@@ -16,17 +23,20 @@ import {
   StaffForm,
 } from "./platform-controls";
 
-export const metadata = { title: { absolute: "Platform | Spark" } };
+export const metadata = { title: { absolute: "Platform | Stewardship.Capital" } };
 export const dynamic = "force-dynamic";
 
 /**
  * The Stewardship.Capital operating surface: every client, every engagement,
  * who can reach each one, and the door for the next person in.
  *
- * Explicit platform staff only, checked by the route guard before this
- * renders and again right here, and every row below comes through RLS or a
- * definer function that makes the same check a third time. Not a dashboard;
- * the one page that lets Brooke and Ryan run Spark without a terminal.
+ * Explicit platform staff only. Signed out, this page is the door itself: the
+ * same email and code sign in Spark uses, on the same identity, so there is
+ * one set of credentials and one place they are decided. Signed in without
+ * the grant, the route guard has already sent the person to Spark's front
+ * door, and this page checks again before it renders a single row. Every row
+ * below then comes through RLS or a definer function that makes the same
+ * check a third time.
  */
 
 type EngagementRow = {
@@ -77,10 +87,49 @@ const trailLine = (event: TrailRow) => {
   return `${who} changed from ${event.from_role} to ${event.to_role}${by}`;
 };
 
+/**
+ * The door, for anyone not signed in. The same two steps as Spark's front
+ * door, wearing the Stewardship.Capital mark. Verification lands platform
+ * staff back here and everyone else wherever they do belong.
+ */
+async function PlatformDoor() {
+  const pending = (await cookies()).get(OTP_EMAIL_COOKIE)?.value;
+  const stage = pending
+    ? ({ name: "code", hint: maskEmail(pending) } as const)
+    : ({ name: "email" } as const);
+
+  return (
+    <div className="www">
+      <a className="skip" href="#main">
+        Skip to content
+      </a>
+      <SiteNav />
+      <main id="main">
+        <section className="entry" aria-labelledby="platform-door-heading">
+          <MultiplierField />
+          <div className="entry-inner">
+            <div className="mask">
+              <h1 id="platform-door-heading" className="entry-mark entry-mark-sc">
+                <Wordmark />
+              </h1>
+            </div>
+            <div className="mask">
+              <p className="entry-sub">Platform. Sign in to continue.</p>
+            </div>
+            <SparkEntry initialStage={stage} />
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 export default async function PlatformPage() {
   const supabase = await createClient().catch(() => null);
   const access = supabase ? await resolveAccess(supabase) : null;
-  if (!supabase || !access?.staff) notFound();
+
+  if (!supabase || !access) return <PlatformDoor />;
+  if (!access.staff) redirect(SPARK_ENTRY);
 
   const [{ data: organizations }, { data: engagements }, { data: invitations }] =
     await Promise.all([
@@ -129,12 +178,13 @@ export default async function PlatformPage() {
           <div>
             <h1 className="pf-title">Platform</h1>
             <p className="pf-lede">
-              Every client and engagement on Spark, who can reach each one, and
-              the door for the next person in. Access changes take effect on
-              the person&apos;s next request.
+              Every client and engagement, who can reach each one, and the
+              door for the next person in. Access changes take effect on the
+              person&apos;s next request.
             </p>
           </div>
           <form action="/spark/signout" method="post">
+            <input type="hidden" name="next" value="/platform" />
             <button className="pf-text-action" type="submit">
               Sign out
             </button>

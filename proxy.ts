@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { resolveAccess } from "./lib/spark/access";
 import { authorizeSparkPath } from "./lib/spark/authorize";
-import { isOpenSparkPath, isSparkPath } from "./lib/spark/paths";
+import {
+  PLATFORM_HOME,
+  SPARK_ENTRY,
+  isOpenSparkPath,
+  isSparkPath,
+} from "./lib/spark/paths";
 import { createProxyClient, hasIdentity } from "./lib/supabase/proxy";
 
 /**
@@ -59,6 +64,23 @@ export async function proxy(request: NextRequest) {
       return refusal;
     }
 
+    return box.response;
+  }
+
+  /* Stewardship.Capital's own home. Signed out, the page shows the same
+     sign in that Spark uses, so the request goes through; the page renders
+     nothing but the door. Signed in without the staff grant is sent to
+     Spark's front door, which knows where that person does belong. The page
+     asks the same question again before it renders a single row. */
+  if (startsWithAny(pathname, [PLATFORM_HOME])) {
+    const access = supabase ? await resolveAccess(supabase) : null;
+    if (access && !access.staff) {
+      const refusal = NextResponse.redirect(new URL(SPARK_ENTRY, request.url));
+      box.response.cookies.getAll().forEach((cookie) => {
+        refusal.cookies.set(cookie);
+      });
+      return refusal;
+    }
     return box.response;
   }
 

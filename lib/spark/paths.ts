@@ -14,7 +14,15 @@ export const SPARK_BASE = "/spark";
 /** The front door. Never guarded: it is what a refusal redirects to. */
 export const SPARK_ENTRY = SPARK_BASE;
 
-/** Every client on the platform. Explicit platform staff only. */
+/**
+ * Every client on the platform. Explicit platform staff only.
+ *
+ * This is Stewardship.Capital's own surface rather than Spark's, so it lives
+ * at the top level. Spark is one product on it.
+ */
+export const PLATFORM_HOME = "/platform";
+
+/** Where the platform home used to be. Redirected to PLATFORM_HOME. */
 export const SPARK_PLATFORM = `${SPARK_BASE}/platform`;
 
 export const INVITE_PREFIX = `${SPARK_BASE}/i`;

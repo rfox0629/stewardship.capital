@@ -1,4 +1,5 @@
 import {
+  PLATFORM_HOME,
   SPARK_BASE,
   SPARK_ENTRY,
   SPARK_PLATFORM,
@@ -95,8 +96,9 @@ export const authorizeSparkPath = (
 
   if (!access) return REFUSE;
 
-  /* Platform staff is the only grant that crosses clients, so the home that
-     lists every client is the one surface that asks for it by name. */
+  /* The platform home now lives at PLATFORM_HOME, outside Spark, and is
+     redirected there before this runs. Should the old path ever arrive here
+     anyway, it keeps asking for the explicit grant by name. */
   if (pathname === SPARK_PLATFORM || pathname.startsWith(`${SPARK_PLATFORM}/`)) {
     return access.staff ? ALLOW : REFUSE;
   }
@@ -157,7 +159,7 @@ export type Landing =
 
 export const landingFor = (access: SparkAccess | null): Landing => {
   if (!access) return { kind: "refused" };
-  if (access.staff) return { kind: "platform", href: SPARK_PLATFORM };
+  if (access.staff) return { kind: "platform", href: PLATFORM_HOME };
   if (access.workspaces.length === 1) {
     return { kind: "workspace", href: workspaceHome(access.workspaces[0]) };
   }

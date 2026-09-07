@@ -1,11 +1,9 @@
-import Link from "next/link";
-
 import { MultiplierField } from "./_components/multiplier-field";
 import { Wordmark } from "./_components/wordmark";
 
 /**
- * The approved hero composition, with the stewardship statement in it.
- * Nothing below the fold.
+ * The approved hero composition, carrying one statement and nothing else.
+ * No door, no explanation, nothing below the fold: the idea, stated once.
  */
 export default function HomePage() {
   return (
@@ -26,30 +24,7 @@ export default function HomePage() {
         </div>
 
         <div className="mask">
-          <p className="hero-sub">
-            Helping steward what God has entrusted to you, because everyone
-            will give an account of themself to God someday.
-          </p>
-        </div>
-
-        <div className="mask">
-          <p className="hero-ref">Romans 14:12</p>
-        </div>
-
-        <div className="mask">
-          <Link className="more" href="/spark">
-            More
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path
-                d="M4 12h15M13 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
+          <p className="hero-sub">Steward what you&rsquo;ve been entrusted with.</p>
         </div>
       </div>
     </section>

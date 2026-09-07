@@ -16,6 +16,11 @@ const nextConfig = {
       { source: "/events-os/:path*", destination: "/spark/:path*", permanent: false },
       { source: "/i/:token", destination: "/spark/i/:token", permanent: false },
 
+      // The platform home is Stewardship.Capital's, not Spark's. It moved up
+      // a level; the old address keeps working for anyone who bookmarked it.
+      { source: "/spark/platform", destination: "/platform", permanent: false },
+      { source: "/spark/platform/:path*", destination: "/platform/:path*", permanent: false },
+
       // /more is temporary on purpose. When Stewardship.Capital has more than
       // one public product it becomes the directory of them, and /spark stays
       // exactly where it is.
