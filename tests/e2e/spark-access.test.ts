@@ -45,6 +45,8 @@ const A_HOME = `/spark/c/${A_SLUG}/e/check/2026`;
 const B_HOME = `/spark/c/${B_SLUG}/e/check/2027`;
 const PLATFORM = "/platform";
 const OLD_PLATFORM = "/spark/platform";
+const B_PAGE = `/platform/clients/${B_SLUG}/check-2027`;
+const A_PAGE = `/platform/clients/${A_SLUG}/check-2026`;
 const ENTRY = "/spark";
 
 const CLEAN = "authcheck";
@@ -102,7 +104,12 @@ const setUp = async (): Promise<World> => {
 
   /* Two organizations of this run's own. If either cannot be created, the
      suite refuses to run at all rather than fall back to anything real. */
-  const makeOrg = async (slug: string, name: string, edition: string) => {
+  const makeOrg = async (
+    slug: string,
+    name: string,
+    edition: string,
+    productKey: string | null,
+  ) => {
     const { data: org, error: orgError } = await admin
       .from("organizations")
       .insert({ slug, name })
@@ -119,6 +126,7 @@ const setUp = async (): Promise<World> => {
         name: `${name} Check`,
         series_slug: "check",
         edition_label: edition,
+        product_key: productKey,
       })
       .select("id")
       .single();
@@ -128,8 +136,10 @@ const setUp = async (): Promise<World> => {
     return { orgId: org.id as string, engagementId: eng.id as string };
   };
 
-  const alpha = await makeOrg(A_SLUG, A_NAME, "2026");
-  const beta = await makeOrg(B_SLUG, B_NAME, "2027");
+  /* Alpha runs on Spark, like SHINE. Beta runs on no product, like a
+     consulting engagement, so it opens the Stewardship.Capital page. */
+  const alpha = await makeOrg(A_SLUG, A_NAME, "2026", "spark");
+  const beta = await makeOrg(B_SLUG, B_NAME, "2027", null);
   const alphaId = alpha.engagementId;
   const betaId = beta.engagementId;
 
@@ -420,6 +430,81 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.match(home.body, /New client|Platform staff/);
       /* Spark's front door no longer holds them either: it sends them home. */
       assert.equal((await visit(jar, ENTRY)).location, PLATFORM);
+    });
+
+    /* ------------------------------------- engagements that run on nothing */
+
+    await t.test("the platform home opens each engagement where it lives", async () => {
+      const jar = await adopt(w.staff.email);
+      const home = await visit(jar, PLATFORM);
+      assert.equal(home.status, 200);
+      /* Spark engagements open Spark, exactly where they always did. */
+      assert.match(home.body, new RegExp(`href="${A_HOME}"`));
+      /* Engagements on no product open the Stewardship.Capital page. */
+      assert.match(home.body, new RegExp(`href="${B_PAGE}"`));
+      assert.doesNotMatch(home.body, new RegExp(`href="${B_HOME}"`));
+    });
+
+    await t.test("the engagement page is the overview and the notes, staff only", async () => {
+      const jar = await adopt(w.staff.email);
+      const page = await visit(jar, B_PAGE);
+      assert.equal(page.status, 200);
+      assert.match(page.body, new RegExp(B_NAME));
+      assert.match(page.body, /Overview/);
+      assert.match(page.body, /Meetings and notes/);
+      assert.match(page.body, /name="title"/);
+
+      /* A Spark engagement has its own home; the page sends it there. */
+      const sparkOne = await visit(jar, A_PAGE);
+      assert.equal(sparkOne.status, 307);
+      assert.equal(sparkOne.location, A_HOME);
+
+      /* Signed out is the door. A member of the very engagement is refused. */
+      assert.equal((await visit(newJar(), B_PAGE)).location, PLATFORM);
+      const asClient = await visit(await adopt(w.client.email), B_PAGE);
+      assert.equal(asClient.status, 307);
+      assert.equal(asClient.location, ENTRY);
+    });
+
+    await t.test("notes are written and read by staff, and by nobody else", async () => {
+      const asStaff = await clientFor(w.staff.email);
+      const { data: written, error } = await asStaff
+        .from("engagement_notes")
+        .insert({ engagement_id: w.betaId, title: `Note ${RUN}`, body: `Thought ${RUN}.` })
+        .select("id");
+      assert.equal(error, null, error?.message);
+      assert.equal(written?.length, 1, "rows affected");
+
+      const { data: read } = await asStaff.rpc("engagement_notes_for", { target: w.betaId });
+      assert.equal(read?.length, 1);
+      assert.equal(read?.[0].title, `Note ${RUN}`);
+      assert.equal(read?.[0].author_email, w.staff.email);
+
+      const page = await visit(await adopt(w.staff.email), B_PAGE);
+      assert.match(page.body, new RegExp(`Note ${RUN}`));
+      assert.match(page.body, new RegExp(`Thought ${RUN}\\.`));
+
+      /* A member of the engagement, a planner elsewhere, and a stranger:
+         nothing to read, nothing to write, through either door. */
+      for (const who of [w.client, w.otherPlanner, w.stranger]) {
+        const asOther = await clientFor(who.email);
+        const { data: seen } = await asOther.from("engagement_notes").select("id");
+        assert.equal(seen?.length ?? 0, 0, who.email);
+        const { data: viaRpc } = await asOther.rpc("engagement_notes_for", { target: w.betaId });
+        assert.equal(viaRpc?.length ?? 0, 0, who.email);
+        const attempt = await asOther
+          .from("engagement_notes")
+          .insert({ engagement_id: w.betaId, title: `Intruder ${RUN}`, body: "no" })
+          .select("id");
+        assert.equal(attempt.data?.length ?? 0, 0, who.email);
+      }
+      const anon = anonClient();
+      const { data: anonSeen } = await anon.from("engagement_notes").select("id");
+      assert.equal(anonSeen?.length ?? 0, 0);
+
+      /* Still exactly one note, and it is the staff one. */
+      const { data: all } = await admin.from("engagement_notes").select("id").eq("engagement_id", w.betaId);
+      assert.equal(all?.length, 1);
     });
 
     /* --------------------------------------------- direct URLs and roles */

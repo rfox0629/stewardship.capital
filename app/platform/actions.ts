@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { platformEngagementPath } from "@lib/platform/engagement-href";
 import { resolveAccess } from "@lib/spark/access";
 import { hashInvitationToken, randomInvitationToken } from "@lib/spark/tokens";
 import { isSparkRole } from "@lib/spark/types";
@@ -248,5 +249,36 @@ export async function grantStaff(formData: FormData): Promise<Outcome> {
   }
 
   revalidatePath(PLATFORM);
+  return { ok: true };
+}
+
+/**
+ * A note on an engagement. Staff only, under the person's own session, so
+ * the row records who wrote it and RLS decides whether they may.
+ */
+export async function createEngagementNote(formData: FormData): Promise<Outcome> {
+  const supabase = await staffSession();
+  if (!supabase) return { ok: false };
+
+  const engagementId = String(formData.get("engagementId") ?? "");
+  const organizationSlug = String(formData.get("organizationSlug") ?? "");
+  const engagementSlug = String(formData.get("engagementSlug") ?? "");
+  const title = String(formData.get("title") ?? "").trim().slice(0, 200);
+  const body = String(formData.get("body") ?? "").trim().slice(0, 20000);
+
+  if (!engagementId || !title || !body) {
+    return { ok: false, message: "A title and a body." };
+  }
+
+  const { data, error } = await supabase
+    .from("engagement_notes")
+    .insert({ engagement_id: engagementId, title, body })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  if (SLUG.test(organizationSlug) && SLUG.test(engagementSlug)) {
+    revalidatePath(platformEngagementPath(organizationSlug, engagementSlug));
+  }
   return { ok: true };
 }

@@ -9,6 +9,7 @@ import { MultiplierField } from "@app/(www)/_components/multiplier-field";
 import { SiteNav } from "@app/(www)/_components/site-nav";
 import { Wordmark } from "@app/(www)/_components/wordmark";
 import { SparkEntry } from "@spark/_components/spark-entry";
+import { engagementHref, productLabel } from "@lib/platform/engagement-href";
 import { resolveAccess } from "@lib/spark/access";
 import { OTP_EMAIL_COOKIE } from "@lib/spark/cookies";
 import { maskEmail } from "@lib/spark/mask";
@@ -42,8 +43,10 @@ export const dynamic = "force-dynamic";
 type EngagementRow = {
   id: string;
   name: string;
+  slug: string;
   series_slug: string | null;
   edition_label: string | null;
+  product_key: string | null;
   status: string;
   starts_on: string | null;
   location: string | null;
@@ -136,7 +139,7 @@ export default async function PlatformPage() {
       supabase.from("organizations").select("id, slug, name").order("name"),
       supabase
         .from("engagements")
-        .select("id, name, series_slug, edition_label, status, starts_on, location, organization_id")
+        .select("id, name, slug, series_slug, edition_label, product_key, status, starts_on, location, organization_id")
         .order("starts_on", { ascending: false }),
       supabase
         .from("invitations")
@@ -211,9 +214,16 @@ export default async function PlatformPage() {
                 .map((engagement) => {
                   const detail = details.get(engagement.id);
                   const pending = pendingFor(engagement.id);
-                  const home = `/spark/c/${organization.slug}/e/${
-                    engagement.series_slug ?? "current"
-                  }/${engagement.edition_label ?? "current"}`;
+                  /* Spark engagements open Spark. Everything else opens the
+                     Stewardship.Capital engagement page. */
+                  const home = engagementHref({
+                    organizationSlug: organization.slug,
+                    engagementSlug: engagement.slug,
+                    seriesSlug: engagement.series_slug,
+                    editionLabel: engagement.edition_label,
+                    productKey: engagement.product_key,
+                  });
+                  const product = productLabel(engagement.product_key);
 
                   return (
                     <details key={engagement.id} className="pf-engagement">
@@ -221,6 +231,7 @@ export default async function PlatformPage() {
                         <span className="pf-eng-name">{engagement.name}</span>
                         <span className="pf-eng-meta">
                           {engagement.status}
+                          {product ? ` · ${product}` : ""}
                           {engagement.starts_on
                             ? ` · ${shortDate(engagement.starts_on)}`
                             : ""}

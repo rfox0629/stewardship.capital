@@ -25,6 +25,7 @@ whole reason revocation is immediate.
 | `/spark/auth/callback` | anyone completing verification from an emailed link |
 | `/spark/signout` | anyone |
 | `/platform` | explicit platform staff only. Stewardship.Capital's own home, signed out it is the same email and code door |
+| `/platform/clients/<org>/<engagement>` | explicit platform staff only. The Stewardship.Capital engagement page for an engagement with no `product_key`; a Spark engagement redirects to its Spark workspace |
 | `/spark/platform` | redirects to `/platform` |
 | `/spark/c/<client>/…` | current members of that engagement, and staff |
 

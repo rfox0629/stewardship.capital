@@ -312,3 +312,129 @@
   overflow-wrap: anywhere;
   color: var(--sp-ink, #eceef2);
 }
+
+/* ------------------------------------------------------- an engagement */
+
+.pf-back {
+  display: inline-block;
+  font-size: 0.82rem;
+  color: var(--sp-dim, #8a8f98);
+  text-decoration: none;
+  margin-bottom: 18px;
+}
+
+.pf-back::before {
+  content: "\2190\00a0";
+}
+
+.pf-back:hover {
+  color: var(--sp-signal, #ff4d00);
+}
+
+.pf-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sp-dim, #8a8f98);
+}
+
+.pf-facts {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.pf-facts > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--sp-line, #1f2229);
+}
+
+.pf-facts > div:last-child {
+  border-bottom: 1px solid var(--sp-line, #1f2229);
+}
+
+.pf-facts dt {
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sp-dim, #8a8f98);
+  padding-top: 2px;
+}
+
+.pf-facts dd {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 560px) {
+  .pf-facts > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+.pf-field textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--sp-ink, #eceef2);
+  background: var(--sp-base, #0d0f12);
+  border: 1px solid var(--sp-line-bright, #2b2f39);
+  border-radius: 3px;
+  padding: 10px 12px;
+  resize: vertical;
+  min-height: 160px;
+}
+
+.pf-field textarea:focus {
+  border-color: var(--sp-signal, #ff4d00);
+  outline: none;
+}
+
+.pf-notes {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+}
+
+.pf-note-item {
+  padding: 18px 0;
+  border-top: 1px solid var(--sp-line, #1f2229);
+  display: grid;
+  gap: 8px;
+}
+
+.pf-note-item:last-child {
+  border-bottom: 1px solid var(--sp-line, #1f2229);
+}
+
+.pf-note-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pf-note-title {
+  font-weight: 600;
+}
+
+.pf-note-meta {
+  font-size: 0.82rem;
+  color: var(--sp-dim, #8a8f98);
+}
+
+.pf-note-body {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
