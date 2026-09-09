@@ -1048,9 +1048,9 @@
 
 .wk-figures {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 
 .wk-figure {
@@ -1082,8 +1082,6 @@
   color: var(--ws-ink-2);
 }
 
-.wk-figure-warm { border-color: #d5dae2; background: #f7f8fa; }
-.wk-figure-warm b { color: #4c525e; }
 .wk-figure-over b { color: var(--ws-warn); }
 
 .wk-sec-head {
@@ -1589,143 +1587,126 @@ input.ws-row-owner {
 
 .ev select { background-color: var(--ws-card); }
 
-/* ============================================ the decision, front of room */
+/* ==================================== the questions, as a line rather than
+   a lectern
 
-.wk-queue {
-  background: var(--ws-card);
-  border: 1px solid var(--ws-line);
-  border-radius: 14px;
-  box-shadow: 0 2px 6px rgba(16, 20, 28, 0.06);
-  padding: 18px 20px 20px;
-  margin-bottom: 26px;
-}
+   An open question is an attention indicator, not an agenda item. The count
+   sits on one line the width of the page and the line opens onto the queue,
+   so a meeting that has come to look at the weekend is told how many there
+   are and is not made to answer one before it can scroll.
+   ========================================================================= */
 
-.wk-queue-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
+.wk-flag-strip { margin-bottom: 22px; }
 
-.wk-queue-head h3 {
-  margin: 0;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #4c525e;
-}
-
-.wk-queue-head span {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--ws-ink-2);
-}
-
-.wk-now {
+/* The same line as Needs planning below it, because they are the same kind
+   of thing: one fact about the weekend, and a way in. */
+.wk-flagline {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 22px;
+  gap: 10px;
   flex-wrap: wrap;
-  background: #f7f8fa;
-  border: 1px solid #d5dae2;
-  border-left: 5px solid #6b7280;
-  border-radius: 11px;
-  padding: 18px 20px;
-}
-
-.wk-now-body { min-width: 0; flex: 1 1 340px; }
-
-.wk-now-day {
-  display: inline-block;
-  font-style: normal;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #4c525e;
-  margin-bottom: 6px;
-}
-
-.wk-now h4 {
+  width: 100%;
+  padding: 13px 16px;
   margin: 0;
-  font-size: 1.32rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  color: var(--ws-ink);
-}
-
-.wk-now p {
-  margin: 7px 0 0;
-  font-size: 0.92rem;
-  line-height: 1.5;
-  color: var(--ws-ink-2);
-  max-width: 62ch;
-}
-
-.wk-now-answers { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-.wk-yes, .wk-no, .wk-open {
-  border-radius: 9px;
-  padding: 11px 20px;
-  font: inherit;
-  font-size: 0.92rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.wk-yes { background: #12694a; color: #fff; border-color: #12694a; }
-.wk-yes:hover { background: #0d5238; transform: translateY(-1px); box-shadow: 0 3px 9px rgba(18, 105, 74, 0.28); }
-
-.wk-open {
   background: var(--ws-card);
-  color: var(--ws-ink);
-  border-color: var(--ws-line);
-  text-decoration: none;
+  border: 1px solid var(--ws-line);
+  border-left: 4px solid var(--ws-accent);
+  border-radius: 11px;
+  box-shadow: var(--ws-shadow);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.wk-open:hover { border-color: var(--ws-ink); }
 
-.wk-no { background: var(--ws-card); color: var(--ws-ink-2); border-color: var(--ws-line); }
-.wk-no:hover { color: var(--ws-ink); border-color: var(--ws-ink-2); }
+.wk-flagline:hover { border-color: var(--ws-accent); background: #fbfcff; }
+.wk-flagline b { font-size: 0.9rem; font-weight: 700; color: var(--ws-ink); }
+.wk-flagline span { font-size: 0.83rem; font-weight: 600; color: var(--ws-ink-2); }
 
-.wk-upnext {
+.wk-flagline em {
+  font-style: normal;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #1b1e24;
+  background: var(--ws-accent-soft);
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+
+.wk-flagline i {
+  margin-left: auto;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ws-accent);
+}
+
+/* Nothing left to open, so it is a statement and not a control. */
+.wk-flagline-clear {
+  border-left-color: #12694a;
+  margin-bottom: 22px;
+  cursor: default;
+}
+
+.wk-flagline-clear:hover { border-color: var(--ws-line); background: var(--ws-card); }
+.wk-flagline-clear b { color: #0d5238; }
+
+.wk-flag-queue {
   list-style: none;
-  margin: 14px 0 0;
+  margin: 6px 0 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 6px;
 }
 
-.wk-upnext li {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--ws-ink-2);
-  background: var(--ws-ground);
-  border-radius: 999px;
-  padding: 5px 12px;
-}
-
-.wk-queue-clear {
+.wk-flag-queue li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
-  border-color: #a9dcc2;
-  background: #f4fbf7;
+  padding: 10px 14px;
+  border: 1px solid var(--ws-line-soft);
+  border-radius: 10px;
+  background: var(--ws-card);
 }
 
-.wk-queue-clear-line {
-  margin: 0;
-  font-size: 1rem;
+.wk-flag-q {
+  min-width: 0;
+  flex: 1 1 320px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--ws-ink-2);
+}
+
+.wk-flag-q b {
+  display: block;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #0d5238;
+  color: var(--ws-ink);
+}
+
+.wk-flag-do { display: flex; gap: 7px; flex: none; }
+
+.wk-flag-do button,
+.wk-flag-do a {
+  border: 1px solid var(--ws-line);
+  border-radius: 8px;
+  padding: 6px 13px;
+  background: var(--ws-card);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ws-ink);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.wk-flag-do button:hover,
+.wk-flag-do a:hover { border-color: var(--ws-ink); }
+
+@media (max-width: 640px) {
+  .wk-flag-do { width: 100%; }
+  .wk-flag-do button, .wk-flag-do a { flex: 1 1 0; text-align: center; }
 }
 
 /* ================================================= quick actions after yes */
@@ -1872,13 +1853,6 @@ input.ws-row-owner {
 /* The day a moment sits in should read before its hour does. */
 .ev-grid-dayname b { font-size: 0.92rem; }
 
-@media (max-width: 760px) {
-  .wk-now { padding: 15px 16px; }
-  .wk-now h4 { font-size: 1.15rem; }
-  .wk-now-answers { width: 100%; }
-  .wk-yes, .wk-no, .wk-open { flex: 1 1 0; text-align: center; }
-}
-
 /* What the room just decided, still in reach. */
 .wk-justdid {
   margin-top: 12px;
@@ -1999,7 +1973,7 @@ input.ws-row-owner {
 .ev-main .ws-msg { color: var(--ws-warn); }
 .ev-main .wk-takeaway { color: #1b1e24; }
 .ev-main .wk-justdid p { color: #0d5238; }
-.ev-main .wk-queue-clear-line { color: #0d5238; }
+.ev-main .wk-flagline-clear b { color: #0d5238; }
 .ev-main .wk-confirm { color: #7a4a08; }
 .ev-main .ev-drawer-msg { color: var(--ws-warn); }
 
@@ -2197,6 +2171,37 @@ input.ws-row-owner {
 }
 
 .ws-flag:hover { border-color: #6b7280; color: #4c525e; }
+
+/* ------------------------------------------------------------ the libraries
+
+   The venue's amenities, the vision elements and the drink concepts used to
+   sit on the event home as three doors, which put reading beside deciding and
+   made both feel like work. They live here instead, inside the idea that has
+   to choose. Everything in them is read only on purpose: a list of thirty
+   amenities is not thirty decisions, and nothing becomes a plan until
+   somebody writes it into the description above.
+   ========================================================================= */
+
+.ws-lib-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ws-lib-row .ws-flag { margin: 0; }
+
+.ws-lib {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--ws-line);
+  border-radius: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ws-lib .ws-hint { margin-bottom: 9px; }
+.ws-lib .ws-hint:last-child { margin: 9px 0 0; }
+.ws-lib .ws-noteline:last-child { margin-bottom: 0; }
 
 .ws-sheet { margin-top: 9px; }
 

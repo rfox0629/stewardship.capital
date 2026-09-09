@@ -9,6 +9,7 @@ import {
   deleteIdea, describeIdea, placeIdeaInMoment, renameIdea, scheduleIdea,
   setIdeaQuestion, setIdeaState,
 } from "./actions";
+import type { EngagementReference } from "@lib/spark/engagement";
 import type { Idea } from "./board";
 
 /**
@@ -57,12 +58,14 @@ const money = (cents: number) =>
     .format(cents / 100);
 
 export function IdeaPanel({
-  idea, route, planner, moments, initialSheet = null, onClose, onDeleted, onPlace,
+  idea, route, planner, moments, reference, initialSheet = null, onClose, onDeleted, onPlace,
 }: {
   idea: Idea;
   route: Route;
   planner: boolean;
   moments: Array<{ id: string; label: string }>;
+  /** The material behind the weekend, available where a decision is made. */
+  reference?: EngagementReference;
   /** The Weekend can open an idea already asking to schedule it. */
   initialSheet?: Sheet;
   onClose: () => void;
@@ -77,6 +80,7 @@ export function IdeaPanel({
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+  const [library, setLibrary] = useState<"vision" | "venue" | "drinks" | null>(null);
   const [, startTransition] = useTransition();
 
   const r = [route.clientSlug, route.eventSlug, route.edition] as const;
@@ -323,6 +327,79 @@ export function IdeaPanel({
               )
             ) : null}
           </div>
+
+          {/* The material this decision rests on, in the place the decision
+              happens. Reading it changes nothing: nothing here becomes a plan
+              until somebody writes it down above. */}
+          {planner && reference ? (
+            <div className="ws-real-block ws-quiet-block">
+              <div className="ws-lib-row">
+                {reference.drinks?.options?.length ? (
+                  <button type="button" className="ws-flag"
+                    onClick={() => setLibrary(library === "drinks" ? null : "drinks")}>
+                    {library === "drinks" ? "Hide" : "Drink concepts"} · {reference.drinks.options.length}
+                  </button>
+                ) : null}
+                {reference.vision?.elements?.length ? (
+                  <button type="button" className="ws-flag"
+                    onClick={() => setLibrary(library === "vision" ? null : "vision")}>
+                    {library === "vision" ? "Hide" : reference.vision.theme ?? "Vision"} ·{" "}
+                    {reference.vision.elements.length}
+                  </button>
+                ) : null}
+                {reference.venue?.amenities?.length ? (
+                  <button type="button" className="ws-flag"
+                    onClick={() => setLibrary(library === "venue" ? null : "venue")}>
+                    {library === "venue" ? "Hide" : "What the property has"} ·{" "}
+                    {reference.venue.amenities.length}
+                  </button>
+                ) : null}
+              </div>
+
+              {library === "drinks" && reference.drinks ? (
+                <div className="ws-lib">
+                  {reference.drinks.note ? <p className="ws-hint">{reference.drinks.note}</p> : null}
+                  {reference.drinks.options?.map((drink) => (
+                    <p key={drink.name} className="ws-noteline">
+                      {drink.name}
+                      <span>{[drink.ingredients, drink.feel].filter(Boolean).join(" · ")}</span>
+                    </p>
+                  ))}
+                  <p className="ws-hint">
+                    None is chosen. When one is, write it in the description above.
+                  </p>
+                </div>
+              ) : null}
+
+              {library === "vision" && reference.vision ? (
+                <div className="ws-lib">
+                  {reference.vision.passage ? (
+                    <p className="ws-hint">{reference.vision.passage}</p>
+                  ) : null}
+                  {reference.vision.elements?.map((element) => (
+                    <p key={element.name} className="ws-noteline">
+                      {element.name}
+                      <span>{element.scripture ?? ""}</span>
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+
+              {library === "venue" && reference.venue ? (
+                <div className="ws-lib">
+                  {reference.venue.takeaway ? (
+                    <p className="ws-hint">{reference.venue.takeaway}</p>
+                  ) : null}
+                  {reference.venue.amenities?.map((amenity) => (
+                    <p key={amenity.name} className="ws-noteline">
+                      {amenity.name}
+                      <span>{[amenity.category, amenity.availability].filter(Boolean).join(" · ")}</span>
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {confirming ? (
             <div className="ws-real-block ws-danger">

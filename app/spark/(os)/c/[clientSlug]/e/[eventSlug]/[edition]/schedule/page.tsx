@@ -201,6 +201,10 @@ export default async function SchedulePage({ params }: PageProps) {
         related={related}
         ideas={ideas}
         momentOptions={momentOptions}
+        /* The property's own list, so a planner deciding what to offer during
+           free time can see what the place already has. */
+        amenities={context.engagement.reference?.venue?.amenities ?? []}
+        reference={context.engagement.reference ?? {}}
         tentative={((tentativeQ.data ?? []) as Array<{
           id: string;
           title: string;

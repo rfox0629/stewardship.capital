@@ -3,16 +3,16 @@ import { notFound, redirect } from "next/navigation";
 
 import { resolveEngagement } from "@lib/spark/engagement";
 import { QuestionQueue, type Question } from "./questions";
-import { Reference } from "./reference";
 
 export const metadata = { title: "The weekend" };
 
 /**
  * The screen a planning meeting opens on.
  *
- * Four numbers, then what is waiting on the room, then the weekend as it
- * currently stands. Reference lives underneath as three doors, because a
- * meeting needs it occasionally and never needs it shouting.
+ * Three numbers, a line for anything unresolved, a line for anything half
+ * planned, and the way into the planner. Nothing here is a working surface:
+ * the weekend is written down once, in the calendar, and this page says how
+ * it stands and gets out of the way.
  */
 
 type PageProps = {
@@ -81,9 +81,10 @@ export default async function WeekendPage({ params }: PageProps) {
   };
   const looseEnds = planning.noTime + planning.noOwner + planning.openNeed;
 
+  /* Open questions are not among these. They have their own line below, and
+     a number that is also the way to answer it does not need saying twice. */
   const figures = [
     { value: String(live.length), label: "Ideas", href: `${base}/plan` },
-    { value: String(carrying.length), label: "Need an answer", href: `${base}/plan?show=question`, warm: carrying.length > 0 },
     { value: String(openActions.length), label: "Open actions", href: `${base}/actions` },
     { value: money(available), label: "Available", href: `${base}/budget`, over: available < 0 },
   ];
@@ -96,7 +97,7 @@ export default async function WeekendPage({ params }: PageProps) {
           <Link
             key={figure.label}
             href={figure.href}
-            className={`wk-figure ${figure.warm ? "wk-figure-warm" : ""} ${figure.over ? "wk-figure-over" : ""}`}
+            className={`wk-figure ${figure.over ? "wk-figure-over" : ""}`}
           >
             <b>{figure.value}</b>
             <span>{figure.label}</span>
@@ -130,18 +131,19 @@ export default async function WeekendPage({ params }: PageProps) {
 
       {/* The weekend itself is one click away and is the only place it is
           written down. Repeating it here as text was a second itinerary to
-          keep in step with the first, and it always lost. */}
+          keep in step with the first, and it always lost.
+
+          The reference libraries left this page for the same reason. The
+          drinks belong in the idea that has to choose one, the property's
+          amenities belong in the block that might offer them, and the tent
+          concepts belong wherever they are being used. On a home page they
+          were three large doors competing with the plan. */}
       <Link className="wk-open-planner" href={`${base}/schedule`}>
         <b>Open the planner</b>
         <span>Ideas, what still needs a time, and the calendar itself</span>
         <i aria-hidden="true">&rarr;</i>
       </Link>
 
-      <Reference
-        reference={engagement.reference ?? {}}
-        route={{ clientSlug, eventSlug, edition }}
-        planner={planner}
-      />
-    </div>
+</div>
   );
 }
