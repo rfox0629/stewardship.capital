@@ -31,6 +31,7 @@ type Row = {
   status: string;
   note: string | null;
   display_mode: string;
+  audience: string;
   spark_id: string | null;
   spark: { title: string } | { title: string }[] | null;
 };
@@ -59,7 +60,7 @@ export default async function SchedulePage({ params }: PageProps) {
     context.supabase
       .from("schedule_items")
       .select(
-        "id, day_key, starts_label, ends_label, daypart, title, track, location, status, note, display_mode, spark_id, spark:sparks(title)",
+        "id, day_key, starts_label, ends_label, daypart, title, track, location, status, note, display_mode, audience, spark_id, spark:sparks(title)",
       )
       .eq("engagement_id", engagementId),
     /* Every live idea. The ones carrying a day become ghosts on their day;
@@ -105,6 +106,9 @@ export default async function SchedulePage({ params }: PageProps) {
     daypart: row.daypart,
     /* A window of the day rather than an appointment in it. */
     background: row.display_mode === "background",
+    /* Who it is for. One schedule; the guest view, when it exists, will be
+       this filtered rather than a second calendar to keep in step. */
+    audience: row.audience ?? "everyone",
     sparkId: row.spark_id,
     sparkTitle: (Array.isArray(row.spark) ? row.spark[0] : row.spark)?.title ?? null,
     minutes: parseTimeLabel(row.starts_label),

@@ -68,6 +68,10 @@ export type Moment = {
    *  setup before guests come, free time. Drawn behind them, and related to
    *  them by nothing but the clock. */
   background: boolean;
+  /** Who it is for. Nothing is filtered on it yet and there is no guest view;
+   *  it exists so that when there is one it is this schedule filtered rather
+   *  than a second schedule to keep in step. */
+  audience: string;
   sparkId: string | null;
   sparkTitle: string | null;
   minutes: number | null;
@@ -324,6 +328,28 @@ function MomentDrawer({
                   A window of the day, like team arrival or free time. It sits
                   behind whatever happens during it, and moving it leaves those
                   moments where they are.
+                </em>
+              </span>
+            </label>
+            {/* One schedule, and eventually two ways of reading it. Nothing
+                filters on this yet: there is no guest view, and every role is
+                already held apart by row level security. It is here so that
+                when guests do see the weekend, they see this calendar with
+                the internal parts left out rather than a second one. */}
+            <label className="ev-display-mode">
+              <input
+                type="checkbox"
+                name="audience"
+                defaultChecked={moment.audience === "planner"}
+                value="planner"
+              />
+              <span>
+                <b>Internal, planners only</b>
+                <em>
+                  Setup, briefings, and anything the room does not need to
+                  know about. It stays on this one calendar and will be left
+                  out of the guest view when there is one. Nothing is hidden
+                  by it today.
                 </em>
               </span>
             </label>
@@ -1258,7 +1284,14 @@ export function ScheduleView({
             </em>
           ) : null}
         </span>
-        <span className="ev-block-title">{moment.title}</span>
+        <span className="ev-block-title">
+          {moment.title}
+          {/* Says what it is, quietly, rather than hiding it: everything is
+              on one calendar and this one is not for the room. */}
+          {planner && moment.audience === "planner" ? (
+            <em className="ev-internal" title="Planners only">internal</em>
+          ) : null}
+        </span>
         {!inTimeline && activitiesOf(moment.id).length > 0 ? (
           <span className="ev-block-activities">
             {activitiesOf(moment.id).map((activity) => (
@@ -1288,13 +1321,14 @@ export function ScheduleView({
 
   /* Until hydration, mirror exactly what the server rendered. */
   const shownView = hydrated ? view : "weekend";
-  /* Everything the weekend has decided on but not yet timed. It belongs to a
-     day and it is real, so it is not an idea; it simply has no hour. It waits
-     in a bank above the calendar rather than being drawn at one, because a
-     block at six in the morning is a claim nobody made. */
-  const needsPlacement = merged.filter((moment) => moment.minutes === null);
-  const needsPlacementFor = (dayKey: string) =>
-    needsPlacement.filter((moment) => moment.day === dayKey);
+  /* Real, on a day, and with no hour: Sunday's departures, and anything else
+     nobody has put a clock time on. There is no separate lane for these any
+     more, and there is no stage called needs placement. They sit in the
+     calendar's own all day row, above the hours and outside them, because
+     drawing one at six in the morning is a claim nobody made and putting it
+     on a shelf of its own made it a third thing to manage. */
+  const allDay = merged.filter((moment) => moment.minutes === null);
+  const allDayOn = (dayKey: string) => allDay.filter((moment) => moment.day === dayKey);
 
   /* A day's loose ideas: still being considered, not yet anywhere. Shown only
      when asked for, and never as a block, because an idea has no time. */
@@ -1538,40 +1572,6 @@ export function ScheduleView({
         </div>
       ) : null}
 
-      {shownView === "weekend" && needsPlacement.length > 0 ? (
-        <div className="ev-bank">
-          <p className="ev-bank-label">
-            Needs placement <span>{needsPlacement.length}</span>
-          </p>
-          <div className="ev-bank-days">
-            {laneDays.map((day) => (
-              <div key={day.key} className="ev-bank-day-cell">
-                {needsPlacementFor(day.key).map((moment) => (
-                  <button
-                    key={moment.id}
-                    type="button"
-                    className={`ev-bank-chip ${carryingMoment?.id === moment.id ? "ev-bank-carried" : ""}`}
-                    draggable={hydrated && planner}
-                    title="Drag onto an hour, or click to give it a time"
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData(MOMENT_DRAG, moment.id);
-                      event.dataTransfer.setData("text/plain", moment.title);
-                      event.dataTransfer.effectAllowed = "move";
-                      setCarryingMoment(moment);
-                    }}
-                    onDragEnd={() => { setCarryingMoment(null); setLanding(null); }}
-                    onClick={() => setPlacing(moment)}
-                  >
-                    <span>{moment.title}</span>
-                    {moment.daypart ? <i>{moment.daypart}</i> : null}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {shownView === "weekend" ? (
         <div className="ev-grid-wrap">
           <div className="ev-grid-head" style={{ marginLeft: 52 }}>
@@ -1582,6 +1582,43 @@ export function ScheduleView({
               </div>
             ))}
           </div>
+
+          {/* The calendar's own all day row. What is here is happening and
+              has no hour; it is not waiting to be promoted into anything.
+              Dragging one onto the clock gives it a time, and that is the
+              only step between here and the grid below. */}
+          {allDay.length > 0 ? (
+            <div className="ev-allday">
+              <span className="ev-allday-axis">All day</span>
+              <div className="ev-allday-lanes">
+                {laneDays.map((day) => (
+                  <div key={day.key} className="ev-allday-cell">
+                    {allDayOn(day.key).map((moment) => (
+                      <button
+                        key={moment.id}
+                        type="button"
+                        className={`ev-allday-chip ${
+                          carryingMoment?.id === moment.id ? "ev-bank-carried" : ""}`}
+                        draggable={hydrated && planner}
+                        title={planner ? "Drag onto an hour, or click to give it one" : undefined}
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData(MOMENT_DRAG, moment.id);
+                          event.dataTransfer.setData("text/plain", moment.title);
+                          event.dataTransfer.effectAllowed = "move";
+                          setCarryingMoment(moment);
+                        }}
+                        onDragEnd={() => { setCarryingMoment(null); setLanding(null); }}
+                        onClick={() => (planner ? setPlacing(moment) : setOpenId(moment.id))}
+                      >
+                        <span>{moment.title}</span>
+                        {moment.audience === "planner" ? <i title="Planners only">internal</i> : null}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="ev-grid-scroll">
             <div className="ev-grid-axis" style={{ height: gridHeight }}>
               {hours.map((minute) => (
@@ -1699,17 +1736,15 @@ export function ScheduleView({
               </button>
             ))}
           </div>
-          {needsPlacementFor(dayKeyNow).length > 0 ? (
-            <div className="ev-bank ev-bank-day">
-              <p className="ev-bank-label">
-                Needs placement <span>{needsPlacementFor(dayKeyNow).length}</span>
-              </p>
-              <div className="ev-bank-cards">
-                {needsPlacementFor(dayKeyNow).map((moment) => (
-                  <button key={moment.id} type="button" className="ev-bank-chip"
-                    onClick={() => setPlacing(moment)}>
+          {allDayOn(dayKeyNow).length > 0 ? (
+            <div className="ev-allday ev-allday-one">
+              <span className="ev-allday-axis">All day</span>
+              <div className="ev-allday-cell">
+                {allDayOn(dayKeyNow).map((moment) => (
+                  <button key={moment.id} type="button" className="ev-allday-chip"
+                    onClick={() => (planner ? setPlacing(moment) : setOpenId(moment.id))}>
                     <span>{moment.title}</span>
-                    {moment.daypart ? <i>{moment.daypart}</i> : null}
+                    {moment.audience === "planner" ? <i title="Planners only">internal</i> : null}
                   </button>
                 ))}
               </div>
@@ -1784,6 +1819,7 @@ export function ScheduleView({
           moment={placing}
           dayName={laneDays.find((day) => day.key === placing.day)?.name ?? ""}
           onPlace={(minutes, length) => giveTime(placing, placing.day, minutes, length)}
+          onOpen={() => { setOpenId(placing.id); setPlacing(null); }}
           onClose={() => setPlacing(null)}
         />
       ) : null}
@@ -1977,11 +2013,14 @@ function GiveTime({
   moment,
   dayName,
   onPlace,
+  onOpen,
   onClose,
 }: {
   moment: Moment;
   dayName: string;
   onPlace: (minutes: number, length: number) => void;
+  /** Everything else about it, for when the hour is not the question. */
+  onOpen: () => void;
   onClose: () => void;
 }) {
   const [time, setTime] = useState("");
@@ -2031,6 +2070,7 @@ function GiveTime({
         </div>
 
         <div className="ws-modal-actions">
+          <button type="button" className="ws-btn-quiet" onClick={onOpen}>Open the details</button>
           <button type="button" className="ws-btn-quiet" onClick={onClose}>Cancel</button>
         </div>
       </div>

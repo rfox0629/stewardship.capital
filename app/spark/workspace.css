@@ -662,6 +662,176 @@
 .ws-standing-protected { color: #1d3f8a; background: #e6ecfb; }
 .ws-standing-committed { color: #0d5238; background: #dff3e8; }
 
+/* ============================================================ two ledgers
+
+   Producing this weekend and buying something SHINE keeps are different kinds
+   of spending, so they are different tables under one screen. Only the first
+   is measured against the ceiling at the top; the second is planned here and
+   deliberately left out of it, because a speaker they still own next year is
+   not what this weekend cost.
+   ========================================================================= */
+
+.ws-ledger-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 26px 0 10px;
+}
+
+.ws-ledger-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ws-ink);
+}
+
+.ws-ledger-head .ws-hint { flex: 1 1 220px; }
+.ws-ledger-head .ws-btn-quiet { margin-left: auto; }
+
+.ws-cell-quiet { color: var(--ws-ink-2); font-size: 0.84rem; }
+
+.ws-line-link { color: var(--ws-ink); text-decoration: underline; text-underline-offset: 2px; }
+.ws-line-link:hover { color: #000; }
+
+.ws-row-edit {
+  border: 1px solid var(--ws-line);
+  background: var(--ws-card);
+  border-radius: 7px;
+  padding: 4px 11px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ws-ink-2);
+  cursor: pointer;
+}
+
+.ws-row-edit:hover { border-color: var(--ws-ink); color: var(--ws-ink); }
+
+/* --------------------------------------------------------- editing a line */
+
+.ws-line-new {
+  border: 1px solid var(--ws-line);
+  border-radius: var(--ws-radius);
+  background: var(--ws-card);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.ws-line-editing td { background: var(--ws-ground); padding: 12px 14px; }
+
+.ws-line-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ws-line-wide { grid-column: span 3; }
+
+.ws-line-field { display: block; min-width: 0; }
+
+.ws-line-field span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ws-ink-2);
+}
+
+.ws-line-field input,
+.ws-line-field select {
+  width: 100%;
+  border: 1px solid var(--ws-line);
+  border-radius: 7px;
+  background: var(--ws-card);
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 0.87rem;
+  color: var(--ws-ink);
+}
+
+.ws-line-field input:focus,
+.ws-line-field select:focus {
+  outline: none;
+  border-color: var(--ws-accent);
+  box-shadow: 0 0 0 3px var(--ws-accent-soft);
+}
+
+.ws-line-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Removing is the one thing on this screen that cannot be typed back, so it
+   asks, in place, and says what is going. */
+.ws-confirm-inline {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.ws-confirm-inline b { font-size: 0.82rem; color: var(--ws-warn); }
+
+/* ------------------------------------------------- the same money, twice? */
+
+.ws-overlap {
+  border: 1px solid var(--ws-line);
+  border-left: 4px solid var(--ws-warn);
+  border-radius: 11px;
+  background: var(--ws-card);
+  padding: 13px 16px;
+  margin-bottom: 18px;
+}
+
+.ws-overlap-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ws-overlap-row + .ws-overlap-row {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ws-line-soft);
+}
+
+.ws-overlap-row p {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.55;
+  color: var(--ws-ink-2);
+}
+
+.ws-overlap-row p b { color: var(--ws-ink); }
+.ws-overlap-row .ws-btn-quiet { flex: none; }
+
+/* Equipment carries its own vocabulary, in the same neutral treatment. */
+.ws-standing-to_buy { color: #7a4a08; background: #f6efe4; }
+.ws-standing-ordered { color: #3c4453; background: #eceff3; }
+.ws-standing-received { color: #0d5238; background: #dff3e8; }
+
+@media (max-width: 760px) {
+  .ws-line-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ws-line-wide { grid-column: span 2; }
+  .ws-confirm-inline { margin-left: 0; width: 100%; }
+}
+
+@media (max-width: 520px) {
+  .ws-line-grid { grid-template-columns: minmax(0, 1fr); }
+  .ws-line-wide { grid-column: span 1; }
+}
+
 /* --------------------------------------------------- responsive behaviour */
 
 @media (max-width: 1100px) {
