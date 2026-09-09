@@ -1814,6 +1814,114 @@
   padding-top: 12px;
 }
 
+/* ================================================= the calendar's all day row
+
+   Real, on a day, and with no hour. This used to be a lane called Needs
+   Placement sitting above the calendar with a count of its own, which turned
+   an idea into a three step journey: think of it, park it, then place it.
+   There is no parking any more. What has no hour sits in the calendar's own
+   all day row, above the hours and outside them, and dragging one onto the
+   clock is the only step between here and the grid.
+   ========================================================================= */
+
+.ev-allday {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 6px 0;
+  border-top: 1px solid var(--ws-line, #ccd2db);
+}
+
+.ev-allday-axis {
+  width: 52px;
+  flex: none;
+  padding-right: 8px;
+  text-align: right;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7c7e83;
+  line-height: 1.9;
+}
+
+.ev-allday-lanes {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ev-allday-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ev-allday-chip {
+  max-width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px dashed rgba(58, 58, 59, 0.34);
+  border-left: 3px solid var(--ev-deep, #1b1e24);
+  background: #fff;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #2c2d2f;
+  text-align: left;
+  cursor: grab;
+}
+
+.ev-allday-chip:hover { border-color: #3a3a3b; }
+.ev-allday-chip:active { cursor: grabbing; }
+
+.ev-allday-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-allday-chip i {
+  flex: none;
+  font-style: normal;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7c7e83;
+}
+
+/* The day view shows one day, so the row does not need lanes. */
+.ev-allday-one .ev-allday-cell { flex: 1 1 auto; }
+
+/* Everything is on one calendar, so a moment the room never sees says so
+   rather than being kept somewhere else. */
+.ev-internal {
+  margin-left: 6px;
+  font-style: normal;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #7c7e83;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .ev-allday-axis { width: 42px; font-size: 0.55rem; }
+}
+
 .ev-grid-axis {
   position: relative;
   width: 52px;

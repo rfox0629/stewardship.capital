@@ -21,7 +21,8 @@ const TIME = /^\d{1,2}(:\d{2})?\s*(am|pm)$/i;
 
 type MomentFields = {
   day: string;
-  starts: string;
+  /** Blank when the moment is real but has no hour, like Sunday's departures. */
+  starts: string | null;
   ends: string | null;
   title: string;
   track: string;
@@ -30,6 +31,8 @@ type MomentFields = {
   note: string | null;
   /** How it is drawn, never what it is. */
   display: string;
+  /** Who it is for. Nothing filters on it yet; see the column's comment. */
+  audience: string;
 };
 
 const readFields = (formData: FormData): MomentFields | null => {
@@ -42,17 +45,22 @@ const readFields = (formData: FormData): MomentFields | null => {
   const status = String(formData.get("status") ?? "draft");
   /* An unchecked box sends nothing, which is how a checkbox says false. */
   const display = formData.get("background") === "background" ? "background" : "normal";
+  const audience = String(formData.get("audience") ?? "everyone");
   const note = String(formData.get("note") ?? "").trim().slice(0, 400);
 
   if (!(DAY_ORDER as readonly string[]).includes(day)) return null;
-  if (!TIME.test(starts)) return null;
+  /* A blank start is a real answer: the moment is happening and nobody has
+     said when. Clearing the time here is how a planner takes an hour back
+     off something, and it must not be mistaken for a malformed form. */
+  if (starts && !TIME.test(starts)) return null;
   if (ends && !TIME.test(ends)) return null;
   if (!title || !TRACKS.includes(track)) return null;
   if (status !== "draft" && status !== "confirmed") return null;
+  if (audience !== "everyone" && audience !== "planner") return null;
 
   return {
     day,
-    starts,
+    starts: starts || null,
     ends: ends || null,
     title,
     track,
@@ -60,6 +68,7 @@ const readFields = (formData: FormData): MomentFields | null => {
     status,
     note: note || null,
     display,
+    audience,
   };
 };
 
@@ -122,20 +131,22 @@ export async function updateMoment(
   if (!context) return { ok: false };
 
   const fields = readFields(formData);
-  if (!fields) return { ok: false, message: "A title, a day, a time like 3:00 pm, and a track." };
+  if (!fields) return { ok: false, message: "A title, a day, a track, and a time like 3:00 pm or none." };
 
   const { data, error } = await context.supabase
     .from("schedule_items")
     .update({
       day_key: fields.day,
       starts_label: fields.starts,
-      ends_label: fields.ends,
+      /* An end without a start is not a time, it is a loose half of one. */
+      ends_label: fields.starts ? fields.ends : null,
       title: fields.title,
       track: fields.track,
       location: fields.location,
       status: fields.status,
       note: fields.note,
       display_mode: fields.display,
+      audience: fields.audience,
     })
     .eq("id", momentId)
     .eq("engagement_id", context.engagement.id)

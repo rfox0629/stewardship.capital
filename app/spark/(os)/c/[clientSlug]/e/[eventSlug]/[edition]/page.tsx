@@ -39,7 +39,10 @@ export default async function WeekendPage({ params }: PageProps) {
     supabase.from("sparks").select("id, title, detail, open_question, question_answer, status, tentative_day, tentative_daypart")
       .eq("engagement_id", engagement.id),
     supabase.from("tasks").select("status, estimated_cents").eq("engagement_id", engagement.id),
-    supabase.from("budget_lines").select("planned_cents").eq("engagement_id", engagement.id),
+    /* The event ledger only. What SHINE buys and keeps is planned in Budget
+       and is deliberately not measured against this weekend's ceiling. */
+    supabase.from("budget_lines").select("planned_cents")
+      .eq("engagement_id", engagement.id).neq("ledger", "equipment"),
     supabase.from("resources").select("estimated_cents").eq("engagement_id", engagement.id),
     /* What the approved ideas have so far, so the gaps can be counted. */
     Promise.all([

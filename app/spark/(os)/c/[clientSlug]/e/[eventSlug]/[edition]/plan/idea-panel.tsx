@@ -480,6 +480,12 @@ function ScheduleSheet({
           <button type="button" className="ws-flag" onClick={() => setLoose((v) => !v)}>
             {loose ? "Use an exact time" : "No exact time yet"}
           </button>
+          {loose ? (
+            <p className="ws-hint">
+              It goes in that day&rsquo;s all day row on the calendar. Drag it onto an
+              hour whenever one is decided.
+            </p>
+          ) : null}
         </form>
       ) : (
         <form className="ws-quick-form"
