@@ -187,14 +187,12 @@ export default async function SchedulePage({ params }: PageProps) {
     ? await gatherIdeas(context.supabase, engagementId, base, true)
     : { ideas: [], momentOptions: [] };
 
+  /* The title lives in the toolbar with the controls, so there is one band
+     between the navigation and the work rather than two. */
   return (
     <>
-      <div className="ws-plan-top">
-        <div className="ws-plan-titles">
-          <h2 className="ws-title">{role === "stakeholder" ? "Schedule" : "Plan"}</h2>
-        </div>
-      </div>
       <ScheduleView
+        title={role === "stakeholder" ? "Schedule" : "Plan"}
         moments={moments}
         days={days}
         role={role}

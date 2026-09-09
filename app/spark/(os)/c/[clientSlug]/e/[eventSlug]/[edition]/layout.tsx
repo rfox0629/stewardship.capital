@@ -54,18 +54,18 @@ export default async function EngagementLayout({ children, params }: LayoutProps
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   const working = role === "planner" || role === "client";
 
-  /* Four doors. Plan opens the weekend itself: the ideas, what needs a time
-     and the calendar are one surface now, so there is nothing to choose
-     between. A guest's only door is the schedule, and a link a reader cannot
-     open is never rendered for them. */
+  /* Two doors. Plan is where the weekend is built and Budget is what it
+     costs, and nothing else has earned a tab yet: the weekend overview and
+     the actions list were both competing with the one surface that is
+     actually working. Neither is deleted. Their routes still resolve and
+     their data is untouched, so putting a door back is a line of this array
+     rather than a rebuild.
+
+     A guest's only door is the schedule, and a link a reader cannot open is
+     never rendered for them. */
   const nav: EventNavItem[] = working
     ? [
-        /* Plan first, because Plan is the screen a planning meeting works on
-           and the one that goes on the television. The weekend is the page
-           that says which weekend it is. */
-        { href: `${base}/schedule`, label: "Plan", also: [`${base}/plan`] },
-        { href: base, label: "The weekend" },
-        { href: `${base}/actions`, label: "Actions" },
+        { href: `${base}/schedule`, label: "Plan", also: [`${base}/plan`, base] },
         { href: `${base}/budget`, label: "Budget" },
       ]
     : [{ href: `${base}/schedule`, label: "Schedule" }];
@@ -74,12 +74,13 @@ export default async function EngagementLayout({ children, params }: LayoutProps
 
   /* The hero path is validated by the theme parser to a narrow repo local
      shape, so it can safely become a background declaration. The overlay
-     keeps type legible and holds the photograph inside the palette. */
+     keeps type legible and holds the photograph inside the palette.
+     Only the image is set here: how it is cropped belongs to the stylesheet,
+     which varies it by width rather than asking one crop to work from a
+     phone to an ultrawide. */
   const mastheadStyle: CSSProperties | undefined = theme.images.hero
     ? {
-        backgroundImage: `linear-gradient(rgba(32, 37, 26, 0.86), rgba(32, 37, 26, 0.72)), url(${theme.images.hero})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center 65%",
+        backgroundImage: `linear-gradient(rgba(32, 37, 26, 0.84), rgba(32, 37, 26, 0.68)), url(${theme.images.hero})`,
       }
     : undefined;
 

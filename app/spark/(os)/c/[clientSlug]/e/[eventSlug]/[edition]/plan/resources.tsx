@@ -3,16 +3,20 @@
 import { useState, useSyncExternalStore, useTransition } from "react";
 
 import type { EngagementReference } from "@lib/spark/engagement";
-import { ideaFromReference } from "./plan/actions";
+import { ideaFromReference } from "./actions";
 
 /**
- * The material the weekend rests on, underneath the plan rather than on top
- * of it.
+ * The material the weekend rests on, one button away from the plan.
  *
- * Three quiet doors. Closed, each is a line and a count. Opened, the sheet is
- * all there. Nothing here is a task or an idea until a person says so, which
- * is what the one button on each row is for: reference becomes an idea by a
- * decision, never by being read.
+ * Three collections: the programme concepts, what the property has, and the
+ * drinks nobody has chosen between yet. This used to be three large doors on
+ * a page of its own, which made reading reference feel like a stage of the
+ * work. It is not a stage. It is what somebody reaches for mid sentence.
+ *
+ * Nothing here becomes part of the weekend by being read. Every row carries
+ * one button, and that button makes an idea, which is the only way in:
+ * resource, then idea, then calendar. An amenity can also become an activity
+ * inside a moment, which is the same rule reached from the other end.
  */
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
@@ -28,16 +32,17 @@ const wantedDoor = (): Door => {
   return value === "vision" || value === "venue" || value === "drinks" ? value : null;
 };
 
-export function Reference({
+export function Resources({
   reference,
   route,
-  planner,
+  planner = true,
 }: {
   reference: EngagementReference;
   route: Route;
-  planner: boolean;
+  planner?: boolean;
 }) {
   const hydrated = useHydrated();
+  const [listing, setListing] = useState(false);
   const [open, setOpen] = useState<Door>(wantedDoor);
   const shown = hydrated ? open : null;
 
@@ -45,10 +50,17 @@ export function Reference({
   const venue = reference.venue;
   const drinks = reference.drinks;
 
-  const doors: Array<{ key: Exclude<Door, null>; title: string; sub: string; count: string }> = [];
+  const doors: Array<{
+    key: Exclude<Door, null>;
+    kicker: string;
+    title: string;
+    sub: string;
+    count: string;
+  }> = [];
   if (vision) {
     doors.push({
       key: "vision",
+      kicker: "Program",
       title: vision.theme ?? "Vision",
       sub: vision.scripture ?? "",
       count: `${vision.elements?.length ?? 0} concepts`,
@@ -57,6 +69,7 @@ export function Reference({
   if (venue) {
     doors.push({
       key: "venue",
+      kicker: "Venue",
       title: venue.name ?? "Venue",
       sub: venue.takeaway ?? "",
       count: `${venue.amenities?.length ?? 0} amenities`,
@@ -65,6 +78,7 @@ export function Reference({
   if (drinks) {
     doors.push({
       key: "drinks",
+      kicker: "Drinks",
       title: "Signature drink",
       sub: "Nothing chosen yet",
       count: `${drinks.options?.length ?? 0} concepts`,
@@ -75,15 +89,30 @@ export function Reference({
 
   return (
     <>
-      <div className="wk-doors">
-        {doors.map((door) => (
-          <button key={door.key} type="button" className="wk-door" onClick={() => setOpen(door.key)}>
-            <b>{door.title}</b>
-            {door.sub ? <span>{door.sub}</span> : null}
-            <em>{door.count}</em>
-          </button>
-        ))}
-      </div>
+      <button type="button" className="ev-bar-quiet" aria-expanded={listing}
+        onClick={() => setListing((was) => !was)}>
+        Resources
+      </button>
+
+      {listing ? (
+        <Sheet title="Planning resources" onClose={() => setListing(false)}>
+          <p className="ws-hint">
+            What the weekend rests on. Reading any of it changes nothing; making an idea
+            from a row is the decision, and the idea is where it joins the plan.
+          </p>
+          <div className="ws-resource-list">
+            {doors.map((door) => (
+              <button key={door.key} type="button" className="ws-resource"
+                onClick={() => { setListing(false); setOpen(door.key); }}>
+                <b>{door.kicker}</b>
+                <span>{door.title}</span>
+                {door.sub ? <em>{door.sub}</em> : null}
+                <i>{door.count}</i>
+              </button>
+            ))}
+          </div>
+        </Sheet>
+      ) : null}
 
       {shown === "vision" && vision ? (
         <Sheet title={vision.theme ?? "Vision"} onClose={() => setOpen(null)}>
@@ -134,7 +163,7 @@ function MakeIdea({
   route,
   title,
   detail,
-  label = "Make idea",
+  label = "+ Idea",
 }: {
   route: Route;
   title: string;
@@ -303,7 +332,6 @@ function DrinkSheet({
                 route={route}
                 title={`Signature drink: ${drink.name}`}
                 detail={[drink.ingredients, drink.feel].filter(Boolean).join(" · ")}
-                label="Choose"
               />
             ) : null}
           </div>

@@ -32,11 +32,27 @@
   text-decoration: none;
 }
 
+/* ------------------------------------------------------------ one container
+
+   The hero, the navigation and the working content are three full bleed
+   bands, and everything inside them lines up on one grid. This used to be two
+   grids: the hero and the nav sat in 1040 and the workspace beneath sat in
+   1400, so on a wide monitor the title drifted inward while the tables below
+   ran out past it. Same token, same gutter, same edge, and the photograph
+   still goes wall to wall behind it.
+
+   The gutter grows with the viewport rather than stepping at breakpoints, so
+   there is no width where the page suddenly re-lays itself. */
+.ev {
+  --ev-measure: 1360px;
+  --ev-gutter: clamp(20px, 3.6vw, 56px);
+}
+
 .ev-shell {
   width: 100%;
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 0 clamp(20px, 4.5vw, 48px);
+  max-width: var(--ev-measure);
+  margin-inline: auto;
+  padding-inline: var(--ev-gutter);
 }
 
 /* The Stewardship.Capital wordmark, top left, exactly the site's own. Its dot
@@ -55,8 +71,13 @@
 .ev-masthead {
   background: var(--ev-primary);
   color: #faf6f1;
-  padding: calc(var(--nav-h, 64px) + clamp(20px, 4vw, 44px)) 0 0;
+  padding: calc(var(--nav-h, 64px) + clamp(16px, 3vw, 40px)) 0 0;
   position: relative;
+  /* The photograph is set inline because its path is the theme's. How it is
+     cropped is this sheet's business, so it is a token and can change with
+     the width rather than one crop being asked to work everywhere. */
+  background-size: cover;
+  background-position: var(--ev-hero-crop, center 62%);
 }
 
 .ev-masthead-inner {
@@ -90,10 +111,14 @@
 .ev-title {
   font-family: var(--ev-display), serif;
   font-weight: 560;
-  font-size: clamp(2.5rem, 7.4vw, 4.4rem);
-  line-height: 1.02;
+  /* Scales with the viewport and stops before it outgrows the container it
+     shares with the application beneath. 14ch used to break "Founders
+     Weekend" while there was still room for it on one line. */
+  font-size: clamp(2.1rem, 5.6vw, 4.9rem);
+  line-height: 1.03;
   letter-spacing: -0.015em;
-  max-width: 14ch;
+  max-width: 18ch;
+  text-wrap: balance;
 }
 
 .ev-campaign {
@@ -107,7 +132,7 @@
 
 .ev-meta {
   font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.92rem;
+  font-size: clamp(0.8rem, 1.1vw, 0.95rem);
   letter-spacing: 0.02em;
   color: #faf6f1;
   font-weight: 600;
@@ -196,6 +221,73 @@
 .ev-lede {
   max-width: 58ch;
   color: #4b4d51;
+}
+
+/* ------------------------------------------------- the shell, across widths
+
+   Three full bleed bands and one grid inside them, so there is nothing here
+   that moves the hero copy independently of the application. What changes
+   with width is the crop of the photograph, how much air the hero is given,
+   and where the metadata is allowed to wrap. The type scales by clamp rather
+   than by breakpoint, so dragging the window never snaps the layout.
+   ========================================================================= */
+
+/* Wide. The container has stopped growing, so the hero is given a little more
+   height rather than a little more width, and the crop lifts to keep the
+   lodge and the water in frame instead of drifting into the treetops. */
+@media (min-width: 1500px) {
+  .ev { --ev-hero-crop: center 58%; }
+  .ev-masthead-inner { padding-bottom: clamp(44px, 3.4vw, 60px); }
+}
+
+/* Tablet. The photograph is taller than it is wide in the space it has, so
+   the crop comes back toward the middle and the hero stops taking a third of
+   the screen before anything useful appears. */
+@media (max-width: 900px) {
+  .ev { --ev-hero-crop: 58% 60%; }
+  .ev-masthead-inner { gap: clamp(16px, 3vw, 24px); }
+  .ev-org-logo { height: clamp(26px, 4vw, 32px); }
+}
+
+/* Phone. The lodge sits left of centre in the frame, so the crop follows it
+   rather than showing a wall of trees. The hero keeps its proportions but not
+   the screen: a title, a line of metadata, and then the work. */
+@media (max-width: 640px) {
+  .ev { --ev-hero-crop: 62% 58%; }
+
+  .ev-masthead {
+    padding-top: calc(var(--nav-h, 64px) + 14px);
+  }
+
+  .ev-masthead-inner {
+    gap: 14px;
+    padding-bottom: 20px;
+  }
+
+  .ev-org-logo { height: 26px; }
+
+  .ev-title { max-width: 100%; line-height: 1.06; }
+
+  .ev-campaign { letter-spacing: 0.22em; }
+
+  /* Three facts, wrapping where they run out rather than at a width somebody
+     guessed. Each one stays whole. */
+  .ev-meta {
+    gap: 4px 14px;
+    line-height: 1.5;
+  }
+
+  .ev-meta span { white-space: nowrap; }
+
+  /* The tabs scroll rather than stacking. Four words on two lines under a
+     photograph reads as a mistake; a row that slides does not. */
+  .ev-nav-inner {
+    scroll-padding-inline: var(--ev-gutter);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ev-nav a { padding: 10px 12px 8px; }
+  .ev-nav a:first-child { margin-left: -12px; }
 }
 
 .ev-section {
@@ -930,12 +1022,28 @@
 
 /* The controls sit just under the title and the calendar just under them.
    There is nothing in between that needs announcing. */
+/* One band between the navigation and the work. The title, the capture
+   button, the resources and the view controls sit on one line, all the same
+   height and the same radius, so nothing looks heavier than it is because it
+   came from a different component. */
 .ev-schedule-bar {
+  --ev-control-h: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
   margin: 0 0 10px;
+}
+
+.ev-bar-title {
+  margin: 0;
+  font-family: var(--ev-body), system-ui, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ev-primary);
+  line-height: var(--ev-control-h);
 }
 
 .ev-toggle {
@@ -961,15 +1069,6 @@
 .ev-toggle button[aria-selected="true"] {
   background: var(--ev-primary);
   color: #faf6f1;
-}
-
-.ev-print-link {
-  font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ev-accent);
 }
 
 .ev-weekend {
@@ -1404,36 +1503,45 @@
 .ev-bar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.ev-bar-add {
-  font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #faf6f1;
-  background: var(--ev-primary);
-  border: 0;
-  border-radius: 3px;
-  padding: 9px 16px;
-  cursor: pointer;
-}
-
+.ev-bar-add,
 .ev-bar-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: var(--ev-control-h, 34px);
+  padding: 0 14px;
+  border-radius: 7px;
   font-family: var(--ev-sub), system-ui, sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Capture is what a planner reaches for most, so it is the one filled thing
+   on the row and everything else is an outline. */
+.ev-bar-add {
+  color: #faf6f1;
+  background: var(--ev-primary);
+  border: 1px solid var(--ev-primary);
+}
+
+.ev-bar-add:hover { background: #000; border-color: #000; }
+
+.ev-bar-quiet {
   color: #55575c;
   background: none;
   border: 1px solid rgba(58, 58, 59, 0.3);
-  border-radius: 3px;
-  padding: 8px 12px;
-  cursor: pointer;
 }
+
+.ev-bar-quiet:hover { border-color: var(--ev-primary); color: var(--ev-primary); }
 
 .ev-bar-failure {
   font-size: 0.8rem;
@@ -1838,12 +1946,14 @@
   padding-right: 8px;
   text-align: right;
   font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.6rem;
+  /* Two words in the hour gutter, on one line. */
+  font-size: 0.55rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
+  white-space: nowrap;
   color: #7c7e83;
-  line-height: 1.9;
+  line-height: 2.1;
 }
 
 .ev-allday-lanes {
@@ -2933,6 +3043,54 @@
   gap: 4px;
 }
 
+/* Three rows of ideas, then the rest on request. A planning meeting is
+   working through all of them, so the bank is worth the vertical space; what
+   it is not worth is a grey chip saying +24. Rows are measured from the chip
+   height so a long title and a short one behave the same. */
+.ev-bank-ideas {
+  --ev-chip-h: 24px;
+  --ev-chip-gap: 4px;
+}
+
+.ev-bank-ideas .ev-bank-chip { height: var(--ev-chip-h); }
+
+/* Exactly N rows, never N and a sliver of the next. The arithmetic is the
+   chip's own height rather than a guess, so a bigger type size still cuts on
+   a row boundary. */
+.ev-bank-ideas .ev-bank-cards {
+  flex: 1 1 auto;
+  gap: var(--ev-chip-gap);
+  max-height: calc(
+    var(--ev-bank-rows, 3) * (var(--ev-chip-h) + var(--ev-chip-gap)) - var(--ev-chip-gap)
+  );
+  overflow: hidden;
+}
+
+.ev-bank-open .ev-bank-cards {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.ev-bank-more {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  margin-left: 4px;
+  border: 1px solid rgba(58, 58, 59, 0.24);
+  background: #fff;
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #55575c;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ev-bank-more:hover { border-color: var(--ev-primary); color: var(--ev-primary); }
+
 .ev-bank-chip {
   max-width: 100%;
   min-width: 0;
@@ -3168,6 +3326,6 @@
      screen. The bank keeps its height and scrolls inside itself. */
   .ev-bank { flex-wrap: wrap; }
   .ev-bank-label { flex: 0 0 100%; }
-  .ev-bank-cards { max-height: 148px; overflow-y: auto; width: 100%; }
+  .ev-bank-cards { width: 100%; }
   .ev-bank-idea { max-width: 100%; }
 }

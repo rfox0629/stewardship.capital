@@ -191,6 +191,7 @@ export function BudgetLedger({
   const categories = [...new Set(spending.map((line) => line.category))];
 
   const eventTable = (
+    <div className="ws-scroll-x">
     <table className="ws-table ws-table-lines">
       <thead>
         <tr>
@@ -255,6 +256,7 @@ export function BudgetLedger({
         </tr>
       </tfoot>
     </table>
+    </div>
   );
 
   /* ----------------------------------------------------- what has to be bought */
@@ -263,6 +265,7 @@ export function BudgetLedger({
   const buyColumns = 6 + (planner ? 1 : 0);
 
   const purchaseTable = (
+    <div className="ws-scroll-x">
     <table className="ws-table ws-table-lines">
       <thead>
         <tr>
@@ -341,6 +344,7 @@ export function BudgetLedger({
         </tfoot>
       ) : null}
     </table>
+    </div>
   );
 
   return (
