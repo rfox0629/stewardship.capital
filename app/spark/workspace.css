@@ -36,8 +36,10 @@
   flex: 1;
 }
 
+/* The working content sits in the same container as the hero and the nav
+   above it, so there is one edge down the page. Only the vertical rhythm is
+   this sheet's to set. */
 .ev-main .ev-shell {
-  max-width: 1400px;
   padding-top: 18px;
   padding-bottom: 64px;
 }
@@ -564,10 +566,22 @@
 
 /* --------------------------------------------------------------- budget */
 
+/* Anything wider than the page scrolls inside itself rather than pushing the
+   page sideways. A table with seven columns is honest on a phone; a document
+   that slides under your thumb is not. */
+.ws-scroll-x {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Five figures while there is room for five, then fewer, deliberately. The
+   gap grows a little with the page so a wide monitor does not read as five
+   cards jammed together in the middle of nowhere. */
 .ws-figures {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  gap: clamp(10px, 0.9vw, 16px);
   margin: 0 0 20px;
 }
 
@@ -916,13 +930,11 @@
 
 @media (max-width: 1100px) {
   .ws-days { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .ws-figures { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .wk-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
   .ws-days { grid-template-columns: minmax(0, 1fr); }
-  .ws-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ws-form-row { grid-template-columns: minmax(0, 1fr); }
   .ws-row, .ws-quickrow {
     grid-template-columns: 30px minmax(0, 1fr);
@@ -983,7 +995,7 @@
   text-transform: none;
 }
 
-.ev-bar-quiet, .ev-print-link {
+.ev-bar-quiet {
   border: 1px solid var(--ws-line);
   background: var(--ws-card);
   color: var(--ws-ink);
@@ -1457,42 +1469,70 @@
 
 .wk-dayempty { margin: 0; font-size: 0.8rem; color: var(--ws-ink-2); }
 
-/* ------------------------------------------------------ reference doors */
+/* -------------------------------------------------- the planning resources
 
-.wk-doors {
+   One list inside a panel rather than three cards on a page of their own.
+   Reading reference is something a planner does mid sentence, not a stage of
+   the work, so it opens from the toolbar beside the ideas it becomes. */
+
+.ws-resource-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 10px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
-.wk-door {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.ws-resource {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
   text-align: left;
   background: var(--ws-card);
   border: 1px solid var(--ws-line);
   border-radius: var(--ws-radius);
-  padding: 14px 16px;
+  padding: 12px 15px;
   font: inherit;
   cursor: pointer;
-  box-shadow: var(--ws-shadow);
-  transition: border-color 0.12s ease, transform 0.12s ease;
+  transition: border-color 0.12s ease;
 }
 
-.wk-door:hover { border-color: var(--ws-ink); transform: translateY(-1px); }
-.wk-door b { font-size: 0.95rem; font-weight: 700; color: var(--ws-ink); }
-.wk-door span { font-size: 0.8rem; color: var(--ws-ink-2); line-height: 1.4; }
+.ws-resource:hover { border-color: var(--ws-ink); }
 
-.wk-door em {
-  margin-top: 4px;
-  font-style: normal;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+.ws-resource b {
+  grid-column: 1;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ws-accent);
+  color: var(--ws-ink-2);
 }
+
+.ws-resource i {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ws-ink-2);
+  white-space: nowrap;
+}
+
+.ws-resource span {
+  grid-column: 1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ws-ink);
+}
+
+.ws-resource em {
+  grid-column: 1;
+  font-style: normal;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--ws-ink-2);
+}
+
 
 .ws-panel-wide { width: min(720px, 100%); }
 

@@ -8,6 +8,7 @@ import { ideasStillOpen, pendingBlocks } from "@lib/spark/weekend";
 import { Select } from "@spark/_components/select";
 import { AddIdea } from "../plan/add-idea";
 import { IdeaPanel } from "../plan/idea-panel";
+import { Resources } from "../plan/resources";
 import type { Idea } from "../plan/board";
 import type { EngagementReference } from "@lib/spark/engagement";
 import { addIdea, placeIdea } from "../plan/actions";
@@ -152,7 +153,11 @@ const TIGHT_PX = 40;
 const DURATIONS = [15, 30, 45, 60, 90, 120];
 /* The bank shows a handful and offers the rest, so it stays a strip rather
    than becoming the board it replaced. */
-const IDEA_CHIPS = 8;
+/* How many rows of ideas the bank shows before it offers the rest. Rows, not
+   a handful: thirty two ideas is what a planning meeting is actually working
+   through, and eight of them with a grey +24 beside it was a scrollbar
+   pretending to be a decision. */
+const IDEA_ROWS = 3;
 
 /* Two drags exist on this screen and they mean opposite things. Carrying an
    idea creates a moment; carrying a moment moves that exact row. They use
@@ -956,6 +961,7 @@ function MomentRecords({
 /* ------------------------------------------------------- the calendar */
 
 export function ScheduleView({
+  title,
   moments,
   days,
   role,
@@ -970,6 +976,8 @@ export function ScheduleView({
   amenities = [],
   reference,
 }: {
+  /** What this surface is called for this reader. */
+  title: string;
   moments: Moment[];
   days: DayLane[];
   role: Role;
@@ -1321,14 +1329,17 @@ export function ScheduleView({
 
   /* Until hydration, mirror exactly what the server rendered. */
   const shownView = hydrated ? view : "weekend";
-  /* Real, on a day, and with no hour: Sunday's departures, and anything else
-     nobody has put a clock time on. There is no separate lane for these any
-     more, and there is no stage called needs placement. They sit in the
-     calendar's own all day row, above the hours and outside them, because
-     drawing one at six in the morning is a claim nobody made and putting it
-     on a shelf of its own made it a third thing to manage. */
-  const allDay = merged.filter((moment) => moment.minutes === null);
-  const allDayOn = (dayKey: string) => allDay.filter((moment) => moment.day === dayKey);
+  /* Real, on a day, and with no hour yet: Sunday's departures, and anything
+     else nobody has put a clock time on. They sit in a strip above the hours
+     and outside them, because drawing one at six in the morning is a claim
+     nobody made.
+
+     It says Time TBD rather than All day, which is what it actually means.
+     All day would be a claim too, and a bigger one: that packing and leaving
+     occupies Sunday from waking to dark. It occupies an hour nobody has
+     chosen. Dragging one onto the clock is that choice. */
+  const untimed = merged.filter((moment) => moment.minutes === null);
+  const untimedOn = (dayKey: string) => untimed.filter((moment) => moment.day === dayKey);
 
   /* A day's loose ideas: still being considered, not yet anywhere. Shown only
      when asked for, and never as a block, because an idea has no time. */
@@ -1346,7 +1357,7 @@ export function ScheduleView({
   const landedTitles = new Set(ideas.map((idea) => idea.title));
   const capturing = captured.filter((title) => !landedTitles.has(title));
   const unplacedIdeas = ideasStillOpen(ideas);
-  const shownIdeas = allIdeas ? unplacedIdeas : unplacedIdeas.slice(0, IDEA_CHIPS);
+  const bankIsLong = unplacedIdeas.length > 0;
   const openedIdea = hydrated ? ideas.find((idea) => idea.id === openIdea) ?? null : null;
 
   /* ------------------------------------------- an idea dropped onto an hour */
@@ -1482,18 +1493,24 @@ export function ScheduleView({
 
   return (
     <>
+      {/* One row of controls, all the same height and the same radius, with
+          the one a planner reaches for most sitting first and darkest. The
+          title used to have a heading of its own above a second row of
+          buttons, which put two bands of nothing between the navigation and
+          the work. */}
       <div className="ev-schedule-bar">
-        <div className="ev-bar-left" />
+        <div className="ev-bar-left">
+          <h2 className="ev-bar-title">{title}</h2>
+        </div>
         <div className="ev-bar-right">
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
-          {/* One button. The two things a planner adds are a thought and a
-              thing that is happening, and the menu says which in the words a
-              planner would use rather than the words the database would. */}
+          {/* Capture is the dominant action, so it says what it captures. A
+              moment is still one item down, in the planner's own words. */}
           {planner ? (
             <div className="ev-bar-menu">
               <button type="button" className="ev-bar-add" aria-expanded={addMenu}
                 onClick={() => setAddMenu((open) => !open)}>
-                <span aria-hidden="true">+</span> Add
+                <span aria-hidden="true">+</span> Idea
               </button>
               {addMenu ? (
                 <div className="ev-add-menu" role="menu">
@@ -1511,12 +1528,15 @@ export function ScheduleView({
               ) : null}
             </div>
           ) : null}
+          {/* The material behind the weekend, one button away from the ideas
+              it turns into. Reading it changes nothing. */}
+          {planner && reference ? <Resources reference={reference} route={route} /> : null}
           <button type="button" className="ev-bar-quiet"
             onClick={() => setView(shownView === "weekend" ? "day" : "weekend")}>
             {shownView === "weekend" ? "Day view" : "Whole weekend"}
           </button>
           {role !== "stakeholder" ? (
-            <Link className="ev-print-link" href={`${base}/schedule/print`}>
+            <Link className="ev-bar-quiet" href={`${base}/schedule/print`}>
               Print
             </Link>
           ) : null}
@@ -1527,17 +1547,17 @@ export function ScheduleView({
           untimed, above the clock. One flow, top to bottom, and none of it a
           separate screen. */}
       {planner && (unplacedIdeas.length > 0 || capturing.length > 0) ? (
-        <div className="ev-bank ev-bank-ideas">
+        <div className={`ev-bank ev-bank-ideas ${allIdeas ? "ev-bank-open" : ""}`}>
           <p className="ev-bank-label">
             Ideas <span>{unplacedIdeas.length + capturing.length}</span>
           </p>
-          <div className="ev-bank-cards">
+          <div className="ev-bank-cards" style={{ "--ev-bank-rows": IDEA_ROWS } as React.CSSProperties}>
             {capturing.map((title) => (
               <span key={title} className="ev-bank-chip ev-bank-idea ev-bank-pending">
                 <span>{title}</span>
               </span>
             ))}
-            {shownIdeas.map((idea) => (
+            {unplacedIdeas.map((idea) => (
               <button
                 key={idea.id}
                 type="button"
@@ -1562,13 +1582,19 @@ export function ScheduleView({
                 {idea.day && idea.day !== "all" ? <i>{idea.day}</i> : null}
               </button>
             ))}
-            {unplacedIdeas.length > IDEA_CHIPS ? (
-              <button type="button" className="ev-idea-more"
-                onClick={() => setAllIdeas((open) => !open)}>
-                {allIdeas ? "Fewer" : `+${unplacedIdeas.length - IDEA_CHIPS}`}
-              </button>
-            ) : null}
           </div>
+          {/* The bank keeps three rows and offers the rest by name. It only
+              appears when there is actually more than fits, which it works
+              out from the height rather than from a count, so a short title
+              and a long one are treated the same. */}
+          {bankIsLong ? (
+            <button type="button" className="ev-bank-more" aria-expanded={allIdeas}
+              onClick={() => setAllIdeas((open) => !open)}>
+              {allIdeas
+                ? "Show fewer"
+                : `Show all ${unplacedIdeas.length + capturing.length} ideas`}
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -1587,13 +1613,13 @@ export function ScheduleView({
               has no hour; it is not waiting to be promoted into anything.
               Dragging one onto the clock gives it a time, and that is the
               only step between here and the grid below. */}
-          {allDay.length > 0 ? (
+          {untimed.length > 0 ? (
             <div className="ev-allday">
-              <span className="ev-allday-axis">All day</span>
+              <span className="ev-allday-axis">Time TBD</span>
               <div className="ev-allday-lanes">
                 {laneDays.map((day) => (
                   <div key={day.key} className="ev-allday-cell">
-                    {allDayOn(day.key).map((moment) => (
+                    {untimedOn(day.key).map((moment) => (
                       <button
                         key={moment.id}
                         type="button"
@@ -1736,11 +1762,11 @@ export function ScheduleView({
               </button>
             ))}
           </div>
-          {allDayOn(dayKeyNow).length > 0 ? (
+          {untimedOn(dayKeyNow).length > 0 ? (
             <div className="ev-allday ev-allday-one">
-              <span className="ev-allday-axis">All day</span>
+              <span className="ev-allday-axis">Time TBD</span>
               <div className="ev-allday-cell">
-                {allDayOn(dayKeyNow).map((moment) => (
+                {untimedOn(dayKeyNow).map((moment) => (
                   <button key={moment.id} type="button" className="ev-allday-chip"
                     onClick={() => (planner ? setPlacing(moment) : setOpenId(moment.id))}>
                     <span>{moment.title}</span>
