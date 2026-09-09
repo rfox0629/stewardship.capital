@@ -284,6 +284,10 @@ test("one membership goes straight in", () => {
   assert.deepEqual(landingFor(shineClient), { kind: "workspace", href: SHINE });
 });
 
+test("a planner lands on Plan, which is the screen the meeting works on", () => {
+  assert.deepEqual(landingFor(shinePlanner), { kind: "workspace", href: `${SHINE}/schedule` });
+});
+
 test("a guest lands on the schedule, not on a page they would be refused", () => {
   const landing = landingFor(shineGuest);
   assert.deepEqual(landing, { kind: "workspace", href: `${SHINE}/schedule` });

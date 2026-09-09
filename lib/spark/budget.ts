@@ -1,22 +1,27 @@
 /**
  * What the money adds up to, and what a planner is allowed to type.
  *
- * Two ledgers share one table. The event ledger is what producing this
- * weekend costs and it is the only thing the engagement's ceiling is measured
- * against. The equipment ledger is durable things bought for the event and
- * kept afterwards; they are planned here and deliberately do not eat the
- * ceiling, because a speaker SHINE still owns next year is not what the
- * weekend cost.
+ * Two questions, and they are not the same question. Whether a line spends
+ * the engagement's budget, and whether SHINE still owns the thing in January,
+ * are independent: food counts and is gone, an espresso machine counts and is
+ * kept, a speaker paid for from somewhere else does not count and is kept.
+ * Nothing here derives either answer from the other.
  *
- * Every total in the product is derived from the lines. Nothing keeps its own
+ * There is one counting rule, applied three times. A line contributes to a
+ * total unless an ancestor already contributed to the same total, because a
+ * $750 machine named inside a $1,500 allocation is detail about money already
+ * counted rather than another $750 of spending. The same rule keeps a kept
+ * thing inside a kept thing from being kept twice.
+ *
+ * Every figure in the product is derived from the lines. Nothing keeps its own
  * running number, so no summary can drift away from what it is summarising.
  */
 
-export type Ledger = "event" | "equipment";
+export type Kind = "allocation" | "purchase";
 
 export type Line = {
   id: string;
-  ledger: string;
+  kind: string;
   category: string;
   label: string;
   planned_cents: number;
@@ -28,43 +33,104 @@ export type Line = {
   source_url: string | null;
   owner_name: string | null;
   spark_id: string | null;
-  review_of: string | null;
+  /** Does this spend the engagement's budget? */
+  counts_toward_budget: boolean;
+  /** Does the thing outlive the event? */
+  reusable: boolean;
+  reuse_note: string | null;
+  /** Detail about money already counted on that line. */
+  parent_id: string | null;
 };
 
-export type Totals = {
-  planned: number;
-  committed: number;
-  spent: number;
-};
+export type Totals = { planned: number; committed: number; spent: number };
 
-/** A ledger's own arithmetic. Equipment never appears in the event's. */
-export const totalsFor = (lines: readonly Line[], ledger: Ledger): Totals =>
-  lines
-    .filter((line) => (line.ledger === "equipment" ? "equipment" : "event") === ledger)
-    .reduce<Totals>(
-      (running, line) => ({
-        planned: running.planned + line.planned_cents,
-        committed: running.committed + line.committed_cents,
-        spent: running.spent + line.actual_cents,
-      }),
-      { planned: 0, committed: 0, spent: 0 },
-    );
+const ZERO: Totals = { planned: 0, committed: 0, spent: 0 };
+
+const add = (running: Totals, line: Line): Totals => ({
+  planned: running.planned + line.planned_cents,
+  committed: running.committed + line.committed_cents,
+  spent: running.spent + line.actual_cents,
+});
 
 /**
- * The overlaps still waiting on a person.
+ * The lines that carry a total, without carrying it twice.
  *
- * A flagged line names the line it might already be inside. Both keep their
- * own number in their own ledger; this only pairs them up so the question can
- * be asked out loud. A flag pointing at a line that has since been deleted is
- * dropped rather than shown as half a question.
+ * A line counts when it matches, and when nothing above it already matched.
+ * Everything on this screen is one of these: what the weekend is spending,
+ * what is being bought from elsewhere, and what SHINE keeps.
+ *
+ * A parent chain that loops, or points at a line that is gone, is treated as
+ * no parent: a total that silently omits a line is worse than one that
+ * includes a line whose parent has been deleted.
  */
-export const overlaps = (lines: readonly Line[]): Array<{ line: Line; against: Line }> => {
+export const contributors = (
+  lines: readonly Line[],
+  matches: (line: Line) => boolean,
+): Line[] => {
   const byId = new Map(lines.map((line) => [line.id, line]));
-  return lines.flatMap((line) => {
-    const against = line.review_of ? byId.get(line.review_of) : undefined;
-    return against ? [{ line, against }] : [];
-  });
+
+  /* The chain above a line, or null when it loops. A loop is nonsense data
+     and the safest reading of nonsense is that the line has no parent: a
+     total that quietly omits money is worse than one that includes it. */
+  const chainAbove = (line: Line): Line[] | null => {
+    const chain: Line[] = [];
+    const seen = new Set<string>([line.id]);
+    let above = line.parent_id ? byId.get(line.parent_id) : undefined;
+    while (above) {
+      if (seen.has(above.id)) return null;
+      seen.add(above.id);
+      chain.push(above);
+      above = above.parent_id ? byId.get(above.parent_id) : undefined;
+    }
+    return chain;
+  };
+
+  const coveredAbove = (line: Line): boolean => {
+    const chain = chainAbove(line);
+    return chain !== null && chain.some(matches);
+  };
+
+  return lines.filter((line) => matches(line) && !coveredAbove(line));
 };
+
+const countsToward = (line: Line) => line.counts_toward_budget;
+const isKept = (line: Line) => line.reusable;
+
+/** What the weekend is spending against its ceiling. */
+export const eventTotals = (lines: readonly Line[]): Totals =>
+  contributors(lines, countsToward).reduce(add, ZERO);
+
+/** What is being bought for the weekend from somewhere other than its budget. */
+export const outsideTotals = (lines: readonly Line[]): Totals =>
+  contributors(lines, (line) => !line.counts_toward_budget).reduce(add, ZERO);
+
+/**
+ * What SHINE still owns afterwards.
+ *
+ * Deliberately not accounting. No depreciation, no useful life, no saving
+ * against renting: it is the planned cost of the things that outlast the
+ * weekend, split by where the money came from, so a planner can see that some
+ * of the budget bought something lasting.
+ */
+export type Kept = { total: number; insideBudget: number; outsideBudget: number; lines: Line[] };
+
+export const keptValue = (lines: readonly Line[]): Kept => {
+  const kept = contributors(lines, isKept);
+  return {
+    total: kept.reduce((sum, line) => sum + line.planned_cents, 0),
+    insideBudget: kept
+      .filter((line) => line.counts_toward_budget)
+      .reduce((sum, line) => sum + line.planned_cents, 0),
+    outsideBudget: kept
+      .filter((line) => !line.counts_toward_budget)
+      .reduce((sum, line) => sum + line.planned_cents, 0),
+    lines: kept,
+  };
+};
+
+/** The details named underneath a line, in the order they were entered. */
+export const childrenOf = (lines: readonly Line[], parentId: string): Line[] =>
+  lines.filter((line) => line.parent_id === parentId);
 
 /**
  * A typed amount, as cents.
@@ -100,14 +166,8 @@ export const cleanLink = (input: string): { ok: true; url: string | null } | { o
   return { ok: true, url: parsed.toString().slice(0, 500) };
 };
 
-/**
- * What a line has to say for itself before it is worth storing.
- *
- * A category and a label, because a line nobody can name is not a line. The
- * amounts are allowed to be nothing at all: most of a budget starts that way.
- */
 export type LineInput = {
-  ledger: string;
+  kind: string;
   category: string;
   label: string;
   planned: string;
@@ -118,13 +178,16 @@ export type LineInput = {
   vendor: string;
   owner: string;
   link: string;
+  counts: string;
+  reusable: string;
+  reuseNote: string;
 };
 
 export type ShapedLine =
   | {
       ok: true;
       row: {
-        ledger: Ledger;
+        kind: Kind;
         category: string;
         label: string;
         planned_cents: number;
@@ -135,20 +198,31 @@ export type ShapedLine =
         vendor: string | null;
         owner_name: string | null;
         source_url: string | null;
+        counts_toward_budget: boolean;
+        reusable: boolean;
+        reuse_note: string | null;
       };
     }
   | { ok: false; message: string };
 
-export const EVENT_STATUS = ["estimate", "discuss", "committed", "protected"] as const;
-export const EQUIPMENT_STATUS = ["to_buy", "ordered", "received"] as const;
+export const ALLOCATION_STATUS = ["estimate", "discuss", "committed", "protected"] as const;
+export const PURCHASE_STATUS = ["to_buy", "ordered", "received"] as const;
 
+/**
+ * What a line has to say for itself before it is worth storing.
+ *
+ * A category and a label, because a line nobody can name is not a line. The
+ * amounts are allowed to be nothing at all: most of a budget starts that way.
+ * The two questions are answered explicitly and never inferred from each
+ * other, so a form that omits one is a form that has not asked.
+ */
 export const shapeLine = (input: LineInput): ShapedLine => {
-  const ledger: Ledger = input.ledger === "equipment" ? "equipment" : "event";
+  const kind: Kind = input.kind === "purchase" ? "purchase" : "allocation";
 
   const label = input.label.trim().slice(0, 160);
   if (!label) return { ok: false, message: "What is it?" };
 
-  const category = input.category.trim().slice(0, 60) || (ledger === "equipment" ? "Equipment" : "");
+  const category = input.category.trim().slice(0, 60) || (kind === "purchase" ? "Equipment" : "");
   if (!category) return { ok: false, message: "Which category?" };
 
   const planned = parseAmount(input.planned);
@@ -161,17 +235,23 @@ export const shapeLine = (input: LineInput): ShapedLine => {
   const link = cleanLink(input.link);
   if (!link.ok) return link;
 
-  const allowed: readonly string[] = ledger === "equipment" ? EQUIPMENT_STATUS : EVENT_STATUS;
+  const allowed: readonly string[] = kind === "purchase" ? PURCHASE_STATUS : ALLOCATION_STATUS;
   const status = allowed.includes(input.status)
     ? input.status
-    : ledger === "equipment"
+    : kind === "purchase"
       ? "to_buy"
       : "estimate";
+
+  /* Both answers are "no" unless the form says otherwise, and neither is read
+     off the other. An allocation defaults to counting because that is what an
+     allocation is; a purchase is asked outright. */
+  const reusable = input.reusable === "yes";
+  const counts = input.counts === "yes" || (input.counts === "" && kind === "allocation");
 
   return {
     ok: true,
     row: {
-      ledger,
+      kind,
       category,
       label,
       planned_cents: planned.cents,
@@ -182,6 +262,11 @@ export const shapeLine = (input: LineInput): ShapedLine => {
       vendor: input.vendor.trim().slice(0, 120) || null,
       owner_name: input.owner.trim().slice(0, 120) || null,
       source_url: link.url,
+      counts_toward_budget: counts,
+      reusable,
+      /* A note about where it goes is only meaningful for a thing that goes
+         somewhere, and is never required. */
+      reuse_note: reusable ? input.reuseNote.trim().slice(0, 200) || null : null,
     },
   };
 };

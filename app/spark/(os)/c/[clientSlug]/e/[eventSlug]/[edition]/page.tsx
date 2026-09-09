@@ -2,17 +2,22 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { resolveEngagement } from "@lib/spark/engagement";
-import { QuestionQueue, type Question } from "./questions";
 
 export const metadata = { title: "The weekend" };
 
 /**
- * The screen a planning meeting opens on.
+ * What this weekend is, and the way into planning it.
  *
- * Three numbers, a line for anything unresolved, a line for anything half
- * planned, and the way into the planner. Nothing here is a working surface:
- * the weekend is written down once, in the calendar, and this page says how
- * it stands and gets out of the way.
+ * Everything operational used to live here: four numbers, a queue of open
+ * questions with its own answering flow, and a loose ends line. All of it was
+ * a second reading of state that Plan holds better, and it put a dashboard in
+ * front of the screen a planning meeting actually works on.
+ *
+ * So this page stopped competing. Plan is the room's screen; this is the page
+ * that says which weekend it is and sends you there. The two figures that
+ * remain are the ones Plan does not carry: what is owed to people, and what
+ * is left of the money. Nothing was deleted underneath. Every open question
+ * is still on its idea, answerable in Plan where the rest of that idea is.
  */
 
 type PageProps = {
@@ -33,29 +38,26 @@ export default async function WeekendPage({ params }: PageProps) {
   if (context.role === "stakeholder") redirect(`${base}/schedule`);
 
   const { engagement, supabase } = context;
-  const planner = context.role === "planner" || context.staff;
 
-  const [ideasQ, actionsQ, budgetQ, needsQ, planLinksQ] = await Promise.all([
-    supabase.from("sparks").select("id, title, detail, open_question, question_answer, status, tentative_day, tentative_daypart")
-      .eq("engagement_id", engagement.id),
+  const [questionsQ, momentsQ, actionsQ, budgetQ, needsQ] = await Promise.all([
+    supabase.from("sparks").select("id, status, open_question").eq("engagement_id", engagement.id),
+    supabase.from("schedule_items").select("id").eq("engagement_id", engagement.id),
     supabase.from("tasks").select("status, estimated_cents").eq("engagement_id", engagement.id),
-    /* The event ledger only. What SHINE buys and keeps is planned in Budget
-       and is deliberately not measured against this weekend's ceiling. */
+    /* What spends this weekend's money. A purchase funded from elsewhere, or
+       named inside an allocation, is not more spending; both are excluded the
+       same way Budget excludes them. */
     supabase.from("budget_lines").select("planned_cents")
-      .eq("engagement_id", engagement.id).neq("ledger", "equipment"),
+      .eq("engagement_id", engagement.id)
+      .eq("counts_toward_budget", true)
+      .is("parent_id", null),
     supabase.from("resources").select("estimated_cents").eq("engagement_id", engagement.id),
-    /* What the approved ideas have so far, so the gaps can be counted. */
-    Promise.all([
-      supabase.from("schedule_items").select("spark_id").eq("engagement_id", engagement.id).not("spark_id", "is", null),
-      supabase.from("tasks").select("spark_id").eq("engagement_id", engagement.id).not("spark_id", "is", null),
-      supabase.from("resources").select("spark_id, status").eq("engagement_id", engagement.id).not("spark_id", "is", null),
-    ]),
   ]);
 
-  const ideas = ideasQ.data ?? [];
-  const live = ideas.filter((row) => row.status !== "parked" && row.status !== "declined");
-  const carrying = ideas.filter((row) => row.open_question && row.status !== "parked");
-  const openActions = (actionsQ.data ?? []).filter((row) => row.status !== "done");
+  const carrying = (questionsQ.data ?? []).filter(
+    (row) => row.open_question && row.status !== "parked",
+  ).length;
+  const moments = (momentsQ.data ?? []).length;
+  const openActions = (actionsQ.data ?? []).filter((row) => row.status !== "done").length;
 
   const working =
     (budgetQ.data ?? []).reduce((total, row) => total + row.planned_cents, 0) +
@@ -63,90 +65,36 @@ export default async function WeekendPage({ params }: PageProps) {
     (needsQ.data ?? []).reduce((total, row) => total + (row.estimated_cents ?? 0), 0);
   const available = engagement.budgetTotalCents - working;
 
-  /* Approved ideas that are not yet carried out. Not a stage, just the
-     count of loose ends after a fast round of decisions. */
-  const [schedLinks, actionLinks, needLinks] = planLinksQ;
-  const scheduled = new Set((schedLinks.data ?? []).map((row) => row.spark_id));
-  const owned = new Set((actionLinks.data ?? []).map((row) => row.spark_id));
-  const openNeed = new Set(
-    (needLinks.data ?? []).filter((row) => row.status === "needed").map((row) => row.spark_id),
-  );
-  /* An idea is in the plan when something has come of it. Loose ends are
-     the parts it is still missing, counted over exactly those ideas. */
-  const inPlan = ideas.filter(
-    (row) => row.status !== "parked" && (scheduled.has(row.id) || owned.has(row.id) || openNeed.has(row.id)),
-  );
-  const planning = {
-    total: inPlan.length,
-    noTime: inPlan.filter((row) => !scheduled.has(row.id)).length,
-    noOwner: inPlan.filter((row) => !owned.has(row.id)).length,
-    openNeed: inPlan.filter((row) => openNeed.has(row.id)).length,
-  };
-  const looseEnds = planning.noTime + planning.noOwner + planning.openNeed;
-
-  /* Open questions are not among these. They have their own line below, and
-     a number that is also the way to answer it does not need saying twice. */
-  const figures = [
-    { value: String(live.length), label: "Ideas", href: `${base}/plan` },
-    { value: String(openActions.length), label: "Open actions", href: `${base}/actions` },
-    { value: money(available), label: "Available", href: `${base}/budget`, over: available < 0 },
-  ];
-
-
   return (
     <div className="wk">
-      <div className="wk-figures">
-        {figures.map((figure) => (
-          <Link
-            key={figure.label}
-            href={figure.href}
-            className={`wk-figure ${figure.over ? "wk-figure-over" : ""}`}
-          >
-            <b>{figure.value}</b>
-            <span>{figure.label}</span>
-          </Link>
-        ))}
-      </div>
-
-      <QuestionQueue
-        questions={carrying.map((row): Question => ({
-          id: row.id,
-          title: row.title,
-          question: row.open_question as string,
-        }))}
-        route={{ clientSlug, eventSlug, edition }}
-        base={base}
-        planner={planner}
-      />
-
-      {planning.total > 0 && looseEnds > 0 ? (
-        <Link href={`${base}/plan?show=planned`} className="wk-loose" aria-label="Needs planning">
-          <b>Needs planning</b>
-          <span>{planning.total} in the plan</span>
-          {planning.noTime > 0 ? <em>{planning.noTime} without a time</em> : null}
-          {planning.noOwner > 0 ? <em>{planning.noOwner} without an owner</em> : null}
-          {planning.openNeed > 0 ? (
-            <em>{planning.openNeed} requirement{planning.openNeed === 1 ? "" : "s"} open</em>
-          ) : null}
-          <i aria-hidden="true">→</i>
-        </Link>
-      ) : null}
-
-      {/* The weekend itself is one click away and is the only place it is
-          written down. Repeating it here as text was a second itinerary to
-          keep in step with the first, and it always lost.
-
-          The reference libraries left this page for the same reason. The
-          drinks belong in the idea that has to choose one, the property's
-          amenities belong in the block that might offer them, and the tent
-          concepts belong wherever they are being used. On a home page they
-          were three large doors competing with the plan. */}
+      {/* One destination, said once, and the state of the plan as a sentence
+          on the way in rather than a panel to work through first. */}
       <Link className="wk-open-planner" href={`${base}/schedule`}>
-        <b>Open the planner</b>
-        <span>Ideas, what still needs a time, and the calendar itself</span>
+        <b>Open Plan</b>
+        <span>
+          The calendar, the ideas waiting on it
+          {moments > 0 ? `, ${moments} moments so far` : ""}
+          {carrying > 0
+            ? `, and ${carrying} ${carrying === 1 ? "idea" : "ideas"} still carrying a question`
+            : ""}
+        </span>
         <i aria-hidden="true">&rarr;</i>
       </Link>
 
-</div>
+      <p className="wk-plan-note">
+        Plan is where this weekend is built. What follows is only what Plan does not carry.
+      </p>
+
+      <div className="wk-figures">
+        <Link href={`${base}/actions`} className="wk-figure">
+          <b>{openActions}</b>
+          <span>Open actions</span>
+        </Link>
+        <Link href={`${base}/budget`} className={`wk-figure ${available < 0 ? "wk-figure-over" : ""}`}>
+          <b>{money(available)}</b>
+          <span>{available < 0 ? "Over budget" : "Available"}</span>
+        </Link>
+      </div>
+    </div>
   );
 }

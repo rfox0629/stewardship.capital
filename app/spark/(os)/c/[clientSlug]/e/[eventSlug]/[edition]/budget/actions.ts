@@ -13,10 +13,10 @@ import { resolveEngagement } from "@lib/spark/engagement";
  * error: an update a policy filters out returns no error and no rows, and
  * only the second of those is the truth.
  *
- * Nothing here decides anything. A line says what somebody typed, a ledger
- * says which pot it comes out of, and an overlap flag says two lines might be
- * the same money. Clearing that flag is the planner saying so, which is why
- * it is an action here and not a rule anywhere.
+ * Nothing here decides anything. A line records what somebody typed and what
+ * they answered to the two questions: does this spend the weekend's budget,
+ * and does SHINE keep it afterwards. Neither answer is ever inferred from the
+ * other, here or anywhere.
  */
 
 export type LineOutcome = { ok: boolean; message?: string; id?: string };
@@ -34,7 +34,7 @@ const revalidate = (clientSlug: string, eventSlug: string, edition: string) => {
 };
 
 const read = (formData: FormData) => ({
-  ledger: String(formData.get("ledger") ?? "event"),
+  kind: String(formData.get("kind") ?? "allocation"),
   category: String(formData.get("category") ?? ""),
   label: String(formData.get("label") ?? ""),
   planned: String(formData.get("planned") ?? ""),
@@ -45,7 +45,37 @@ const read = (formData: FormData) => ({
   vendor: String(formData.get("vendor") ?? ""),
   owner: String(formData.get("owner") ?? ""),
   link: String(formData.get("link") ?? ""),
+  counts: String(formData.get("counts") ?? ""),
+  reusable: String(formData.get("reusable") ?? ""),
+  reuseNote: String(formData.get("reuse_note") ?? ""),
 });
+
+/**
+ * The line this one is detail about, if any.
+ *
+ * Checked against this engagement's own lines, because a parent from another
+ * engagement would be both a leak and a total that made no sense. A line
+ * cannot be detail about itself; longer loops are read as no parent at all
+ * when the totals are computed, so money is never quietly dropped.
+ */
+const readParent = async (
+  context: NonNullable<Awaited<ReturnType<typeof plannerContext>>>,
+  formData: FormData,
+  selfId: string | null,
+): Promise<{ ok: true; id: string | null } | { ok: false; message: string }> => {
+  const wanted = String(formData.get("parent") ?? "").trim();
+  if (!wanted) return { ok: true, id: null };
+  if (wanted === selfId) return { ok: false, message: "A line cannot be detail about itself." };
+
+  const { data } = await context.supabase
+    .from("budget_lines")
+    .select("id")
+    .eq("id", wanted)
+    .eq("engagement_id", context.engagement.id);
+
+  if ((data?.length ?? 0) === 0) return { ok: false, message: "That line is not in this budget." };
+  return { ok: true, id: wanted };
+};
 
 export async function addBudgetLine(
   clientSlug: string,
@@ -59,9 +89,12 @@ export async function addBudgetLine(
   const shaped = shapeLine(read(formData));
   if (!shaped.ok) return { ok: false, message: shaped.message };
 
+  const parent = await readParent(context, formData, null);
+  if (!parent.ok) return { ok: false, message: parent.message };
+
   const { data, error } = await context.supabase
     .from("budget_lines")
-    .insert({ engagement_id: context.engagement.id, ...shaped.row })
+    .insert({ engagement_id: context.engagement.id, parent_id: parent.id, ...shaped.row })
     .select("id");
 
   if (error || (data?.length ?? 0) === 0) {
@@ -85,11 +118,14 @@ export async function updateBudgetLine(
   const shaped = shapeLine(read(formData));
   if (!shaped.ok) return { ok: false, message: shaped.message };
 
+  const parent = await readParent(context, formData, lineId);
+  if (!parent.ok) return { ok: false, message: parent.message };
+
   /* The idea a cost came from is provenance and is never edited from here,
      the same way a moment never edits the spark behind it. */
   const { data, error } = await context.supabase
     .from("budget_lines")
-    .update(shaped.row)
+    .update({ parent_id: parent.id, ...shaped.row })
     .eq("id", lineId)
     .eq("engagement_id", context.engagement.id)
     .select("id");
@@ -120,37 +156,6 @@ export async function deleteBudgetLine(
 
   if (error || (data?.length ?? 0) === 0) {
     return { ok: false, message: "That did not delete, so the line is still there." };
-  }
-
-  revalidate(clientSlug, eventSlug, edition);
-  return { ok: true };
-}
-
-/**
- * Saying the overlap is settled.
- *
- * Both lines keep whatever they say; this only takes the question down, and
- * it is the one thing on this screen that is a judgement rather than a
- * record, so it is the planner who makes it and never the product.
- */
-export async function settleOverlap(
-  clientSlug: string,
-  eventSlug: string,
-  edition: string,
-  lineId: string,
-): Promise<LineOutcome> {
-  const context = await plannerContext(clientSlug, eventSlug, edition);
-  if (!context) return { ok: false };
-
-  const { data, error } = await context.supabase
-    .from("budget_lines")
-    .update({ review_of: null })
-    .eq("id", lineId)
-    .eq("engagement_id", context.engagement.id)
-    .select("id");
-
-  if (error || (data?.length ?? 0) === 0) {
-    return { ok: false, message: "That did not save, so the question is still open." };
   }
 
   revalidate(clientSlug, eventSlug, edition);
