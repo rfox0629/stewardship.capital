@@ -1,5 +1,6 @@
 import { MultiplierField } from "./_components/multiplier-field";
 import { Wordmark } from "./_components/wordmark";
+import styles from "./homepage.module.css";
 
 /**
  * The approved hero composition, carrying one statement and nothing else.
@@ -24,7 +25,9 @@ export default function HomePage() {
         </div>
 
         <div className="mask">
-          <p className="hero-sub">Steward what you&rsquo;ve been entrusted with.</p>
+          <p className={`hero-sub ${styles.statement}`}>
+            Steward what you&rsquo;ve been entrusted with.
+          </p>
         </div>
       </div>
     </section>

@@ -1,0 +1,30 @@
+.statement {
+  position: relative;
+  display: inline-block;
+  margin-left: clamp(18px, 4vw, 64px);
+  padding-left: clamp(24px, 2.5vw, 36px);
+  max-width: 38ch;
+  font-size: clamp(0.9rem, 1.05vw, 1.08rem);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.statement::before {
+  content: "↳";
+  position: absolute;
+  left: 0;
+  top: -0.04em;
+  font-size: 1.05em;
+  line-height: 1;
+  color: var(--signal);
+  opacity: 0.9;
+}
+
+@media (max-width: 619px) {
+  .statement {
+    margin-left: 10px;
+    padding-left: 22px;
+    max-width: 30ch;
+    font-size: 0.94rem;
+  }
+}
