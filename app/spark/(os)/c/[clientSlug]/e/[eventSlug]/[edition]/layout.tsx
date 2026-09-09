@@ -60,8 +60,11 @@ export default async function EngagementLayout({ children, params }: LayoutProps
      open is never rendered for them. */
   const nav: EventNavItem[] = working
     ? [
-        { href: base, label: "The weekend" },
+        /* Plan first, because Plan is the screen a planning meeting works on
+           and the one that goes on the television. The weekend is the page
+           that says which weekend it is. */
         { href: `${base}/schedule`, label: "Plan", also: [`${base}/plan`] },
+        { href: base, label: "The weekend" },
         { href: `${base}/actions`, label: "Actions" },
         { href: `${base}/budget`, label: "Budget" },
       ]

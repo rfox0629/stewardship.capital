@@ -662,13 +662,13 @@
 .ws-standing-protected { color: #1d3f8a; background: #e6ecfb; }
 .ws-standing-committed { color: #0d5238; background: #dff3e8; }
 
-/* ============================================================ two ledgers
+/* ================================================== two questions, not one
 
-   Producing this weekend and buying something SHINE keeps are different kinds
-   of spending, so they are different tables under one screen. Only the first
-   is measured against the ceiling at the top; the second is planned here and
-   deliberately left out of it, because a speaker they still own next year is
-   not what this weekend cost.
+   Whether a line spends the weekend's money and whether SHINE keeps the thing
+   afterwards are independent, so the screen asks both outright and never
+   answers one from the other. A purchase named inside an allocation is drawn
+   under it as detail, quieter and indented, because it is money already
+   counted rather than money added.
    ========================================================================= */
 
 .ws-ledger-head {
@@ -688,13 +688,16 @@
   color: var(--ws-ink);
 }
 
-.ws-ledger-head .ws-hint { flex: 1 1 220px; }
+.ws-ledger-head .ws-hint { flex: 1 1 240px; }
 .ws-ledger-head .ws-btn-quiet { margin-left: auto; }
 
 .ws-cell-quiet { color: var(--ws-ink-2); font-size: 0.84rem; }
 
 .ws-line-link { color: var(--ws-ink); text-decoration: underline; text-underline-offset: 2px; }
 .ws-line-link:hover { color: #000; }
+
+.ws-table-lines td .ws-tag { margin-left: 7px; vertical-align: middle; }
+.ws-tag-kept { color: #0d5238; background: #dff3e8; }
 
 .ws-row-edit {
   border: 1px solid var(--ws-line);
@@ -709,6 +712,72 @@
 }
 
 .ws-row-edit:hover { border-color: var(--ws-ink); color: var(--ws-ink); }
+
+/* Detail about money already counted above. Never a second number. */
+.ws-line-detail td { background: var(--ws-ground); }
+.ws-line-detail td:nth-child(2) { padding-left: 24px; position: relative; }
+
+.ws-detail-mark {
+  position: absolute;
+  left: 8px;
+  color: var(--ws-ink-2);
+}
+
+/* --------------------------------------------- what SHINE still owns after */
+
+.ws-kept {
+  border: 1px solid var(--ws-line);
+  border-left: 4px solid var(--ws-good);
+  border-radius: 11px;
+  background: var(--ws-card);
+  padding: 13px 16px;
+  margin-bottom: 18px;
+}
+
+.ws-kept-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+
+.ws-kept-head b {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ws-ink);
+}
+
+.ws-kept-head span { font-size: 1.1rem; font-weight: 700; color: var(--ws-ink); }
+
+.ws-kept-split {
+  margin: 6px 0 0;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: var(--ws-ink-2);
+}
+
+.ws-kept-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--ws-line-soft);
+  display: grid;
+  gap: 7px;
+}
+
+.ws-kept-list li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.86rem;
+}
+
+.ws-kept-list b { color: var(--ws-ink); font-weight: 700; }
+.ws-kept-list span { font-weight: 700; color: var(--ws-ink); }
+.ws-kept-list em { font-style: normal; font-size: 0.78rem; color: var(--ws-ink-2); }
 
 /* --------------------------------------------------------- editing a line */
 
@@ -732,7 +801,7 @@
 
 .ws-line-field { display: block; min-width: 0; }
 
-.ws-line-field span {
+.ws-line-field > span {
   display: block;
   margin-bottom: 4px;
   font-size: 0.68rem;
@@ -761,6 +830,43 @@
   box-shadow: 0 0 0 3px var(--ws-accent-soft);
 }
 
+/* Yes or no, with the consequence spelled out rather than a term of art. */
+.ws-yesno {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--ws-ground);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.ws-yesno button {
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  padding: 6px 18px;
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--ws-ink-2);
+  cursor: pointer;
+}
+
+.ws-yesno button[aria-pressed="true"] {
+  background: var(--ws-card);
+  color: var(--ws-ink);
+  box-shadow: var(--ws-shadow);
+}
+
+.ws-yesno-says {
+  display: block;
+  margin-top: 5px;
+  font-style: normal;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ws-ink-2);
+  max-width: 62ch;
+}
+
 .ws-line-actions {
   display: flex;
   align-items: center;
@@ -781,45 +887,18 @@
 
 .ws-confirm-inline b { font-size: 0.82rem; color: var(--ws-warn); }
 
-/* ------------------------------------------------- the same money, twice? */
-
-.ws-overlap {
-  border: 1px solid var(--ws-line);
-  border-left: 4px solid var(--ws-warn);
-  border-radius: 11px;
-  background: var(--ws-card);
-  padding: 13px 16px;
-  margin-bottom: 18px;
-}
-
-.ws-overlap-row {
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.ws-overlap-row + .ws-overlap-row {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--ws-line-soft);
-}
-
-.ws-overlap-row p {
-  flex: 1 1 320px;
-  margin: 0;
-  font-size: 0.87rem;
-  line-height: 1.55;
-  color: var(--ws-ink-2);
-}
-
-.ws-overlap-row p b { color: var(--ws-ink); }
-.ws-overlap-row .ws-btn-quiet { flex: none; }
-
-/* Equipment carries its own vocabulary, in the same neutral treatment. */
+/* A purchase carries its own vocabulary, in the same neutral treatment. */
 .ws-standing-to_buy { color: #7a4a08; background: #f6efe4; }
 .ws-standing-ordered { color: #3c4453; background: #eceff3; }
 .ws-standing-received { color: #0d5238; background: #dff3e8; }
+
+/* Plan is the destination; the weekend page says which weekend and gets out
+   of the way. This keeps that promise legible for what is left underneath. */
+.wk-plan-note {
+  margin: 12px 0 14px;
+  font-size: 0.83rem;
+  color: var(--ws-ink-2);
+}
 
 @media (max-width: 760px) {
   .ws-line-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -831,6 +910,7 @@
   .ws-line-grid { grid-template-columns: minmax(0, 1fr); }
   .ws-line-wide { grid-column: span 1; }
 }
+
 
 /* --------------------------------------------------- responsive behaviour */
 
@@ -1216,9 +1296,11 @@
 
 /* ======================================================= the meeting home */
 
+/* However many numbers survive the next round of simplification, they share
+   the row rather than leaving a hole where a removed one used to be. */
 .wk-figures {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -1719,7 +1801,6 @@
 }
 
 @media (max-width: 900px) {
-  .wk-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ws-lanes { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -1757,333 +1838,8 @@ input.ws-row-owner {
 
 .ev select { background-color: var(--ws-card); }
 
-/* ==================================== the questions, as a line rather than
-   a lectern
-
-   An open question is an attention indicator, not an agenda item. The count
-   sits on one line the width of the page and the line opens onto the queue,
-   so a meeting that has come to look at the weekend is told how many there
-   are and is not made to answer one before it can scroll.
-   ========================================================================= */
-
-.wk-flag-strip { margin-bottom: 22px; }
-
-/* The same line as Needs planning below it, because they are the same kind
-   of thing: one fact about the weekend, and a way in. */
-.wk-flagline {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  width: 100%;
-  padding: 13px 16px;
-  margin: 0;
-  background: var(--ws-card);
-  border: 1px solid var(--ws-line);
-  border-left: 4px solid var(--ws-accent);
-  border-radius: 11px;
-  box-shadow: var(--ws-shadow);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.wk-flagline:hover { border-color: var(--ws-accent); background: #fbfcff; }
-.wk-flagline b { font-size: 0.9rem; font-weight: 700; color: var(--ws-ink); }
-.wk-flagline span { font-size: 0.83rem; font-weight: 600; color: var(--ws-ink-2); }
-
-.wk-flagline em {
-  font-style: normal;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #1b1e24;
-  background: var(--ws-accent-soft);
-  border-radius: 999px;
-  padding: 4px 11px;
-}
-
-.wk-flagline i {
-  margin-left: auto;
-  font-style: normal;
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--ws-accent);
-}
-
-/* Nothing left to open, so it is a statement and not a control. */
-.wk-flagline-clear {
-  border-left-color: #12694a;
-  margin-bottom: 22px;
-  cursor: default;
-}
-
-.wk-flagline-clear:hover { border-color: var(--ws-line); background: var(--ws-card); }
-.wk-flagline-clear b { color: #0d5238; }
-
-.wk-flag-queue {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.wk-flag-queue li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  border: 1px solid var(--ws-line-soft);
-  border-radius: 10px;
-  background: var(--ws-card);
-}
-
-.wk-flag-q {
-  min-width: 0;
-  flex: 1 1 320px;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  color: var(--ws-ink-2);
-}
-
-.wk-flag-q b {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--ws-ink);
-}
-
-.wk-flag-do { display: flex; gap: 7px; flex: none; }
-
-.wk-flag-do button,
-.wk-flag-do a {
-  border: 1px solid var(--ws-line);
-  border-radius: 8px;
-  padding: 6px 13px;
-  background: var(--ws-card);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--ws-ink);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.wk-flag-do button:hover,
-.wk-flag-do a:hover { border-color: var(--ws-ink); }
-
-@media (max-width: 640px) {
-  .wk-flag-do { width: 100%; }
-  .wk-flag-do button, .wk-flag-do a { flex: 1 1 0; text-align: center; }
-}
-
-/* ================================================= quick actions after yes */
-
-.ws-quick { display: grid; gap: 9px; }
-
-.ws-quick-row { display: flex; flex-wrap: wrap; gap: 7px; }
-
-.ws-quick-btn {
-  border: 1px solid var(--ws-line);
-  background: var(--ws-card);
-  border-radius: 999px;
-  padding: 8px 15px;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--ws-ink);
-  cursor: pointer;
-  transition: border-color 0.1s ease, background 0.1s ease;
-}
-
-.ws-quick-btn:hover { border-color: var(--ws-ink); background: var(--ws-ground); }
-.ws-quick-on { background: var(--ws-ink) !important; color: #fff !important; border-color: var(--ws-ink) !important; }
-.ws-quick-done { color: #0d5238; border-color: #a9dcc2; background: #f4fbf7; }
-
-.ws-quick-form {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  padding: 11px;
-  background: var(--ws-ground);
-  border: 1px solid var(--ws-line);
-  border-radius: 10px;
-}
-
-.ws-quick-form input,
-.ws-quick-form select {
-  flex: 1 1 110px;
-  min-width: 0;
-  border: 1px solid var(--ws-line);
-  border-radius: 8px;
-  background: var(--ws-card);
-  padding: 9px 10px;
-  font: inherit;
-  font-size: 0.88rem;
-  color: var(--ws-ink);
-}
-
-.ws-quick-form input:focus,
-.ws-quick-form select:focus {
-  outline: none;
-  border-color: var(--ws-accent);
-  box-shadow: 0 0 0 3px var(--ws-accent-soft);
-}
-
-.ws-quick-prefix { font-size: 1rem; font-weight: 700; color: var(--ws-ink-2); }
-.ws-quick-form .ws-btn { flex: 0 0 auto; }
-
-/* ==================================== the moment expands, it is not a tab */
-
-.ev-expanders { padding: 0 22px 22px; display: grid; gap: 8px; }
-
-.ev-expander {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  width: 100%;
-  text-align: left;
-  border: 1px solid var(--ws-line);
-  border-radius: 10px;
-  background: var(--ws-card);
-  padding: 12px 14px;
-  font: inherit;
-  cursor: pointer;
-}
-
-.ev-expander:hover { border-color: var(--ws-ink-2); background: var(--ws-ground); }
-.ev-expander b { font-size: 0.9rem; font-weight: 700; color: var(--ws-ink); }
-.ev-expander span { font-size: 0.8rem; color: var(--ws-ink-2); }
-
-.ev-expander i {
-  margin-left: auto;
-  font-style: normal;
-  font-size: 1.2rem;
-  line-height: 1;
-  color: var(--ws-ink-2);
-}
-
-.ev-expander[aria-expanded="true"] {
-  border-color: var(--ws-ink);
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.ev-expanders .ev-drawer-body {
-  margin-top: -9px;
-  border: 1px solid var(--ws-ink);
-  border-top: 0;
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-  padding: 14px;
-}
-
-/* ================================================ ideas that feel tactile */
-
-.ws-card {
-  border-radius: 10px;
-  padding: 12px 13px;
-  gap: 7px;
-}
-
-.ws-card-title {
-  font-size: 0.95rem;
-  font-weight: 650;
-  line-height: 1.3;
-  letter-spacing: -0.006em;
-  color: var(--ws-ink);
-}
-
-.ws-card:hover {
-  border-color: var(--ws-ink);
-  box-shadow: 0 3px 10px rgba(16, 20, 28, 0.1);
-}
-
-.ws-card-considering { border-left-color: #8f98a8; }
-
-/* ============================================ the calendar keeps its air */
-
-/* Free and open time is the plan, not a gap in it. It reads as deliberate
-   breathing room rather than as something waiting to be filled. */
-.ev-block-open {
-  background: repeating-linear-gradient(
-    135deg, #fbfcfd, #fbfcfd 7px, #f2f5f8 7px, #f2f5f8 14px
-  );
-  border-style: dashed;
-  border-color: var(--ws-line);
-  box-shadow: none;
-}
-
-.ev-block-open .ev-block-title { color: var(--ws-ink-2); font-weight: 600; }
-
-
-/* The day a moment sits in should read before its hour does. */
-.ev-grid-dayname b { font-size: 0.92rem; }
-
-/* What the room just decided, still in reach. */
-.wk-justdid {
-  margin-top: 12px;
-  padding: 14px 16px;
-  background: #f4fbf7;
-  border: 1px solid #a9dcc2;
-  border-radius: 11px;
-}
-
-.wk-justdid p { margin: 0 0 10px; font-size: 0.88rem; color: #0d5238; }
-.wk-justdid b { font-weight: 700; }
-.wk-justdid .ws-quick-form { background: var(--ws-card); }
-
-/* In the snapshot the moment should read before its hour does. */
-.wk-moment {
-  font-size: 0.83rem;
-  font-weight: 550;
-  color: var(--ws-ink);
-  margin-bottom: 7px;
-}
-
-.wk-moment span {
-  font-size: 0.66rem;
-  font-weight: 700;
-  color: var(--ws-ink-2);
-  opacity: 0.9;
-}
-
 .wk-dayempty { color: var(--ws-ink-2); font-weight: 500; }
 .ws-lane-empty { color: var(--ws-ink-2); font-weight: 500; }
-
-/* Loose ends after a fast round of decisions. A line, not a stage. */
-.wk-loose {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  background: var(--ws-card);
-  border: 1px solid var(--ws-line);
-  border-left: 4px solid var(--ws-accent);
-  border-radius: 11px;
-  padding: 13px 16px;
-  margin-bottom: 22px;
-  box-shadow: var(--ws-shadow);
-}
-
-.wk-loose:hover { border-color: var(--ws-accent); background: #fbfcff; }
-.wk-loose b { font-size: 0.9rem; font-weight: 700; color: var(--ws-ink); }
-.wk-loose span { font-size: 0.83rem; font-weight: 600; color: var(--ws-ink-2); }
-
-.wk-loose em {
-  font-style: normal;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #1b1e24;
-  background: var(--ws-accent-soft);
-  border-radius: 999px;
-  padding: 4px 11px;
-}
-
-.wk-loose i { margin-left: auto; font-style: normal; color: var(--ws-accent); font-weight: 700; }
 
 .ws-btn-attention { border-color: var(--ws-accent); color: #1b1e24; background: var(--ws-accent-soft); }
 
@@ -2143,7 +1899,6 @@ input.ws-row-owner {
 .ev-main .ws-msg { color: var(--ws-warn); }
 .ev-main .wk-takeaway { color: #1b1e24; }
 .ev-main .wk-justdid p { color: #0d5238; }
-.ev-main .wk-flagline-clear b { color: #0d5238; }
 .ev-main .wk-confirm { color: #7a4a08; }
 .ev-main .ev-drawer-msg { color: var(--ws-warn); }
 

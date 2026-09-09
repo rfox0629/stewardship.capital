@@ -69,14 +69,20 @@ const allowedRoles = (section: string): SparkRole[] =>
 /**
  * Where a person's own workspace starts, for them.
  *
- * Guests and speakers begin at the schedule, because the overview is not
- * theirs to see and landing somewhere you are refused is indistinguishable
- * from being locked out.
+ * A planner starts on Plan. It is the screen a planning meeting works on and
+ * the one that goes on the television, and arriving anywhere else made the
+ * product look like it had an opinion about which came first. The weekend
+ * page is still there and still says which weekend this is.
+ *
+ * Guests and speakers begin at the schedule too, but for a different reason:
+ * the overview is not theirs to see, and landing somewhere you are refused is
+ * indistinguishable from being locked out. A client still starts on the
+ * overview, which is what they came for.
  */
 export const workspaceHome = (workspace: SparkWorkspace): string =>
-  workspace.role === "stakeholder"
-    ? `${workspacePath(workspace)}/schedule`
-    : workspacePath(workspace);
+  workspace.role === "client"
+    ? workspacePath(workspace)
+    : `${workspacePath(workspace)}/schedule`;
 
 /* Every refusal lands on the front door, which then routes the person to
    wherever they do belong. One destination means a refusal never becomes a

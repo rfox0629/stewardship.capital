@@ -15,10 +15,10 @@ export const metadata = { title: "Budget" };
  * an action can explain a cost and a requirement can be the reason for one,
  * but neither carries the number, so the same money cannot be counted twice.
  *
- * Two ledgers share the table. What this weekend costs is measured against
- * the engagement's ceiling; what SHINE buys and keeps is planned here and
- * deliberately outside it. Which one a line belongs to is a single field, so
- * reclassifying is a decision rather than a migration.
+ * A line answers two questions that are not the same question: does it spend
+ * this engagement's budget, and does SHINE keep the thing afterwards. Neither
+ * is derived from the other. A purchase named inside an allocation is detail
+ * about money already counted, and is never added to a total twice.
  */
 
 type PageProps = {
@@ -38,7 +38,7 @@ export default async function BudgetPage({ params }: PageProps) {
     context.supabase
       .from("budget_lines")
       .select(
-        "id, ledger, category, label, planned_cents, committed_cents, actual_cents, status, note, vendor, source_url, owner_name, spark_id, review_of",
+        "id, kind, category, label, planned_cents, committed_cents, actual_cents, status, note, vendor, source_url, owner_name, spark_id, counts_toward_budget, reusable, reuse_note, parent_id",
       )
       .eq("engagement_id", engagementId)
       .order("created_at", { ascending: true }),
