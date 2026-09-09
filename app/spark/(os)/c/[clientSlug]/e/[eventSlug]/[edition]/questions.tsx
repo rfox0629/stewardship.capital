@@ -9,9 +9,15 @@ import { setIdeaQuestion } from "./plan/actions";
  * The questions hanging over the weekend.
  *
  * Not a stage and not a queue anyone has to clear: these are ideas like any
- * other that happen to be carrying something unresolved. The room sees them
- * one at a time, answers in a sentence, and the flag comes off. Nothing about
- * the idea moves.
+ * other that happen to be carrying something unresolved. Answering one is a
+ * sentence and the flag comes off. Nothing about the idea moves.
+ *
+ * This used to be the largest thing on the event home: a white card with a
+ * headline set at twenty one pixels and a green button, shouting one question
+ * at a meeting that had come to look at the weekend. The number of open
+ * questions is worth knowing at a glance; the questions themselves are worth
+ * reading when somebody decides to read them. So it is a line, and the line
+ * opens.
  */
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
@@ -31,11 +37,10 @@ export function QuestionQueue({
 }) {
   const [answered, setAnswered] = useState<Set<string>>(new Set());
   const [failure, setFailure] = useState<string | null>(null);
+  const [showing, setShowing] = useState(false);
   const [, startTransition] = useTransition();
 
   const open = questions.filter((row) => !answered.has(row.id));
-  const current = open[0] ?? null;
-  const rest = open.slice(1);
   const done = questions.length - open.length;
 
   const clear = (row: Question) => {
@@ -56,47 +61,54 @@ export function QuestionQueue({
 
   if (questions.length === 0) return null;
 
-  if (!current) {
+  /* Everything asked has been answered in this sitting. Say so once, quietly,
+     and offer nothing to open. */
+  if (open.length === 0) {
     return (
-      <section className="wk-queue wk-queue-clear" aria-label="Questions">
-        <p className="wk-queue-clear-line">
-          {done === 1 ? "One question answered." : `${done} questions answered.`} Nothing else is
-          waiting on the room.
-        </p>
-        <Link href={`${base}/schedule`} className="ws-btn">See the weekend</Link>
-      </section>
+      <p className="wk-flagline wk-flagline-clear">
+        <b>Answered</b>
+        <span>
+          {done === 1 ? "One question" : `${done} questions`}, nothing waiting on the room
+        </span>
+      </p>
     );
   }
 
   return (
-    <section className="wk-queue" aria-label="Needs an answer">
-      <header className="wk-queue-head">
-        <h3>Needs an answer</h3>
-        <span>{done > 0 ? `${done} answered · ` : ""}{open.length} left</span>
-      </header>
+    <div className="wk-flag-strip">
+      <button
+        type="button"
+        className="wk-flagline"
+        aria-expanded={showing}
+        onClick={() => setShowing(!showing)}
+      >
+        <b>Needs an answer</b>
+        <em>{open.length}</em>
+        <span>waiting on the room</span>
+        {done > 0 ? <span>{done} answered in this sitting</span> : null}
+        <i aria-hidden="true">{showing ? "−" : "+"}</i>
+      </button>
 
-      <div className="wk-now">
-        <div className="wk-now-body">
-          <em className="wk-now-day">{current.title}</em>
-          <h4>{current.question}</h4>
-        </div>
-        {planner ? (
-          <div className="wk-now-answers">
-            <button type="button" className="wk-yes" onClick={() => clear(current)}>
-              Answered
-            </button>
-            <Link className="wk-open" href={`${base}/plan?open=${current.id}`}>Open</Link>
-          </div>
-        ) : null}
-      </div>
-
-      {rest.length > 0 ? (
-        <ol className="wk-upnext">
-          {rest.map((row) => <li key={row.id}><span>{row.title}</span></li>)}
+      {showing ? (
+        <ol className="wk-flag-queue">
+          {open.map((row) => (
+            <li key={row.id}>
+              <span className="wk-flag-q">
+                <b>{row.title}</b>
+                {row.question}
+              </span>
+              {planner ? (
+                <span className="wk-flag-do">
+                  <button type="button" onClick={() => clear(row)}>Answered</button>
+                  <Link href={`${base}/plan?open=${row.id}`}>Open</Link>
+                </span>
+              ) : null}
+            </li>
+          ))}
         </ol>
       ) : null}
 
       {failure ? <p className="ws-msg" role="status">{failure}</p> : null}
-    </section>
+    </div>
   );
 }

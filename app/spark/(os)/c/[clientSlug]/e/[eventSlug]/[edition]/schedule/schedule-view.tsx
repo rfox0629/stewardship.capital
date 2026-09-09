@@ -9,6 +9,7 @@ import { Select } from "@spark/_components/select";
 import { AddIdea } from "../plan/add-idea";
 import { IdeaPanel } from "../plan/idea-panel";
 import type { Idea } from "../plan/board";
+import type { EngagementReference } from "@lib/spark/engagement";
 import { addIdea, placeIdea } from "../plan/actions";
 
 import { scheduleIdea } from "../plan/actions";
@@ -88,6 +89,14 @@ export type Cue = {
   note: string | null;
   /** Some cues are ideas placed inside this moment rather than plain beats. */
   ideaId: string | null;
+};
+
+/** Something the venue already has. It is not a plan until somebody says so. */
+export type Amenity = {
+  name: string;
+  category?: string;
+  availability?: string;
+  confirm?: string;
 };
 
 export type RelatedRecord = {
@@ -203,6 +212,7 @@ function MomentDrawer({
   cues,
   related,
   ideas,
+  amenities,
   onClose,
 }: {
   moment: Moment;
@@ -212,6 +222,7 @@ function MomentDrawer({
   cues: Cue[];
   related: RelatedRecord[];
   ideas: TentativeIdea[];
+  amenities: Amenity[];
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -369,7 +380,8 @@ function MomentDrawer({
               <i aria-hidden="true">{expanded === "activities" ? "−" : "+"}</i>
             </button>
             {expanded === "activities" ? (
-              <ActivityEditor moment={moment} activities={inside} route={route} ideas={ideas} />
+              <ActivityEditor moment={moment} activities={inside} route={route}
+                ideas={ideas} amenities={amenities} />
             ) : null}
 
             <button
@@ -637,16 +649,26 @@ function ActivityEditor({
   activities,
   route,
   ideas,
+  amenities,
 }: {
   moment: Moment;
   activities: Cue[];
   route: Route;
   ideas: TentativeIdea[];
+  amenities: Amenity[];
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-  const [source, setSource] = useState<"new" | "idea">("new");
+  const [source, setSource] = useState<"new" | "idea" | "venue">("new");
   const [fromIdea, setFromIdea] = useState(ideas[0]?.id ?? "");
+  /* The property's own list, browsable but never automatic. Thirty amenities
+     existing is not thirty decisions; adding one is. */
+  const [category, setCategory] = useState<string | null>(null);
+  const already = new Set(activities.map((activity) => activity.cue.toLowerCase()));
+  const categories = [...new Set(amenities.map((a) => a.category ?? "Other"))];
+  const offered = category
+    ? amenities.filter((a) => (a.category ?? "Other") === category)
+    : amenities;
   const base = `/spark/c/${route.clientSlug}/e/${route.eventSlug}/${route.edition}`;
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
@@ -693,9 +715,51 @@ function ActivityEditor({
           onClick={() => setSource("idea")}>
           From idea
         </button>
+        <button type="button" aria-pressed={source === "venue"} disabled={amenities.length === 0}
+          onClick={() => setSource("venue")}>
+          From the venue
+        </button>
       </div>
 
-      {source === "new" ? (
+      {source === "venue" ? (
+        <div className="ev-venue-pick">
+          <p className="ev-ros-hint">
+            What the property already has. Reading the list changes nothing;
+            adding one says this block is offering it.
+          </p>
+          <div className="ev-cue-source ev-venue-filters" role="group" aria-label="Kind">
+            <button type="button" aria-pressed={category === null}
+              onClick={() => setCategory(null)}>All {amenities.length}</button>
+            {categories.map((name) => (
+              <button key={name} type="button" aria-pressed={category === name}
+                onClick={() => setCategory(category === name ? null : name)}>{name}</button>
+            ))}
+          </div>
+          <div className="ev-venue-list">
+            {offered.map((amenity) => {
+              const added = already.has(amenity.name.toLowerCase());
+              return (
+                <button
+                  key={amenity.name}
+                  type="button"
+                  className={`ev-venue-item ${added ? "ev-venue-added" : ""}`}
+                  disabled={pending || added}
+                  onClick={() =>
+                    run(() =>
+                      addActivity(
+                        route.clientSlug, route.eventSlug, route.edition,
+                        moment.id, amenity.name,
+                      ),
+                    )}
+                >
+                  <span>{amenity.name}</span>
+                  {added ? <i>offered</i> : amenity.availability ? <i>{amenity.availability}</i> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : source === "new" ? (
         <form
           className="ev-cue-form"
           action={(formData) =>
@@ -877,6 +941,8 @@ export function ScheduleView({
   tentative = [],
   ideas = [],
   momentOptions = [],
+  amenities = [],
+  reference,
 }: {
   moments: Moment[];
   days: DayLane[];
@@ -890,6 +956,10 @@ export function ScheduleView({
   /** Everything under consideration, so it can be worked on from here. */
   ideas?: Idea[];
   momentOptions?: Array<{ id: string; label: string }>;
+  /** What the property offers. Reference until somebody chooses one. */
+  amenities?: Amenity[];
+  /** The libraries behind the weekend, offered inside an idea. */
+  reference?: EngagementReference;
 }) {
   const planner = role === "planner";
   const hydrated = useHydrated();
@@ -1671,6 +1741,7 @@ export function ScheduleView({
           cues={cues.filter((cue) => cue.momentId === openMoment.id)}
           related={related.filter((row) => row.momentId === openMoment.id)}
           ideas={tentative}
+          amenities={amenities}
           onClose={() => {
             setOpenId(null);
             setOverrides((prev) => {
@@ -1725,6 +1796,7 @@ export function ScheduleView({
           route={route}
           planner={planner}
           moments={momentOptions}
+          reference={reference}
           onClose={() => setOpenIdea(null)}
           onPlace={(day) =>
             startTransition(async () => {

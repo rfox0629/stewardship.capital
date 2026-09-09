@@ -2703,6 +2703,69 @@
 
 .ev-cue-pick { grid-column: span 2; min-width: 0; }
 
+/* --------------------------------------------------- what the property has
+
+   A third source for an activity, beside writing one and drawing one from an
+   idea. The list is the venue's, not the weekend's: reading it changes
+   nothing, and an amenity only becomes part of the evening when somebody adds
+   it to a block. One already offered here is shown and disabled rather than
+   hidden, so the same thing cannot be added twice and its absence is never
+   mistaken for the property not having it.
+   ========================================================================= */
+
+.ev-venue-pick { margin-top: 4px; }
+
+.ev-venue-filters { flex-wrap: wrap; max-width: 100%; }
+.ev-venue-filters button { padding: 4px 9px; font-size: 0.74rem; }
+
+.ev-venue-list {
+  display: grid;
+  gap: 4px;
+  max-height: 232px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ev-venue-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ws-line, #ccd2db);
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 0.84rem;
+  text-align: left;
+  color: var(--ws-ink, #16181d);
+  cursor: pointer;
+}
+
+.ev-venue-item:hover:not(:disabled) {
+  border-color: #6b7280;
+  background: rgba(27, 30, 36, 0.035);
+}
+
+.ev-venue-item i {
+  flex: none;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--ws-ink-2, #39404d);
+}
+
+.ev-venue-item:disabled { cursor: default; }
+
+.ev-venue-added {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .ev-venue-list { max-height: 180px; }
+}
+
 /* ============================================ what has no hour, and what
    happens inside one
 
