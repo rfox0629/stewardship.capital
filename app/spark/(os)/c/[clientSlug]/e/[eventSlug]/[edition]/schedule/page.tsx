@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { DAY_NAMES, DAY_ORDER, dayDateLabel, parseTimeLabel, todayKey } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
-import { PlanTabs } from "../plan-tabs";
+import { gatherIdeas } from "@lib/spark/ideas";
 import { ScheduleView, type Cue, type DayLane, type Moment, type RelatedRecord } from "./schedule-view";
 
 export const metadata = { title: "Schedule" };
@@ -30,6 +30,7 @@ type Row = {
   location: string | null;
   status: string;
   note: string | null;
+  display_mode: string;
   spark_id: string | null;
   spark: { title: string } | { title: string }[] | null;
 };
@@ -58,7 +59,7 @@ export default async function SchedulePage({ params }: PageProps) {
     context.supabase
       .from("schedule_items")
       .select(
-        "id, day_key, starts_label, ends_label, daypart, title, track, location, status, note, spark_id, spark:sparks(title)",
+        "id, day_key, starts_label, ends_label, daypart, title, track, location, status, note, display_mode, spark_id, spark:sparks(title)",
       )
       .eq("engagement_id", engagementId),
     /* Every live idea. The ones carrying a day become ghosts on their day;
@@ -102,6 +103,8 @@ export default async function SchedulePage({ params }: PageProps) {
     status: row.status,
     note: row.note,
     daypart: row.daypart,
+    /* A window of the day rather than an appointment in it. */
+    background: row.display_mode === "background",
     sparkId: row.spark_id,
     sparkTitle: (Array.isArray(row.spark) ? row.spark[0] : row.spark)?.title ?? null,
     minutes: parseTimeLabel(row.starts_label),
@@ -174,12 +177,17 @@ export default async function SchedulePage({ params }: PageProps) {
     date: dayDateLabel(context.engagement.startsOn, key),
   }));
 
+  /* The weekend is the working canvas now, so the ideas come with it: the
+     same ones, assembled the same way, so nothing has to be learned twice. */
+  const { ideas, momentOptions } = planner
+    ? await gatherIdeas(context.supabase, engagementId, base, true)
+    : { ideas: [], momentOptions: [] };
+
   return (
     <>
       <div className="ws-plan-top">
         <div className="ws-plan-titles">
           <h2 className="ws-title">{role === "stakeholder" ? "Schedule" : "Plan"}</h2>
-          {role !== "stakeholder" ? <PlanTabs base={base} active="weekend" /> : null}
         </div>
       </div>
       <ScheduleView
@@ -191,6 +199,8 @@ export default async function SchedulePage({ params }: PageProps) {
         base={base}
         cues={cues}
         related={related}
+        ideas={ideas}
+        momentOptions={momentOptions}
         tentative={((tentativeQ.data ?? []) as Array<{
           id: string;
           title: string;

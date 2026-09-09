@@ -18,8 +18,12 @@
   --ws-ink-2: #39404d;
   --ws-line: #ccd2db;
   --ws-line-soft: #e6e9ee;
-  --ws-accent: #1d4ed8;
-  --ws-accent-soft: #eaf0ff;
+  /* The product has no brand colour of its own on the working surface. What
+     used to be blue is charcoal: an active state, a drop target and a link
+     read as emphasis rather than as a second identity competing with the
+     client's above. */
+  --ws-accent: #1b1e24;
+  --ws-accent-soft: #eef0f3;
   --ws-warn: #a3480d;
   --ws-good: #12694a;
   --ws-radius: 10px;
@@ -47,38 +51,6 @@
   letter-spacing: -0.015em;
   color: var(--ws-ink);
   margin: 0 0 8px;
-}
-
-/* The Plan's two sides, as one control. Ideas is the workbench and Weekend
-   is the canvas; switching between them is a lens change, not a journey, so
-   it is a segmented control and not two links. */
-.ws-lens-seg {
-  display: inline-flex;
-  gap: 2px;
-  background: var(--ws-ground);
-  border: 1px solid var(--ws-line);
-  border-radius: 9px;
-  padding: 2px;
-}
-
-.ws-lens-seg a {
-  border-radius: 7px;
-  padding: 6px 16px;
-  font-family: var(--ev-body), system-ui, sans-serif;
-  font-size: 0.83rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  text-transform: none;
-  color: var(--ws-ink-2);
-  transition: background 0.12s ease, color 0.12s ease;
-}
-
-.ws-lens-seg a:hover { color: var(--ws-ink); }
-
-.ws-lens-seg a.ws-seg-on {
-  background: var(--ws-ink);
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(16, 20, 28, 0.24);
 }
 
 /* ------------------------------------------------------------ the bar */
@@ -216,7 +188,7 @@
 }
 
 .ws-card-considering { border-left-color: #9aa3b2; }
-.ws-card-discuss { border-left-color: #c2790f; background: #fffdf7; }
+.ws-card-discuss { border-left-color: #6b7280; background: #f7f8fa; }
 .ws-card-planned { border-left-color: #12694a; background: #f6fbf8; }
 
 .ws-card-title {
@@ -243,7 +215,7 @@
   padding: 2px 6px;
 }
 
-.ws-tag-discuss { color: #8a5205; background: #fdf0d8; }
+.ws-tag-discuss { color: #4c525e; background: #eef0f3; }
 .ws-tag-planned { color: #0d5238; background: #dff3e8; }
 
 /* One line of typing at the head of a day. */
@@ -583,8 +555,8 @@
   width: 10px; height: 10px; border-radius: 50%; margin-left: 6px;
   background: var(--ws-line);
 }
-.ws-need-needed { background: #c2790f; }
-.ws-need-holding { background: #1d4ed8; }
+.ws-need-needed { background: #6b7280; }
+.ws-need-holding { background: #1b1e24; }
 .ws-need-confirmed { background: var(--ws-good); }
 
 .ws-empty { font-size: 0.9rem; color: var(--ws-ink-2); padding: 10px 2px; }
@@ -686,7 +658,7 @@
 }
 
 .ws-standing-estimate { color: #3c4453; background: #eceff3; }
-.ws-standing-discuss { color: #8a5205; background: #fdf0d8; }
+.ws-standing-discuss { color: #4c525e; background: #eef0f3; }
 .ws-standing-protected { color: #1d3f8a; background: #e6ecfb; }
 .ws-standing-committed { color: #0d5238; background: #dff3e8; }
 
@@ -817,7 +789,7 @@
 /* Ideas over the schedule: outlined, never solid, never mistakable. */
 .ev-ghost {
   background: rgba(194, 121, 15, 0.09);
-  border: 1px dashed #c2790f;
+  border: 1px dashed #6b7280;
   color: #7a4a08;
   font-weight: 600;
 }
@@ -1019,7 +991,7 @@
   border-radius: 7px;
   font-size: 0.86rem;
   font-weight: 600;
-  color: #16346f;
+  color: #1b1e24;
 }
 
 .wk-amenity-group { margin-bottom: 14px; }
@@ -1051,14 +1023,14 @@
 .wk-confirm {
   font-size: 0.76rem;
   line-height: 1.35;
-  color: #8a5205;
+  color: #4c525e;
 }
 
 .wk-confirm-none { color: var(--ws-ink-2); }
 
 .wk-avail-builtin { color: #0d5238; background: #dff3e8; }
 .wk-avail-rental { color: #1d3f8a; background: #e6ecfb; }
-.wk-avail-reviewconfirmed { color: #8a5205; background: #fdf0d8; }
+.wk-avail-reviewconfirmed { color: #4c525e; background: #eef0f3; }
 
 .wk-drinks li { display: flex; flex-direction: column; gap: 3px; }
 .wk-drinks span { font-size: 0.8rem; color: var(--ws-ink-2); line-height: 1.4; }
@@ -1110,8 +1082,8 @@
   color: var(--ws-ink-2);
 }
 
-.wk-figure-warm { border-color: #e6bf7a; background: #fffdf7; }
-.wk-figure-warm b { color: #8a5205; }
+.wk-figure-warm { border-color: #d5dae2; background: #f7f8fa; }
+.wk-figure-warm b { color: #4c525e; }
 .wk-figure-over b { color: var(--ws-warn); }
 
 .wk-sec-head {
@@ -1151,8 +1123,8 @@
   flex-direction: column;
   gap: 5px;
   background: var(--ws-card);
-  border: 1px solid #e6bf7a;
-  border-left: 4px solid #c2790f;
+  border: 1px solid #d5dae2;
+  border-left: 4px solid #6b7280;
   border-radius: var(--ws-radius);
   padding: 13px 15px;
   box-shadow: var(--ws-shadow);
@@ -1185,8 +1157,8 @@
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #8a5205;
-  background: #fdf0d8;
+  color: #4c525e;
+  background: #eef0f3;
   border-radius: 5px;
   padding: 4px 9px;
 }
@@ -1376,9 +1348,9 @@
 
 .wk-avail-builtin { color: #0d5238; background: #dff3e8; }
 .wk-avail-rental { color: #1d3f8a; background: #e6ecfb; }
-.wk-avail-reviewconfirmed { color: #8a5205; background: #fdf0d8; }
+.wk-avail-reviewconfirmed { color: #4c525e; background: #eef0f3; }
 
-.wk-confirm { font-size: 0.75rem; line-height: 1.35; color: #8a5205; }
+.wk-confirm { font-size: 0.75rem; line-height: 1.35; color: #4c525e; }
 
 .wk-make { align-self: flex-start; margin-top: 4px; padding: 5px 11px; font-size: 0.78rem; }
 
@@ -1451,7 +1423,7 @@
   border-radius: 8px;
   font-size: 0.87rem;
   font-weight: 600;
-  color: #16346f;
+  color: #1b1e24;
 }
 
 /* ============================================================ idea lanes */
@@ -1472,7 +1444,7 @@
   min-height: 200px;
 }
 
-.ws-lane-warm { border-color: #e6bf7a; background: #fffdf8; }
+.ws-lane-warm { border-color: #d5dae2; background: #f7f8fa; }
 
 .ws-lane-over {
   border-color: var(--ws-accent);
@@ -1525,7 +1497,7 @@
   padding: 2px 6px;
 }
 
-.ws-chip-day { color: #16346f; background: var(--ws-accent-soft); }
+.ws-chip-day { color: #1b1e24; background: var(--ws-accent-soft); }
 .ws-chip-mark { color: #0d5238; background: #dff3e8; }
 
 /* --------------------------------------------------------- deciding */
@@ -1553,8 +1525,8 @@
 .ws-decide button:hover { transform: translateY(-1px); }
 .ws-decide-yes { color: #0d5238 !important; border-color: #a9dcc2 !important; background: #f2fbf6 !important; }
 .ws-decide-yes[aria-pressed="true"] { background: var(--ws-good) !important; color: #fff !important; border-color: var(--ws-good) !important; }
-.ws-decide-wait { color: #8a5205 !important; border-color: #e6bf7a !important; background: #fffdf7 !important; }
-.ws-decide-wait[aria-pressed="true"] { background: #8a5205 !important; color: #fff !important; border-color: #8a5205 !important; }
+.ws-decide-wait { color: #4c525e !important; border-color: #d5dae2 !important; background: #f7f8fa !important; }
+.ws-decide-wait[aria-pressed="true"] { background: #4c525e !important; color: #fff !important; border-color: #4c525e !important; }
 
 .ws-shelf-row {
   display: flex;
@@ -1642,7 +1614,7 @@ input.ws-row-owner {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #8a5205;
+  color: #4c525e;
 }
 
 .wk-queue-head span {
@@ -1657,9 +1629,9 @@ input.ws-row-owner {
   justify-content: space-between;
   gap: 22px;
   flex-wrap: wrap;
-  background: #fffdf7;
-  border: 1px solid #e8c689;
-  border-left: 5px solid #c2790f;
+  background: #f7f8fa;
+  border: 1px solid #d5dae2;
+  border-left: 5px solid #6b7280;
   border-radius: 11px;
   padding: 18px 20px;
 }
@@ -1673,7 +1645,7 @@ input.ws-row-owner {
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8a5205;
+  color: #4c525e;
   margin-bottom: 6px;
 }
 
@@ -1961,7 +1933,7 @@ input.ws-row-owner {
   font-style: normal;
   font-size: 0.76rem;
   font-weight: 700;
-  color: #16346f;
+  color: #1b1e24;
   background: var(--ws-accent-soft);
   border-radius: 999px;
   padding: 4px 11px;
@@ -1969,7 +1941,7 @@ input.ws-row-owner {
 
 .wk-loose i { margin-left: auto; font-style: normal; color: var(--ws-accent); font-weight: 700; }
 
-.ws-btn-attention { border-color: var(--ws-accent); color: #16346f; background: var(--ws-accent-soft); }
+.ws-btn-attention { border-color: var(--ws-accent); color: #1b1e24; background: var(--ws-accent-soft); }
 
 .ws-shelf-filter { display: flex; gap: 6px; margin-bottom: 14px; }
 
@@ -1991,7 +1963,7 @@ input.ws-row-owner {
   border-color: var(--ws-ink);
 }
 
-.ws-chip-gap { color: #16346f; background: var(--ws-accent-soft); }
+.ws-chip-gap { color: #1b1e24; background: var(--ws-accent-soft); }
 
 /* =================================================== the shell stops here
 
@@ -2025,7 +1997,7 @@ input.ws-row-owner {
 
 .ev-main .wk-passage { color: var(--ws-ink); }
 .ev-main .ws-msg { color: var(--ws-warn); }
-.ev-main .wk-takeaway { color: #16346f; }
+.ev-main .wk-takeaway { color: #1b1e24; }
 .ev-main .wk-justdid p { color: #0d5238; }
 .ev-main .wk-queue-clear-line { color: #0d5238; }
 .ev-main .wk-confirm { color: #7a4a08; }
@@ -2187,9 +2159,9 @@ input.ws-row-owner {
 }
 
 .ws-question {
-  border: 1px solid #e8c689;
-  border-left: 4px solid #c2790f;
-  background: #fffdf7;
+  border: 1px solid #d5dae2;
+  border-left: 4px solid #6b7280;
+  background: #f7f8fa;
   border-radius: 10px;
   padding: 12px 14px;
   margin: 12px 0;
@@ -2201,7 +2173,7 @@ input.ws-row-owner {
   font-weight: 800;
   letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: #8a5205;
+  color: #4c525e;
 }
 
 .ev-main .ws-question-text {
@@ -2224,7 +2196,7 @@ input.ws-row-owner {
   cursor: pointer;
 }
 
-.ws-flag:hover { border-color: #c2790f; color: #8a5205; }
+.ws-flag:hover { border-color: #6b7280; color: #4c525e; }
 
 .ws-sheet { margin-top: 9px; }
 
@@ -2293,9 +2265,9 @@ input.ws-row-owner {
 .ws-quickadd-wide { max-width: 460px; margin-bottom: 14px; }
 .ws-quickadd-wide input { padding: 11px 13px; font-size: 0.92rem; }
 
-.ws-card-question { border-left-color: #c2790f; background: #fffdf8; }
+.ws-card-question { border-left-color: #6b7280; background: #f7f8fa; }
 .ws-card-planned { border-left-color: #12694a; }
-.ws-chip-q { color: #8a5205; background: #fdf0d8; }
+.ws-chip-q { color: #4c525e; background: #eef0f3; }
 
 .ev-cue-ideas { margin-top: 12px; display: grid; gap: 5px; }
 .ev-main .ev-cue-idea { color: var(--ws-accent); font-weight: 600; }
@@ -2416,7 +2388,7 @@ input.ws-row-owner {
    painting the whole card, because one idea can be scheduled and costed and
    owned all at once and a card cannot be four colours. The single exception
    is a question, which is a state of the idea rather than an attachment. */
-.ws-idea-q { border-left-color: #c2790f; }
+.ws-idea-q { border-left-color: #6b7280; }
 .ws-idea-pending { opacity: 0.6; border-style: dashed; cursor: default; }
 .ws-idea-grab { cursor: grab; }
 .ws-idea-grab:active { cursor: grabbing; }
@@ -2448,9 +2420,9 @@ input.ws-row-owner {
   padding: 2px 6px;
 }
 
-.ws-mark-q { color: #8a5205; background: #fdf0d8; }
+.ws-mark-q { color: #4c525e; background: #eef0f3; }
 .ws-mark-when { color: #0d5238; background: #dff3e8; }
-.ws-mark-ok { color: #16346f; background: var(--ws-accent-soft); }
+.ws-mark-ok { color: #1b1e24; background: var(--ws-accent-soft); }
 
 .ev-main .ws-empty-line { font-size: 0.9rem; color: var(--ws-ink-2); padding: 10px 2px; }
 
@@ -2690,16 +2662,18 @@ input.ws-row-owner {
    is no day filter above them and no day chip on any card.
    ========================================================================= */
 
+/* The title and the working surface, with nothing between them to justify a
+   gap. Every vertical space here has to earn its place. */
 .ws-plan-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
 }
 
 .ws-plan-titles { min-width: 0; }
-.ws-plan-titles .ws-title { margin: 0 0 9px; font-size: 1.55rem; }
+.ws-plan-titles .ws-title { margin: 0; font-size: 1.5rem; }
 .ws-plan-tools { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 
 /* A filter is a state, not furniture: it appears only while one is on. */
@@ -2991,7 +2965,7 @@ input.ws-row-owner {
   color: var(--ws-ink);
 }
 
-.ws-tray-wide .ws-tray-label span { background: var(--ws-accent-soft); color: #16346f; }
+.ws-tray-wide .ws-tray-label span { background: var(--ws-accent-soft); color: #1b1e24; }
 
 .ws-tray-cards { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; min-width: 0; }
 .ws-tray-cards .ws-idea { flex: 0 1 215px; }
@@ -3028,9 +3002,27 @@ input.ws-row-owner {
   padding: 4px 2px;
   font-size: 0.76rem;
   font-weight: 600;
-  color: #16346f;
+  color: #1b1e24;
 }
 
 /* An empty column while something is in the air is an invitation, not a
    report, so it keeps a landable shape instead of collapsing. */
 .ws-col-cards { min-height: 26px; }
+
+/* The way into the planner, where the weekend actually lives. */
+.ev-main .wk-open-planner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 6px;
+  padding: 16px 18px;
+  background: var(--ws-ink);
+  border-radius: var(--ws-radius);
+  color: #fff;
+  box-shadow: var(--ws-shadow);
+}
+
+.wk-open-planner b { font-size: 1rem; font-weight: 700; }
+.wk-open-planner span { flex: 1 1 auto; font-size: 0.88rem; color: rgba(255, 255, 255, 0.72); }
+.wk-open-planner i { font-style: normal; font-size: 1.1rem; }
+.ev-main .wk-open-planner:hover { background: #000; }

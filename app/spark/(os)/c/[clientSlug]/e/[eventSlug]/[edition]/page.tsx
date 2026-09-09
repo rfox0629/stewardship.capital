@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { DAY_NAMES, DAY_ORDER, parseTimeLabel } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
 import { QuestionQueue, type Question } from "./questions";
 import { Reference } from "./reference";
@@ -36,10 +35,8 @@ export default async function WeekendPage({ params }: PageProps) {
   const { engagement, supabase } = context;
   const planner = context.role === "planner" || context.staff;
 
-  const [ideasQ, scheduleQ, actionsQ, budgetQ, needsQ, planLinksQ] = await Promise.all([
+  const [ideasQ, actionsQ, budgetQ, needsQ, planLinksQ] = await Promise.all([
     supabase.from("sparks").select("id, title, detail, open_question, question_answer, status, tentative_day, tentative_daypart")
-      .eq("engagement_id", engagement.id),
-    supabase.from("schedule_items").select("day_key, starts_label, daypart, title, track")
       .eq("engagement_id", engagement.id),
     supabase.from("tasks").select("status, estimated_cents").eq("engagement_id", engagement.id),
     supabase.from("budget_lines").select("planned_cents").eq("engagement_id", engagement.id),
@@ -91,17 +88,6 @@ export default async function WeekendPage({ params }: PageProps) {
     { value: money(available), label: "Available", href: `${base}/budget`, over: available < 0 },
   ];
 
-  /* The weekend as it stands, one column per day, titles only. An untimed
-     moment sorts into the part of the day it names rather than to the end,
-     so "Afternoon: free time" reads where the afternoon actually is. */
-  const BAND: Record<string, number> = {
-    morning: 8 * 60, afternoon: 13 * 60, evening: 18 * 60, anytime: 21 * 60,
-  };
-  const at = (row: { starts_label: string | null; daypart: string | null }) =>
-    parseTimeLabel(row.starts_label) ?? BAND[row.daypart ?? ""] ?? 9999;
-  const moments = (scheduleQ.data ?? []).slice().sort((a, b) => at(a) - at(b));
-  const present = new Set(moments.map((row) => row.day_key));
-  const days = DAY_ORDER.filter((key) => key !== "wed" || present.has("wed"));
 
   return (
     <div className="wk">
@@ -142,32 +128,14 @@ export default async function WeekendPage({ params }: PageProps) {
         </Link>
       ) : null}
 
-      <section className="wk-snapshot" aria-label="The weekend as it stands">
-        <header className="wk-sec-head">
-          <h3>The weekend</h3>
-          <Link href={`${base}/schedule`}>Open the calendar</Link>
-        </header>
-        <div className="wk-days">
-          {days.map((key) => {
-            const mine = moments.filter((row) => row.day_key === key);
-            return (
-              <div key={key} className="wk-daycol">
-                <p className="wk-dayname">{DAY_NAMES[key]}</p>
-                {mine.length === 0 ? (
-                  <p className="wk-dayempty">Nothing yet</p>
-                ) : (
-                  mine.map((row, index) => (
-                    <p key={index} className="wk-moment">
-                      <span>{row.starts_label ?? row.daypart}</span>
-                      {row.title}
-                    </p>
-                  ))
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      {/* The weekend itself is one click away and is the only place it is
+          written down. Repeating it here as text was a second itinerary to
+          keep in step with the first, and it always lost. */}
+      <Link className="wk-open-planner" href={`${base}/schedule`}>
+        <b>Open the planner</b>
+        <span>Ideas, what still needs a time, and the calendar itself</span>
+        <i aria-hidden="true">&rarr;</i>
+      </Link>
 
       <Reference
         reference={engagement.reference ?? {}}

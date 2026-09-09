@@ -68,13 +68,12 @@ export const isPlanned = (idea: Idea) =>
 type Lens = "open" | "question" | "aside";
 
 export function IdeaBoard({
-  ideas, route, planner, moments, tabs,
+  ideas, route, planner, moments,
 }: {
   ideas: Idea[];
   route: Route;
   planner: boolean;
   moments: Array<{ id: string; label: string }>;
-  tabs: React.ReactNode;
 }) {
   const hydrated = useHydrated();
   const [openId, setOpenId] = useState<string | null>(() =>
@@ -262,8 +261,7 @@ export function IdeaBoard({
     <>
       <div className="ws-plan-top">
         <div className="ws-plan-titles">
-          <h2 className="ws-title">Plan</h2>
-          {tabs}
+          <h2 className="ws-title">Ideas</h2>
         </div>
         {planner ? (
           <div className="ws-plan-tools">
