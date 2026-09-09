@@ -28,6 +28,8 @@ type MomentFields = {
   location: string | null;
   status: string;
   note: string | null;
+  /** How it is drawn, never what it is. */
+  display: string;
 };
 
 const readFields = (formData: FormData): MomentFields | null => {
@@ -38,6 +40,8 @@ const readFields = (formData: FormData): MomentFields | null => {
   const track = String(formData.get("track") ?? "");
   const location = String(formData.get("location") ?? "").trim().slice(0, 120);
   const status = String(formData.get("status") ?? "draft");
+  /* An unchecked box sends nothing, which is how a checkbox says false. */
+  const display = formData.get("background") === "background" ? "background" : "normal";
   const note = String(formData.get("note") ?? "").trim().slice(0, 400);
 
   if (!(DAY_ORDER as readonly string[]).includes(day)) return null;
@@ -55,6 +59,7 @@ const readFields = (formData: FormData): MomentFields | null => {
     location: location || null,
     status,
     note: note || null,
+    display,
   };
 };
 
@@ -130,6 +135,7 @@ export async function updateMoment(
       location: fields.location,
       status: fields.status,
       note: fields.note,
+      display_mode: fields.display,
     })
     .eq("id", momentId)
     .eq("engagement_id", context.engagement.id)

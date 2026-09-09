@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  ideasStillOpen,
   pendingBlocks,
-  unscheduledIdeas,
   type Placeholder,
   type ScheduledRow,
 } from "../lib/spark/weekend.ts";
@@ -89,37 +89,35 @@ test("two occurrences of one idea retire their own placeholders only", () => {
   );
 });
 
-/* ------------------------------------------------- what the overlay offers */
+/* --------------------------------------------------- what the bank offers */
 
-test("an idea with no scheduled moment is still offered", () => {
-  assert.equal(unscheduledIdeas([{ scheduled: 0 }]).length, 1);
+const idea = (over: Partial<{ state: string; schedule: unknown[]; inMoments: unknown[] }> = {}) => ({
+  state: "open",
+  schedule: [] as unknown[],
+  inMoments: [] as unknown[],
+  ...over,
 });
 
-test("an idea that has been scheduled is not offered as unscheduled", () => {
-  assert.deepEqual(unscheduledIdeas([{ scheduled: 1 }]), []);
+test("an idea with nowhere to be is offered", () => {
+  assert.equal(ideasStillOpen([idea()]).length, 1);
 });
 
-test("an idea scheduled several times is not offered either", () => {
-  assert.deepEqual(unscheduledIdeas([{ scheduled: 2 }]), []);
+test("an idea that became a moment is not offered", () => {
+  assert.deepEqual(ideasStillOpen([idea({ schedule: [{}] })]), []);
 });
 
-test("an idea placed inside another moment is not offered either", () => {
-  /* A boat ride happening during free time has been placed. It has no moment
-     of its own and never will, and offering it as unplaced invites somebody
-     to place it twice. */
-  assert.deepEqual(unscheduledIdeas([{ scheduled: 1 }]), []);
+test("an idea happening inside another moment is not offered either", () => {
+  /* A boat ride during free time has been placed. It has no moment of its own
+     and never will, and offering it invites somebody to place it twice. */
+  assert.deepEqual(ideasStillOpen([idea({ inMoments: [{}] })]), []);
 });
 
-test("only placement hides an idea, never an action or a cost", () => {
-  /* Attaching a receipt to an idea does not place it in the weekend, so the
-     overlay must keep offering it. Anything else quietly loses ideas. */
-  const ideas = [
-    { name: "has an action", scheduled: 0 },
-    { name: "has a cost", scheduled: 0 },
-    { name: "is on the calendar", scheduled: 1 },
-  ];
-  assert.deepEqual(
-    unscheduledIdeas(ideas).map((idea) => idea.name),
-    ["has an action", "has a cost"],
-  );
+test("an idea set aside is not offered", () => {
+  assert.deepEqual(ideasStillOpen([idea({ state: "aside" })]), []);
+});
+
+test("only placement removes an idea from the bank, never an action or a cost", () => {
+  /* Attaching a receipt to an idea does not put it in the weekend, so the
+     bank must keep offering it. Anything else quietly loses ideas. */
+  assert.equal(ideasStillOpen([idea(), idea()]).length, 2);
 });

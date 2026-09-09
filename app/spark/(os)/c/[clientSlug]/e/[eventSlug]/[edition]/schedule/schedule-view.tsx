@@ -4,8 +4,12 @@ import Link from "next/link";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
 import { parseTimeLabel } from "@lib/spark/days";
-import { pendingBlocks, unscheduledIdeas } from "@lib/spark/weekend";
+import { ideasStillOpen, pendingBlocks } from "@lib/spark/weekend";
 import { Select } from "@spark/_components/select";
+import { AddIdea } from "../plan/add-idea";
+import { IdeaPanel } from "../plan/idea-panel";
+import type { Idea } from "../plan/board";
+import { addIdea, placeIdea } from "../plan/actions";
 
 import { scheduleIdea } from "../plan/actions";
 
@@ -59,6 +63,10 @@ export type Moment = {
   note: string | null;
   /** A moment the sheet gives without a clock time carries a part of day. */
   daypart: string | null;
+  /** A window of the day that other moments happen during: team arrival, the
+   *  setup before guests come, free time. Drawn behind them, and related to
+   *  them by nothing but the clock. */
+  background: boolean;
   sparkId: string | null;
   sparkTitle: string | null;
   minutes: number | null;
@@ -129,6 +137,9 @@ const MIN_BLOCK_PX = 14;
 /* Below this a block is one line: time and title, nothing else. */
 const TIGHT_PX = 40;
 const DURATIONS = [15, 30, 45, 60, 90, 120];
+/* The bank shows a handful and offers the rest, so it stays a strip rather
+   than becoming the board it replaced. */
+const IDEA_CHIPS = 8;
 
 /* Two drags exist on this screen and they mean opposite things. Carrying an
    idea creates a moment; carrying a moment moves that exact row. They use
@@ -289,6 +300,22 @@ function MomentDrawer({
                 </select>
               </div>
             </div>
+            <label className="ev-display-mode">
+              <input
+                type="checkbox"
+                name="background"
+                defaultChecked={moment.background}
+                value="background"
+              />
+              <span>
+                <b>Use as a background time block</b>
+                <em>
+                  A window of the day, like team arrival or free time. It sits
+                  behind whatever happens during it, and moving it leaves those
+                  moments where they are.
+                </em>
+              </span>
+            </label>
             <div className="ev-field">
               <label>Location</label>
               <input name="location" defaultValue={moment.location ?? ""} maxLength={120} />
@@ -848,6 +875,8 @@ export function ScheduleView({
   cues = [],
   related = [],
   tentative = [],
+  ideas = [],
+  momentOptions = [],
 }: {
   moments: Moment[];
   days: DayLane[];
@@ -858,6 +887,9 @@ export function ScheduleView({
   cues?: Cue[];
   related?: RelatedRecord[];
   tentative?: TentativeIdea[];
+  /** Everything under consideration, so it can be worked on from here. */
+  ideas?: Idea[];
+  momentOptions?: Array<{ id: string; label: string }>;
 }) {
   const planner = role === "planner";
   const hydrated = useHydrated();
@@ -887,12 +919,7 @@ export function ScheduleView({
       : null,
   );
   const [addDay, setAddDay] = useState<string | null>(null);
-  /* The day's loose ideas are the point of the tray, so they are there by
-     default and can be put away. */
-  const [showSparks, setShowSparks] = useState<boolean>(() =>
-    typeof window === "undefined" ||
-    new URLSearchParams(window.location.search).get("sparks") !== "0",
-  );
+
   const [overrides, setOverrides] = useState<Map<string, Override>>(new Map());
   const [failure, setFailure] = useState<string | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -906,6 +933,13 @@ export function ScheduleView({
   /* A real moment being given its hour, either dragged onto one or opened. */
   const [carryingMoment, setCarryingMoment] = useState<Moment | null>(null);
   const [placing, setPlacing] = useState<Moment | null>(null);
+  /* The bank of what is still only being considered, and the idea opened out
+     of it. Both live here so a planning meeting never leaves this screen. */
+  const [openIdea, setOpenIdea] = useState<string | null>(null);
+  const [allIdeas, setAllIdeas] = useState(false);
+  const [addingIdea, setAddingIdea] = useState(false);
+  const [addMenu, setAddMenu] = useState(false);
+  const [captured, setCaptured] = useState<string[]>([]);
   const [placed, setPlaced] = useState<
     Array<{
       key: string; ideaId: string; title: string; day: string; minutes: number; length: number;
@@ -1102,15 +1136,19 @@ export function ScheduleView({
     const tight = length * PX_PER_MIN < TIGHT_PX;
     const marker = markers.get(moment.id);
     const open = OPEN_SPACE.test(moment.title);
+    /* A window is drawn behind, and its own track colour would compete with
+       the moments standing on it, so it does not take one. */
+    const window = moment.background && !inTimeline;
 
     const classes = [
       "ev-block",
-      TRACK_CLASS[moment.track] ?? "ev-b-logistics",
+      window ? "ev-block-window" : TRACK_CLASS[moment.track] ?? "ev-b-logistics",
       moment.status === "draft" ? "ev-block-draft" : "",
-      open ? "ev-block-open" : "",
+      open && !window ? "ev-block-open" : "",
       dragging ? "ev-block-dragging" : "",
       inTimeline ? "ev-block-row" : "",
-      tight && !inTimeline ? "ev-block-tight" : "",
+      moment.background && inTimeline ? "ev-block-row-window" : "",
+      tight && !inTimeline && !window ? "ev-block-tight" : "",
     ].join(" ");
 
     const style = inTimeline
@@ -1180,7 +1218,6 @@ export function ScheduleView({
 
   /* Until hydration, mirror exactly what the server rendered. */
   const shownView = hydrated ? view : "weekend";
-  const shownSparks = hydrated ? showSparks : false;
   /* Everything the weekend has decided on but not yet timed. It belongs to a
      day and it is real, so it is not an idea; it simply has no hour. It waits
      in a bank above the calendar rather than being drawn at one, because a
@@ -1191,15 +1228,22 @@ export function ScheduleView({
 
   /* A day's loose ideas: still being considered, not yet anywhere. Shown only
      when asked for, and never as a block, because an idea has no time. */
-  const ideasFor = (dayKey: string) =>
-    shownSparks && planner
-      ? unscheduledIdeas(tentative.filter((idea) => idea.day === dayKey))
-      : [];
-
   /* What each timed block contains. These ride with their parent rather than
      claiming hours of their own. */
   const activitiesOf = (momentId: string) =>
     cues.filter((cue) => cue.momentId === momentId && cue.offset === null);
+
+  /* The bank holds what is still being considered: live ideas that have not
+     become a moment and are not already happening inside one. Everything
+     else about an idea, including where it might roughly belong, is in the
+     idea itself, one click away. */
+  /* A captured idea is drawn the instant it is typed and stops being drawn
+     the instant the real one arrives under the same name. */
+  const landedTitles = new Set(ideas.map((idea) => idea.title));
+  const capturing = captured.filter((title) => !landedTitles.has(title));
+  const unplacedIdeas = ideasStillOpen(ideas);
+  const shownIdeas = allIdeas ? unplacedIdeas : unplacedIdeas.slice(0, IDEA_CHIPS);
+  const openedIdea = hydrated ? ideas.find((idea) => idea.id === openIdea) ?? null : null;
 
   /* ------------------------------------------- an idea dropped onto an hour */
 
@@ -1289,19 +1333,33 @@ export function ScheduleView({
   /* The sheet gives starts and no ends: a moment runs until the next one
      begins. Without this every block would claim a default hour and bury
      the three that follow it. */
+  /* A moment given a start and no end runs until the next one begins.
+     Windows are left out of that chain in both directions: a window is not
+     the end of the moment before it, and the moments standing on a window do
+     not cut it short. Otherwise team arrival would stop the instant the first
+     van was unloaded. */
   const impliedEnd = new Map<string, number>();
   for (const day of laneDays) {
-    const timed = merged
-      .filter((moment) => moment.day === day.key && moment.minutes !== null)
+    const onTheClock = merged.filter(
+      (moment) => moment.day === day.key && moment.minutes !== null,
+    );
+    const foreground = onTheClock
+      .filter((moment) => !moment.background)
       .toSorted((a, b) => (a.minutes as number) - (b.minutes as number));
-    timed.forEach((moment, index) => {
+
+    foreground.forEach((moment, index) => {
       const start = moment.minutes as number;
-      const next = timed[index + 1]?.minutes ?? null;
+      const next = foreground[index + 1]?.minutes ?? null;
       const end =
         moment.endMinutes ??
         (next !== null ? Math.min(next, start + DEFAULT_LEN) : start + DEFAULT_LEN);
       impliedEnd.set(moment.id, Math.max(start + 10, end));
     });
+
+    for (const window of onTheClock.filter((moment) => moment.background)) {
+      const start = window.minutes as number;
+      impliedEnd.set(window.id, Math.max(start + 10, window.endMinutes ?? start + DEFAULT_LEN));
+    }
   }
   const shownDayKey = hydrated ? dayKey : (today ?? firstBusyDay);
   const openMoment = hydrated
@@ -1324,23 +1382,30 @@ export function ScheduleView({
         <div className="ev-bar-left" />
         <div className="ev-bar-right">
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
-          {planner && tentative.length > 0 ? (
-            <button
-              type="button"
-              className={`ev-bar-toggle ${shownSparks ? "ev-bar-toggle-on" : ""}`}
-              aria-pressed={shownSparks}
-              onClick={() => setShowSparks((current) => !current)}
-            >
-              {shownSparks ? "Ideas shown" : "Show ideas"}
-            </button>
-          ) : null}
-          {/* This screen is the schedule, so its add button adds to the
-              schedule. Considering something is what Ideas is for. */}
+          {/* One button. The two things a planner adds are a thought and a
+              thing that is happening, and the menu says which in the words a
+              planner would use rather than the words the database would. */}
           {planner ? (
-            <button type="button" className="ev-bar-add"
-              onClick={() => setAddDay(activeDay?.key ?? "thu")}>
-              <span aria-hidden="true">+</span> Add moment
-            </button>
+            <div className="ev-bar-menu">
+              <button type="button" className="ev-bar-add" aria-expanded={addMenu}
+                onClick={() => setAddMenu((open) => !open)}>
+                <span aria-hidden="true">+</span> Add
+              </button>
+              {addMenu ? (
+                <div className="ev-add-menu" role="menu">
+                  <button type="button" role="menuitem"
+                    onClick={() => { setAddMenu(false); setAddingIdea(true); }}>
+                    Idea
+                    <em>Something we are considering</em>
+                  </button>
+                  <button type="button" role="menuitem"
+                    onClick={() => { setAddMenu(false); setAddDay(activeDay?.key ?? "thu"); }}>
+                    Moment
+                    <em>Something happening this weekend</em>
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
           <button type="button" className="ev-bar-quiet"
             onClick={() => setView(shownView === "weekend" ? "day" : "weekend")}>
@@ -1353,6 +1418,55 @@ export function ScheduleView({
           ) : null}
         </div>
       </div>
+
+      {/* What is still only being considered, above what is decided but
+          untimed, above the clock. One flow, top to bottom, and none of it a
+          separate screen. */}
+      {planner && (unplacedIdeas.length > 0 || capturing.length > 0) ? (
+        <div className="ev-bank ev-bank-ideas">
+          <p className="ev-bank-label">
+            Ideas <span>{unplacedIdeas.length + capturing.length}</span>
+          </p>
+          <div className="ev-bank-cards">
+            {capturing.map((title) => (
+              <span key={title} className="ev-bank-chip ev-bank-idea ev-bank-pending">
+                <span>{title}</span>
+              </span>
+            ))}
+            {shownIdeas.map((idea) => (
+              <button
+                key={idea.id}
+                type="button"
+                className={`ev-bank-chip ev-bank-idea ${
+                  carrying?.id === idea.id ? "ev-bank-carried" : ""}`}
+                draggable={hydrated}
+                title="Drag onto an hour, or click to open it"
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(IDEA_DRAG, idea.id);
+                  event.dataTransfer.setData("text/plain", idea.title);
+                  event.dataTransfer.effectAllowed = "copy";
+                  setCarrying({
+                    id: idea.id, title: idea.title, status: "captured",
+                    day: idea.day ?? "", daypart: idea.daypart ?? "anytime", scheduled: 0,
+                  });
+                }}
+                onDragEnd={() => { setCarrying(null); setLanding(null); }}
+                onClick={() => setOpenIdea(idea.id)}
+              >
+                <span>{idea.title}</span>
+                {idea.question ? <i title="Needs an answer">?</i> : null}
+                {idea.day && idea.day !== "all" ? <i>{idea.day}</i> : null}
+              </button>
+            ))}
+            {unplacedIdeas.length > IDEA_CHIPS ? (
+              <button type="button" className="ev-idea-more"
+                onClick={() => setAllIdeas((open) => !open)}>
+                {allIdeas ? "Fewer" : `+${unplacedIdeas.length - IDEA_CHIPS}`}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {shownView === "weekend" && needsPlacement.length > 0 ? (
         <div className="ev-bank">
@@ -1486,44 +1600,14 @@ export function ScheduleView({
                       const shownDay = drag?.id === moment.id && drag.moved ? drag.previewDay : moment.day;
                       return shownDay === day.key;
                     })
+                    /* Windows first, so the day's moments stand on them
+                       rather than behind them. Order is the layering, and it
+                       is decided here rather than left to the data. */
+                    .toSorted((a, b) => Number(b.background) - Number(a.background))
                     .map((moment) => block(moment))}
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      ) : null}
-
-      {shownView === "weekend" && laneDays.some((day) => ideasFor(day.key).length > 0) ? (
-        <div className="ev-bank ev-bank-ideas">
-          <p className="ev-bank-label">
-            Ideas <span>{laneDays.reduce((n, day) => n + ideasFor(day.key).length, 0)}</span>
-          </p>
-          <div className="ev-bank-days">
-            {laneDays.map((day) => (
-              <div key={day.key} className="ev-bank-day-cell">
-                {ideasFor(day.key).map((idea) => (
-                  <button
-                    key={idea.id}
-                    type="button"
-                    className={`ev-bank-chip ev-bank-idea ${
-                      carrying?.id === idea.id ? "ev-bank-carried" : ""}`}
-                    draggable={hydrated && planner}
-                    title="Drag onto an hour, or click to place it"
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData(IDEA_DRAG, idea.id);
-                      event.dataTransfer.setData("text/plain", idea.title);
-                      event.dataTransfer.effectAllowed = "copy";
-                      setCarrying(idea);
-                    }}
-                    onDragEnd={() => { setCarrying(null); setLanding(null); }}
-                    onClick={() => setAsking({ idea, day: day.key, minutes: null })}
-                  >
-                    <span>{idea.title}</span>
-                  </button>
-                ))}
-              </div>
-            ))}
           </div>
         </div>
       ) : null}
@@ -1575,21 +1659,6 @@ export function ScheduleView({
             ))}
           </div>
 
-          {ideasFor(dayKeyNow).length > 0 ? (
-            <div className="ev-bank ev-bank-ideas ev-bank-day">
-              <p className="ev-bank-label">
-                Ideas for this day <span>{ideasFor(dayKeyNow).length}</span>
-              </p>
-              <div className="ev-bank-cards">
-                {ideasFor(dayKeyNow).map((idea) => (
-                  <button key={idea.id} type="button" className="ev-bank-chip ev-bank-idea"
-                    onClick={() => setAsking({ idea, day: dayKeyNow, minutes: null })}>
-                    <span>{idea.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </>
       ) : null}
 
@@ -1648,11 +1717,64 @@ export function ScheduleView({
         />
       ) : null}
 
+      {/* The whole idea, opened where it was found. Everything it can become
+          is in here, so a planning meeting never changes screens. */}
+      {openedIdea ? (
+        <IdeaPanel
+          idea={openedIdea}
+          route={route}
+          planner={planner}
+          moments={momentOptions}
+          onClose={() => setOpenIdea(null)}
+          onPlace={(day) =>
+            startTransition(async () => {
+              const outcome = await placeIdea(
+                route.clientSlug, route.eventSlug, route.edition,
+                openedIdea.id, day, day ? openedIdea.daypart : null);
+              if (!outcome.ok) setFailure("That move did not save.");
+            })}
+          onDeleted={() => setOpenIdea(null)}
+        />
+      ) : null}
+
+      {addingIdea ? (
+        <AddIdea
+          onClose={() => setAddingIdea(false)}
+          onAdd={(title, day) => {
+            setAddingIdea(false);
+            setCaptured((prev) => [...prev, title]);
+            startTransition(async () => {
+              const outcome = await addIdea(
+                route.clientSlug, route.eventSlug, route.edition, title, day);
+              /* Only drop the placeholder if it failed. On success it stays
+                 until the real idea arrives, or the chip blinks out and back
+                 and the capture looks lost. */
+              if (!outcome.ok) {
+                setCaptured((prev) => prev.filter((entry) => entry !== title));
+                setFailure(outcome.message ?? "That idea did not save.");
+              }
+            });
+          }}
+        />
+      ) : null}
+
       {addDay ? (
         <AddMomentSheet
           route={route}
           days={laneDays}
           presetDay={addDay}
+          /* Purely informational: if the hour lands inside a window, say so,
+             so nobody wonders whether they are double booking. It creates no
+             relationship and blocks nothing. */
+          windowAt={(dayKey, minutes) =>
+            merged.find(
+              (moment) =>
+                moment.background &&
+                moment.day === dayKey &&
+                moment.minutes !== null &&
+                minutes >= moment.minutes &&
+                minutes < (moment.endMinutes ?? moment.minutes + DEFAULT_LEN),
+            )?.title ?? null}
           onClose={() => setAddDay(null)}
         />
       ) : null}
@@ -1675,16 +1797,23 @@ function AddMomentSheet({
   route,
   days,
   presetDay,
+  windowAt,
   onClose,
 }: {
   route: Route;
   days: DayLane[];
   presetDay: string;
+  windowAt: (dayKey: string, minutes: number) => string | null;
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [day, setDay] = useState(presetDay);
+  const [startsAt, setStartsAt] = useState("");
+  const during = (() => {
+    const parsed = parseTimeLabel(startsAt.trim().toLowerCase());
+    return parsed === null ? null : windowAt(day, parsed);
+  })();
   const [length, setLength] = useState(60);
   const [more, setMore] = useState(false);
 
@@ -1715,8 +1844,10 @@ function AddMomentSheet({
             <Select label="Day" value={day} onChange={setDay} compact
               options={days.map((lane) => ({ value: lane.key, label: lane.name }))} />
             <input className="ev-when-time" name="starts" required placeholder="12:00 pm"
-              aria-label="Start time" />
+              aria-label="Start time" value={startsAt}
+              onChange={(event) => setStartsAt(event.target.value)} />
           </div>
+          {during ? <p className="ev-during">During {during}</p> : null}
 
           <p className="ws-modal-label">How long?</p>
           <div className="ws-modal-days">

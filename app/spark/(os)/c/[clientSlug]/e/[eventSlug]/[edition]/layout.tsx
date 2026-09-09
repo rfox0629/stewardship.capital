@@ -54,13 +54,14 @@ export default async function EngagementLayout({ children, params }: LayoutProps
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   const working = role === "planner" || role === "client";
 
-  /* Four doors. Ideas and the Schedule are two sides of one Plan, and the
-     run of show lives inside a scheduled moment. A guest's only door is the
-     schedule, and a link a reader cannot open is never rendered for them. */
+  /* Four doors. Plan opens the weekend itself: the ideas, what needs a time
+     and the calendar are one surface now, so there is nothing to choose
+     between. A guest's only door is the schedule, and a link a reader cannot
+     open is never rendered for them. */
   const nav: EventNavItem[] = working
     ? [
         { href: base, label: "The weekend" },
-        { href: `${base}/plan`, label: "Plan", also: [`${base}/schedule`] },
+        { href: `${base}/schedule`, label: "Plan", also: [`${base}/plan`] },
         { href: `${base}/actions`, label: "Actions" },
         { href: `${base}/budget`, label: "Budget" },
       ]

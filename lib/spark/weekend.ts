@@ -59,20 +59,28 @@ export const pendingBlocks = <T extends Placeholder>(
 };
 
 /**
- * Which ideas still have nowhere to be.
+ * Which ideas are still only ideas.
  *
- * The overlay answers one question: what have we not placed in the weekend
- * yet. An idea that has become a moment of its own, or that happens inside
+ * The bank answers one question: what have we not put into the weekend yet.
+ * An idea that has become a moment of its own, or that happens inside
  * somebody else's, has an answer either way and stops being offered as though
  * it needed one.
  *
  * Placement is the only test. An idea with an action, a cost or a requirement
  * is still unplaced, and hiding it because somebody attached a receipt to it
- * would quietly lose it.
- *
- * The idea itself is untouched either way. This is about the overlay, and a
- * second occurrence is still available deliberately, from the idea.
+ * would quietly lose it. An idea set aside is not offered either: it was
+ * considered and put down, which is also an answer.
  */
-export const unscheduledIdeas = <T extends { scheduled: number }>(
+export const ideasStillOpen = <
+  T extends {
+    state: string;
+    schedule: readonly unknown[];
+    inMoments: readonly unknown[];
+  },
+>(
   ideas: readonly T[],
-): T[] => ideas.filter((idea) => idea.scheduled === 0);
+): T[] =>
+  ideas.filter(
+    (idea) =>
+      idea.state === "open" && idea.schedule.length === 0 && idea.inMoments.length === 0,
+  );

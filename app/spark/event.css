@@ -102,7 +102,7 @@
   font-weight: 700;
   letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: #e9b949;
+  color: #f4f5f7;
 }
 
 .ev-meta {
@@ -119,8 +119,10 @@
 
 /* --------------------------------------------------------------- nav */
 
+/* The product's own navigation, so it wears the product's charcoal rather
+   than the client's colour. The identity above it is the client's. */
 .ev-nav {
-  background: var(--ev-primary);
+  background: #1b1e24;
   position: sticky;
   top: 0;
   z-index: 40;
@@ -159,12 +161,24 @@
 
 .ev-nav a[aria-current="page"] {
   color: #faf6f1;
-  border-bottom-color: #e9b949;
+  border-bottom-color: #ffffff;
 }
 
 /* -------------------------------------------------------------- page */
 
+/* Below the hero, this is Spark, not SHINE.
+ *
+ * The masthead above wears the client's photograph, logo, colours and type,
+ * and should. The product underneath belongs to Stewardship.Capital and has
+ * to look the same for the next client without anyone redesigning it, so the
+ * event's palette is redefined here to a neutral one. Everything inside still
+ * reads var(--ev-primary) and friends; they simply resolve to charcoal now,
+ * which keeps one set of rules instead of two. */
 .ev-main {
+  --ev-primary: #1b1e24;
+  --ev-secondary: #4c525e;
+  --ev-accent: #2b3038;
+  --ev-deep: #3a404a;
   flex: 1;
   /* Whitespace is not hierarchy. The plan begins just under the nav. */
   padding: clamp(18px, 2.4vw, 26px) 0 clamp(40px, 6vw, 72px);
@@ -914,12 +928,14 @@
 
 /* ---------------------------------------------------- schedule views */
 
+/* The controls sit just under the title and the calendar just under them.
+   There is nothing in between that needs announcing. */
 .ev-schedule-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: clamp(20px, 3vw, 28px);
+  margin: 0 0 10px;
 }
 
 .ev-toggle {
@@ -1790,9 +1806,12 @@
   color: var(--ev-secondary);
 }
 
+/* The rule is the boundary beneath the day header. The hours begin below it,
+   so the first label sits under the line rather than astride it. */
 .ev-grid-scroll {
   display: flex;
-  border-top: 2px solid var(--ev-primary);
+  border-top: 1px solid var(--ws-line, #ccd2db);
+  padding-top: 12px;
 }
 
 .ev-grid-axis {
@@ -1864,12 +1883,15 @@
   z-index: 3;
 }
 
-.ev-b-program { border-left-color: var(--ev-primary); }
-.ev-b-meals { border-left-color: var(--ev-secondary); background: #fdf7ef; }
-.ev-b-experience { border-left-color: var(--ev-accent); }
-.ev-b-hospitality { border-left-color: var(--ev-deep); }
-.ev-b-logistics { border-left-color: #9a9c9f; }
-.ev-b-worship { border-left-color: #8a6d3b; }
+/* Track is still recorded and still editable; it stopped painting the
+   calendar. Six colours on a working surface is a legend to memorise, and the
+   distinction it drew was never the one a planner is looking for. */
+.ev-b-program,
+.ev-b-meals,
+.ev-b-experience,
+.ev-b-hospitality,
+.ev-b-logistics,
+.ev-b-worship { border-left-color: #1b1e24; }
 
 .ev-block-open {
   border-style: dashed;
@@ -2113,7 +2135,7 @@
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #6b5510;
+  color: #4c525e;
   cursor: grab;
   text-align: left;
   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
@@ -2130,7 +2152,7 @@
 
 .ev-ghost:hover {
   background: rgba(233, 185, 73, 0.36);
-  border-color: #9d7a1c;
+  border-color: #6b7280;
   box-shadow: 0 2px 8px rgba(30, 30, 30, 0.14);
   z-index: 6;
 }
@@ -2618,8 +2640,8 @@
 
 .ev-bar-toggle-on {
   background: rgba(233, 185, 73, 0.24);
-  border-color: #9d7a1c;
-  color: #6b5510;
+  border-color: #6b7280;
+  color: #4c525e;
 }
 
 /* When something happens: a day, a start, and a length. The end is
@@ -2648,7 +2670,7 @@
 .ev-when-time:focus,
 .ev-when-track:focus {
   outline: none;
-  border-color: var(--ws-accent, #1d4ed8);
+  border-color: var(--ws-accent, #1b1e24);
   box-shadow: 0 0 0 3px var(--ws-accent-soft, rgba(29, 78, 216, 0.14));
 }
 
@@ -2789,20 +2811,37 @@
 
 /* An idea is a different thing and looks like one: dashed, warm, and never
    sitting on the clock. */
+/* Tentative is a shape, not a colour. Dashed says "not decided" without
+   painting a second identity onto the working surface. */
 .ev-bank-ideas {
-  border-left-color: #9d7a1c;
-  background: rgba(233, 185, 73, 0.08);
+  border-left-color: #9aa1ad;
+  background: #fbfbfc;
 }
 
 .ev-bank-idea {
   border-style: dashed;
-  border-left: 3px dashed #9d7a1c;
-  background: rgba(233, 185, 73, 0.16);
-  color: #6b5510;
+  border-left: 3px dashed #9aa1ad;
+  background: #fff;
+  color: #4c525e;
   cursor: pointer;
+  /* A bank of thirty titles is a board again. Each one says enough to be
+     recognised and the rest waits inside the idea. */
+  max-width: 190px;
 }
 
-.ev-bank-idea:hover { border-color: #9d7a1c; }
+.ev-bank-idea:hover { border-color: #4c525e; color: #1b1e24; }
+
+/* Still on its way to the database. */
+.ev-bank-pending { opacity: 0.55; cursor: default; }
+
+/* A question worth answering, said in one character rather than a banner. */
+.ev-bank-idea i {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #6b7280;
+}
 
 .ev-bank-day { margin-top: 10px; }
 .ev-bank-day .ev-bank-label { flex: 0 0 100%; }
@@ -2848,4 +2887,116 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: #2c2d2f;
+}
+
+/* ================================================ windows of the day
+
+   Some moments are not appointments but stretches: the team arriving, the
+   setup before guests come, an afternoon left free. Things happen during
+   them, so they are drawn behind those things rather than among them. Quiet
+   enough to read past, present enough to explain what you are looking at.
+
+   Layering is decided in the markup, which paints windows first, and held
+   here so hover cannot lift one over the moments standing on it.
+   ========================================================================= */
+
+.ev-block:not(.ev-block-window) { z-index: 2; }
+
+.ev-block-window,
+.ev-block-window:hover {
+  z-index: 0;
+  /* Charcoal at a whisper, so it reads as part of the day rather than as
+     something switched off. */
+  background: rgba(27, 30, 36, 0.045);
+  border: 1px solid rgba(27, 30, 36, 0.16);
+  border-left-width: 3px;
+  box-shadow: none;
+  cursor: grab;
+}
+
+.ev-block-window:hover {
+  background: rgba(27, 30, 36, 0.075);
+  border-color: rgba(27, 30, 36, 0.34);
+}
+
+/* A window keeps its name at the top, where a moment sitting lower down
+   cannot hide it, and says it once. */
+.ev-block-window .ev-block-time,
+.ev-block-window .ev-block-title {
+  position: relative;
+  color: #4c525e;
+}
+
+.ev-block-window .ev-block-time {
+  font-size: 0.56rem;
+  letter-spacing: 0.09em;
+  opacity: 0.85;
+}
+
+.ev-block-window .ev-block-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Never the draft hatching: a window is not a work in progress, and stripes
+   behind live cards are noise. */
+.ev-block-window.ev-block-draft { background-image: none; }
+
+/* The grip stays reachable at the foot of a long window. */
+.ev-block-window .ev-block-grip { opacity: 0.5; }
+.ev-block-window:hover .ev-block-grip { opacity: 1; }
+
+/* On the phone the day is a list, so there is nothing to sit behind. The
+   window still reads as the quieter thing. */
+.ev-block-row-window {
+  background: rgba(27, 30, 36, 0.045);
+  border-color: rgba(27, 30, 36, 0.16);
+}
+
+.ev-block-row-window .ev-block-title {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.74rem;
+}
+
+/* The setting, in the moment's own drawer. */
+.ev-display-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 4px 0 12px;
+  padding: 9px 11px;
+  border: 1px solid rgba(58, 58, 59, 0.16);
+  border-radius: 8px;
+  background: #f7f8fa;
+  cursor: pointer;
+}
+
+.ev-display-mode input { margin-top: 3px; flex: 0 0 auto; }
+.ev-display-mode span { display: flex; flex-direction: column; gap: 3px; }
+.ev-display-mode b { font-size: 0.85rem; font-weight: 700; color: #2c2d2f; }
+.ev-display-mode em {
+  font-style: normal;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #6b6d72;
+}
+
+/* Informational only: which window an hour falls inside. */
+.ev-during {
+  margin: 2px 0 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4c525e;
+}
+
+@media (max-width: 760px) {
+  /* Stacked one per line, thirty ideas would push the calendar off the
+     screen. The bank keeps its height and scrolls inside itself. */
+  .ev-bank { flex-wrap: wrap; }
+  .ev-bank-label { flex: 0 0 100%; }
+  .ev-bank-cards { max-height: 148px; overflow-y: auto; width: 100%; }
+  .ev-bank-idea { max-width: 100%; }
 }
