@@ -337,10 +337,14 @@ export function IdeaPanel({
             <div className="ws-real-block ws-danger">
               {inThePlan ? (
                 <>
-                  <p className="ws-blocked-head">Already in the plan</p>
+                  <p className="ws-blocked-head">Not deleted: still in the plan</p>
                   <p className="ws-note">
-                    Remove its planned items before deleting. Set aside is the right answer for an
-                    idea the team considered and will not pursue.
+                    {idea.schedule.length > 0
+                      ? `It is on the calendar${idea.schedule.length > 1 ? ` ${idea.schedule.length} times` : ""}. Open that moment and choose Unschedule; the idea returns to the bank and can then be deleted.`
+                      : idea.inMoments.length > 0
+                        ? "It is happening inside a moment. Take it out of that moment first, then it can be deleted."
+                        : "It has actions, requirements or costs attached. Remove those first, then it can be deleted."}{" "}
+                    Set aside is the right answer for an idea the team considered and will not pursue.
                   </p>
                   <button type="button" className="ws-btn-quiet" onClick={() => setConfirming(false)}>Close</button>
                 </>
@@ -397,6 +401,9 @@ function ScheduleSheet({
         <form className="ws-quick-form" action={(f) => onRun(() => scheduleIdea(...r, idea.id, {
           day, starts: loose ? "" : String(f.get("starts") ?? ""),
           minutes: String(f.get("minutes") ?? ""), daypart, track,
+          /* Asked for from inside the idea, so another time on the calendar is
+             on purpose. A drag from the bank is refused a second time. */
+          another: true,
         }))}>
           <Select label="Day" value={day} onChange={setDay} options={DAYS} compact />
           {loose ? (

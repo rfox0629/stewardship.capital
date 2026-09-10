@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
 import { parseTimeLabel } from "@lib/spark/days";
-import { ideasStillOpen, pendingBlocks } from "@lib/spark/weekend";
+import { ideasStillOpen, pendingBlocks, timedOn, type Leaving } from "@lib/spark/weekend";
 import { Select } from "@spark/_components/select";
 import { AddIdea } from "../plan/add-idea";
 import { IdeaPanel } from "../plan/idea-panel";
@@ -236,6 +237,7 @@ function MomentDrawer({
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const router = useRouter();
   /* The drawer only mounts after hydration, so the deep link is safe here. */
   const [tab, setTab] = useState<DrawerTab>(() => {
     if (typeof window === "undefined") return "details";
@@ -379,12 +381,22 @@ function MomentDrawer({
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    await deleteMoment(route.clientSlug, route.eventSlug, route.edition, moment.id);
+                    const outcome = await deleteMoment(
+                      route.clientSlug, route.eventSlug, route.edition, moment.id,
+                    );
+                    if (!outcome.ok) {
+                      setMessage("That did not remove, so it is still on the calendar.");
+                      return;
+                    }
                     onClose();
+                    router.refresh();
                   })
                 }
               >
-                Remove
+                {/* A moment that came from an idea is being unscheduled: the
+                    idea goes back to the bank, untouched. Only a moment with
+                    no idea behind it is simply removed. */}
+                {moment.sparkId ? "Unschedule" : "Remove"}
               </button>
             </div>
             {message ? <p className="ev-drawer-msg" role="status">{message}</p> : null}
@@ -1049,10 +1061,17 @@ export function ScheduleView({
       key: string; ideaId: string; title: string; day: string; minutes: number; length: number;
       /** The row this became, once the server says which one it is. */
       id: string | null;
+      /** The moments on screen at the drop. A newer set means the server has
+       *  answered, and this placeholder is finished for good. */
+      basis: Moment[];
     }>
   >([]);
+  /* Ideas taken out of the bank the instant they were dropped, held out only
+     until the server answers. */
+  const [leaving, setLeaving] = useState<Leaving[]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
+  const router = useRouter();
 
   /* Overrides sit on top of the server's truth, so a committed drag holds
      its place until the refreshed data arrives carrying the same answer. */
@@ -1356,7 +1375,7 @@ export function ScheduleView({
      the instant the real one arrives under the same name. */
   const landedTitles = new Set(ideas.map((idea) => idea.title));
   const capturing = captured.filter((title) => !landedTitles.has(title));
-  const unplacedIdeas = ideasStillOpen(ideas);
+  const unplacedIdeas = ideasStillOpen(ideas, leaving);
   const bankIsLong = unplacedIdeas.length > 0;
   const openedIdea = hydrated ? ideas.find((idea) => idea.id === openIdea) ?? null : null;
 
@@ -1390,10 +1409,20 @@ export function ScheduleView({
     daypart?: string,
   ) => {
     const key = `${idea.id}-${day}-${minutes ?? daypart ?? "open"}-${Date.now()}`;
+    /* Two things are drawn before the server answers, and both are tied to
+       what was on screen at the drop. The card appears on the hour; the idea
+       leaves the bank. When the server's answer arrives both are finished,
+       and from then on only the server decides what is scheduled. Nothing
+       held here can bring a card back after it is removed, or keep an idea
+       out of the bank after it is unscheduled. */
     if (minutes !== null) {
-      setPlaced((prev) => [...prev,
-        { key, ideaId: idea.id, title: idea.title, day, minutes, length, id: null }]);
+      setPlaced((prev) => [
+        ...prev.filter((entry) => entry.basis === moments),
+        { key, ideaId: idea.id, title: idea.title, day, minutes, length, id: null, basis: moments },
+      ]);
     }
+    const hold: Leaving = { id: idea.id, basis: ideas };
+    setLeaving((prev) => [...prev.filter((entry) => entry.basis === ideas), hold]);
     setAsking(null);
     setFailure(null);
     startTransition(async () => {
@@ -1405,11 +1434,15 @@ export function ScheduleView({
       );
       if (!outcome.ok) {
         setPlaced((prev) => prev.filter((entry) => entry.key !== key));
+        setLeaving((prev) => prev.filter((entry) => entry !== hold));
         setFailure(outcome.message ?? "That did not schedule, so nothing was added.");
-        return;
+      } else {
+        setPlaced((prev) =>
+          prev.map((entry) => (entry.key === key ? { ...entry, id: outcome.id ?? null } : entry)));
       }
-      setPlaced((prev) =>
-        prev.map((entry) => (entry.key === key ? { ...entry, id: outcome.id ?? null } : entry)));
+      /* The action already revalidates. This makes sure the answer arrives
+         even when it did not, so nothing optimistic is left standing. */
+      router.refresh();
     });
   };
 
@@ -1487,8 +1520,7 @@ export function ScheduleView({
   const dayKeyNow = activeDay?.key ?? "";
   /* The phone gets the same three layers, flattened: what still needs a time,
      then the day on the clock, then what is only being considered. */
-  const dayTimed = merged
-    .filter((moment) => moment.day === dayKeyNow && moment.minutes !== null)
+  const dayTimed = timedOn(merged, dayKeyNow)
     .sort((a, b) => (a.minutes as number) - (b.minutes as number));
 
   return (
@@ -1727,12 +1759,8 @@ export function ScheduleView({
                         <span className="ev-block-title">{entry.title}</span>
                       </div>
                     ))}
-                  {merged
-                    .filter((moment) => {
-                      if (moment.minutes === null) return false;
-                      const shownDay = drag?.id === moment.id && drag.moved ? drag.previewDay : moment.day;
-                      return shownDay === day.key;
-                    })
+                  {timedOn(merged, day.key, (moment) =>
+                    drag?.id === moment.id && drag.moved ? drag.previewDay : moment.day)
                     /* Windows first, so the day's moments stand on them
                        rather than behind them. Order is the layering, and it
                        is decided here rather than left to the data. */
@@ -1823,15 +1851,22 @@ export function ScheduleView({
             .filter((moment) => moment.day === asking.day && moment.minutes !== null)
             .sort((a, b) => (a.minutes as number) - (b.minutes as number))
             .map((moment) => ({ id: moment.id, label: `${moment.starts} ${moment.title}` }))}
-          onInside={(momentId) =>
+          onInside={(momentId) => {
+            const ideaId = asking.idea.id;
+            const hold: Leaving = { id: ideaId, basis: ideas };
+            setLeaving((prev) => [...prev.filter((entry) => entry.basis === ideas), hold]);
+            setAsking(null);
             startTransition(async () => {
               const outcome = await placeIdeaInMoment(
-                route.clientSlug, route.eventSlug, route.edition,
-                asking.idea.id, momentId, "",
+                route.clientSlug, route.eventSlug, route.edition, ideaId, momentId, "",
               );
-              setAsking(null);
-              if (!outcome.ok) setFailure(outcome.message ?? "That did not save.");
-            })}
+              if (!outcome.ok) {
+                setLeaving((prev) => prev.filter((entry) => entry !== hold));
+                setFailure(outcome.message ?? "That did not save.");
+              }
+              router.refresh();
+            });
+          }}
           onSchedule={(minutes, length) =>
             schedule(asking.idea, asking.day, minutes, length, asking.idea.daypart)}
           onOpenEnded={() =>
@@ -1866,7 +1901,7 @@ export function ScheduleView({
                 openedIdea.id, day, day ? openedIdea.daypart : null);
               if (!outcome.ok) setFailure("That move did not save.");
             })}
-          onDeleted={() => setOpenIdea(null)}
+          onDeleted={() => { setOpenIdea(null); router.refresh(); }}
         />
       ) : null}
 
