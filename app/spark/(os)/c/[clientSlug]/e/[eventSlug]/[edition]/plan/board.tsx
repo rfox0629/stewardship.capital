@@ -6,7 +6,6 @@ import { addIdea, placeIdea } from "./actions";
 import { AddIdea } from "./add-idea";
 import { toIdeaState, type IdeaState } from "./idea-state";
 import { IdeaPanel } from "./idea-panel";
-import type { EngagementReference } from "@lib/spark/engagement";
 
 /**
  * The workbench.
@@ -24,6 +23,16 @@ import type { EngagementReference } from "@lib/spark/engagement";
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
 
+/**
+ * What an idea came out of, kept on the idea.
+ *
+ * The shape follows whatever the source carried: the Expand the Tent concepts
+ * carry a Scripture, the passage itself, why it belongs to this weekend, and
+ * how to run it. Anything else the record holds is still shown, labelled by
+ * its own key, so nothing in the source is quietly dropped.
+ */
+export type SourceContext = Record<string, string>;
+
 export type Idea = {
   id: string;
   title: string;
@@ -34,6 +43,8 @@ export type Idea = {
   reason: string | null;
   day: string | null;
   daypart: string | null;
+  /** The material this idea came out of, when it came out of something. */
+  source: SourceContext | null;
   schedule: Array<{ id: string; label: string; href: string; at: string | null }>;
   inMoments: Array<{ id: string; label: string; href: string }>;
   actions: Array<{ id: string; title: string; sub: string }>;
@@ -69,13 +80,12 @@ export const isPlanned = (idea: Idea) =>
 type Lens = "open" | "question" | "aside";
 
 export function IdeaBoard({
-  ideas, route, planner, moments, reference,
+  ideas, route, planner, moments,
 }: {
   ideas: Idea[];
   route: Route;
   planner: boolean;
   moments: Array<{ id: string; label: string }>;
-  reference?: EngagementReference;
 }) {
   const hydrated = useHydrated();
   const [openId, setOpenId] = useState<string | null>(() =>
@@ -392,7 +402,6 @@ export function IdeaBoard({
 
       {opened ? (
         <IdeaPanel idea={opened} route={route} planner={planner} moments={moments}
-          reference={reference}
           initialSheet={openSheet}
           onClose={closePanel}
           onPlace={(day) => move(opened.id, day)}

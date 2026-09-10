@@ -2554,6 +2554,53 @@ input.ws-row-owner {
 
 .ws-quiet-block { border-top-style: dashed; }
 
+/* ------------------------------------------------ where an idea came from
+
+   On the idea, not in a library two screens away. Quiet enough to read past
+   when you already know what the idea is, and complete enough that nobody has
+   to go and look the Scripture up. Read only: it records where the idea came
+   from and is never a second place to plan. */
+
+.ws-source { border-top-style: dashed; }
+
+.ws-source-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 9px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ws-ink-2);
+}
+
+.ws-source-head span {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ws-ink);
+}
+
+.ws-source-row {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--ws-ink-2);
+}
+
+.ws-source-row:last-child { margin-bottom: 0; }
+
+.ws-source-row b {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ws-ink);
+}
+
 .ws-real-line {
   display: block;
   padding: 9px 11px;
