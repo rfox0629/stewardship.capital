@@ -39,7 +39,6 @@ export default async function PlanPage({ params }: PageProps) {
       route={{ clientSlug, eventSlug, edition }}
       planner={planner}
       moments={momentOptions}
-      reference={context.engagement.reference ?? {}}
     />
   );
 }

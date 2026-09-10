@@ -1858,7 +1858,6 @@ export function ScheduleView({
           route={route}
           planner={planner}
           moments={momentOptions}
-          reference={reference}
           onClose={() => setOpenIdea(null)}
           onPlace={(day) =>
             startTransition(async () => {

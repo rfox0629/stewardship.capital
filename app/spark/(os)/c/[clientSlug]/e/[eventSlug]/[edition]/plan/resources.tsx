@@ -8,10 +8,15 @@ import { ideaFromReference } from "./actions";
 /**
  * The material the weekend rests on, one button away from the plan.
  *
- * Three collections: the programme concepts, what the property has, and the
- * drinks nobody has chosen between yet. This used to be three large doors on
- * a page of its own, which made reading reference feel like a stage of the
- * work. It is not a stage. It is what somebody reaches for mid sentence.
+ * Two collections, and only two: what the property has, and the drinks nobody
+ * has chosen between yet. Both are genuinely reusable, in the sense that they
+ * are lists somebody browses and picks from more than once.
+ *
+ * The Expand the Tent concepts used to be a third. They were not reusable in
+ * that sense at all: all seven were already ideas, so the library was a
+ * second copy of the bank, and the Scripture behind the knot tying sat two
+ * screens away from the knot tying. That material now lives on the ideas
+ * themselves and travels with them onto the calendar.
  *
  * Nothing here becomes part of the weekend by being read. Every row carries
  * one button, and that button makes an idea, which is the only way in:
@@ -20,7 +25,7 @@ import { ideaFromReference } from "./actions";
  */
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
-type Door = "vision" | "venue" | "drinks" | null;
+type Door = "venue" | "drinks" | null;
 
 /* A door can be linked to, so a meeting can open one from an agenda. */
 const noopSubscribe = () => () => {};
@@ -29,7 +34,7 @@ const useHydrated = () => useSyncExternalStore(noopSubscribe, () => true, () => 
 const wantedDoor = (): Door => {
   if (typeof window === "undefined") return null;
   const value = new URLSearchParams(window.location.search).get("ref");
-  return value === "vision" || value === "venue" || value === "drinks" ? value : null;
+  return value === "venue" || value === "drinks" ? value : null;
 };
 
 export function Resources({
@@ -46,7 +51,6 @@ export function Resources({
   const [open, setOpen] = useState<Door>(wantedDoor);
   const shown = hydrated ? open : null;
 
-  const vision = reference.vision;
   const venue = reference.venue;
   const drinks = reference.drinks;
 
@@ -57,15 +61,6 @@ export function Resources({
     sub: string;
     count: string;
   }> = [];
-  if (vision) {
-    doors.push({
-      key: "vision",
-      kicker: "Program",
-      title: vision.theme ?? "Vision",
-      sub: vision.scripture ?? "",
-      count: `${vision.elements?.length ?? 0} concepts`,
-    });
-  }
   if (venue) {
     doors.push({
       key: "venue",
@@ -111,12 +106,6 @@ export function Resources({
               </button>
             ))}
           </div>
-        </Sheet>
-      ) : null}
-
-      {shown === "vision" && vision ? (
-        <Sheet title={vision.theme ?? "Vision"} onClose={() => setOpen(null)}>
-          <VisionSheet vision={vision} route={route} planner={planner} />
         </Sheet>
       ) : null}
 
@@ -193,57 +182,6 @@ function MakeIdea({
     >
       {label}
     </button>
-  );
-}
-
-function VisionSheet({
-  vision,
-  route,
-  planner,
-}: {
-  vision: NonNullable<EngagementReference["vision"]>;
-  route: Route;
-  planner: boolean;
-}) {
-  const [openName, setOpenName] = useState<string | null>(null);
-
-  return (
-    <>
-      {vision.passage ? <p className="wk-passage">{vision.passage}</p> : null}
-      {vision.connection ? <p className="wk-body">{vision.connection}</p> : null}
-
-      <div className="wk-concepts">
-        {(vision.elements ?? []).map((element) => {
-          const isOpen = openName === element.name;
-          return (
-            <div key={element.name} className={`wk-concept ${isOpen ? "wk-concept-open" : ""}`}>
-              <button
-                type="button"
-                className="wk-concept-head"
-                aria-expanded={isOpen}
-                onClick={() => setOpenName(isOpen ? null : element.name)}
-              >
-                <b>{element.name}</b>
-                {element.scripture ? <span>{element.scripture}</span> : null}
-                <em>{isOpen ? "Close" : "Explore"}</em>
-              </button>
-              {isOpen ? (
-                <div className="wk-concept-body">
-                  {element.passage ? <p className="wk-passage">{element.passage}</p> : null}
-                  {element.connection ? <p className="wk-body">{element.connection}</p> : null}
-                  {element.practical ? (
-                    <p className="wk-practical"><b>Practical</b> {element.practical}</p>
-                  ) : null}
-                  {planner ? (
-                    <MakeIdea route={route} title={element.name} detail={element.practical} />
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    </>
   );
 }
 

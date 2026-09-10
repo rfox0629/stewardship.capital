@@ -25,6 +25,7 @@ type Row = {
   decision: string | null;
   tentative_day: string | null;
   tentative_daypart: string | null;
+  source_context: Record<string, string> | null;
 };
 
 /** An idea can be placed inside a moment, so callers need the moments too. */
@@ -38,7 +39,7 @@ export const gatherIdeas = async (
 ): Promise<{ ideas: Idea[]; momentOptions: MomentOption[] }> => {
   const [ideasQ, notesQ, momentsQ, actionsQ, needsQ, costsQ, cuesQ] = await Promise.all([
     supabase.from("sparks")
-      .select("id, title, detail, open_question, question_answer, status, decision, tentative_day, tentative_daypart")
+      .select("id, title, detail, open_question, question_answer, status, decision, tentative_day, tentative_daypart, source_context")
       .eq("engagement_id", engagementId)
       .order("created_at", { ascending: true }),
     supabase.from("spark_notes")
@@ -139,6 +140,9 @@ export const gatherIdeas = async (
     reason: row.decision,
     day: row.tentative_day,
     daypart: row.tentative_daypart,
+    /* Where it came from, carried on the idea rather than left in a library
+       somebody has to remember to open. */
+    source: row.source_context ?? null,
     schedule: schedule.get(row.id) ?? [],
     inMoments: inMoments.get(row.id) ?? [],
     actions: actions.get(row.id) ?? [],
