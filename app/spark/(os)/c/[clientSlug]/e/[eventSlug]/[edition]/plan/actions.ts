@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { deleteIdeaRefusal, repeatScheduleRefusal } from "@lib/spark/weekend";
+
 import { resolveEngagement } from "@lib/spark/engagement";
 import { shapeMoment } from "@lib/spark/schedule-moment";
 import { IDEA_STATE_TO_STATUS, type IdeaState } from "./idea-state";
@@ -289,7 +291,12 @@ export async function scheduleIdea(
   eventSlug: string,
   edition: string,
   ideaId: string,
-  fields: { day: string; starts?: string; minutes?: string; daypart?: string; track?: string; location?: string },
+  fields: {
+    day: string; starts?: string; minutes?: string; daypart?: string; track?: string; location?: string;
+    /** A second time on the calendar, asked for on purpose from inside the
+     *  idea. A drag from the bank never sets this. */
+    another?: boolean;
+  },
 ): Promise<ScheduleOutcome> {
   const context = await planner(clientSlug, eventSlug, edition);
   if (!context) return { ok: false };
@@ -302,6 +309,17 @@ export async function scheduleIdea(
     .eq("engagement_id", context.engagement.id)
     .maybeSingle();
   if (!idea) return { ok: false };
+
+  /* A drag of an idea already on the calendar, from a screen that had not yet
+     caught up or a drop that fired twice, must not quietly make a duplicate.
+     Another time is still possible; it is asked for from inside the idea. */
+  const { count: existing } = await context.supabase
+    .from("schedule_items")
+    .select("id", { count: "exact", head: true })
+    .eq("engagement_id", context.engagement.id)
+    .eq("spark_id", idea.id);
+  const refusal = repeatScheduleRefusal({ existing: existing ?? 0, another: fields.another === true });
+  if (refusal) return { ok: false, message: refusal };
 
   /* Every door to the schedule shapes its row the same way. */
   const shaped = shapeMoment({
@@ -558,12 +576,12 @@ export async function deleteIdea(
     ),
   );
 
-  if (counts.some((result) => (result.count ?? 0) > 0)) {
-    return {
-      ok: false,
-      message: "Already in the plan. Remove its planned items before deleting this idea.",
-    };
-  }
+  /* Refused, never cascaded, while anything still points at it. A deleted
+     idea with a moment left on the calendar is the orphan card USA-263 was
+     about; the foreign key would null the link and keep the card. */
+  const [schedule, tasks, resources, costs, cues] = counts.map((result) => result.count ?? 0);
+  const refusal = deleteIdeaRefusal({ schedule, tasks, resources, costs, cues });
+  if (refusal) return { ok: false, message: refusal };
 
   const { data, error } = await context.supabase
     .from("sparks").delete()
