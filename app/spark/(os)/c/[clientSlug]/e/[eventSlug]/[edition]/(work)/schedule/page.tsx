@@ -192,7 +192,7 @@ export default async function SchedulePage({ params }: PageProps) {
   return (
     <>
       <ScheduleView
-        title={role === "stakeholder" ? "Schedule" : "Plan"}
+        title="Calendar"
         moments={moments}
         days={days}
         role={role}
@@ -206,7 +206,6 @@ export default async function SchedulePage({ params }: PageProps) {
         /* The property's own list, so a planner deciding what to offer during
            free time can see what the place already has. */
         amenities={context.engagement.reference?.venue?.amenities ?? []}
-        reference={context.engagement.reference ?? {}}
         tentative={((tentativeQ.data ?? []) as Array<{
           id: string;
           title: string;

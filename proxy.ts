@@ -7,6 +7,7 @@ import {
   SPARK_ENTRY,
   isOpenSparkPath,
   isSparkPath,
+  workspaceRootOf,
 } from "./lib/spark/paths";
 import { createProxyClient, hasIdentity } from "./lib/supabase/proxy";
 
@@ -50,7 +51,22 @@ export async function proxy(request: NextRequest) {
        currently reach. A missing configuration, an expired session, a revoked
        refresh token, and a forged cookie all resolve to no access. */
     const access = supabase ? await resolveAccess(supabase) : null;
-    const decision = authorizeSparkPath(pathname, access);
+
+    /* A workspace root is where the weekend guide lives, and a published
+       guide is public. Ask the database, only for that one path, whether this
+       engagement has published it. */
+    const root = workspaceRootOf(pathname);
+    let publicGuide = false;
+    if (root && supabase) {
+      const { data } = await supabase.rpc("weekend_guide_published", {
+        p_client: root.clientSlug,
+        p_series: root.eventSlug,
+        p_edition: root.editionSlug,
+      });
+      publicGuide = data === true;
+    }
+
+    const decision = authorizeSparkPath(pathname, access, { publicGuide });
 
     if (!decision.allow) {
       const refusal = NextResponse.redirect(

@@ -81,6 +81,7 @@ const plannerContext = async (clientSlug: string, eventSlug: string, edition: st
 const revalidate = (clientSlug: string, eventSlug: string, edition: string) => {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   revalidatePath(`${base}/schedule`);
+  revalidatePath(`${base}/team`);
   revalidatePath(base);
 };
 
