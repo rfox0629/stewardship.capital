@@ -460,22 +460,157 @@ function DrinkDetail({ drink }: { drink: Drink | null }) {
 /* ---------------------------------------------------------- activities */
 
 function ActivityList({ activities, compact = false }: { activities: Activity[]; compact?: boolean }) {
+  const groups = activityGroups(activities);
+
+  if (compact) {
+    return (
+      <div className="gd-activities gd-activities-compact">
+        {groups.map((group) => (
+          <section key={group.category} className="gd-actmini" data-tone={toneOf(group.category)}>
+            <h4>
+              <CategoryIcon category={group.category} />
+              {group.category}
+            </h4>
+            <p>{group.activities.map((activity) => activity.name).join(" · ")}</p>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className={`gd-activities ${compact ? "gd-activities-compact" : ""}`}>
-      {activityGroups(activities).map((group) => (
-        <section key={group.category} className="gd-actgroup">
-          <h3>{group.category}</h3>
-          <ul>
-            {group.activities.map((activity) => (
-              <li key={activity.name}>
-                <span>{activity.name}</span>
-                {activity.note && !compact ? <em>{activity.note}</em> : null}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+    <div className="gd-activities">
+      <nav className="gd-actjump" aria-label="Jump to a category">
+        {groups.map((group) => (
+          <a key={group.category} href={`#act-${slugOf(group.category)}`} data-tone={toneOf(group.category)}>
+            <CategoryIcon category={group.category} />
+            {group.category}
+          </a>
+        ))}
+      </nav>
+      <div className="gd-actcards">
+        {groups.map((group) => (
+          <section
+            key={group.category}
+            id={`act-${slugOf(group.category)}`}
+            className="gd-actcard"
+            data-tone={toneOf(group.category)}
+            aria-labelledby={`act-${slugOf(group.category)}-title`}
+          >
+            <header>
+              <span className="gd-actbadge">
+                <CategoryIcon category={group.category} />
+              </span>
+              <h3 id={`act-${slugOf(group.category)}-title`}>{group.category}</h3>
+              <span className="gd-actcount">{group.activities.length}</span>
+            </header>
+            <ul>
+              {group.activities.map((activity) => (
+                <li key={activity.name}>
+                  <span className="gd-actname">{activity.name}</span>
+                  {activity.note ? <span className="gd-actnote">{activity.note}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
     </div>
+  );
+}
+
+const slugOf = (category: string) => category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+/** A color family per kind of thing, so a category reads before its name. */
+const toneOf = (category: string): string => {
+  const key = category.toLowerCase();
+  if (/water|lake|swim/.test(key)) return "lake";
+  if (/well|spa|rest|quiet/.test(key)) return "sage";
+  if (/gather|fire|food|eat|meal/.test(key)) return "ember";
+  if (/indoor|game/.test(key)) return "plum";
+  if (/spirit|faith|prayer|worship/.test(key)) return "gold";
+  return "forest";
+};
+
+function CategoryIcon({ category }: { category: string }) {
+  const key = category.toLowerCase();
+  const common = { viewBox: "0 0 24 24", "aria-hidden": true, className: "gd-caticon" } as const;
+  if (/water|lake|swim/.test(key)) {
+    return (
+      <svg {...common}>
+        <path d="M3 8.5c2 0 2-1.5 4.5-1.5S9.5 8.5 12 8.5s2.5-1.5 4.5-1.5S19 8.5 21 8.5" />
+        <path d="M3 13c2 0 2-1.5 4.5-1.5S9.5 13 12 13s2.5-1.5 4.5-1.5S19 13 21 13" />
+        <path d="M3 17.5c2 0 2-1.5 4.5-1.5s2 1.5 4.5 1.5 2.5-1.5 4.5-1.5 2.5 1.5 4.5 1.5" />
+      </svg>
+    );
+  }
+  if (/well|spa/.test(key)) {
+    return (
+      <svg {...common}>
+        <path d="M5 19.5C5 11 10.5 5.5 19.5 4.5c0 9-5.5 15-14.5 15z" />
+        <path d="M5 19.5l7.5-7.5" />
+      </svg>
+    );
+  }
+  if (/sport/.test(key)) {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M3.8 9.5c3 1 5.5 3.5 6.5 10.8M20.2 9.5c-3 1-5.5 3.5-6.5 10.8M7 5.2c2.8 2 7.2 2 10 0" />
+      </svg>
+    );
+  }
+  if (/gather|fire/.test(key)) {
+    return (
+      <svg {...common}>
+        <path d="M12 3c.8 3 5.5 5.2 5.5 10.5a5.5 5.5 0 0 1-11 0c0-2.8 1.6-4.4 2.7-5.4 0 2.1 1 3.3 2.6 3.4C11.2 8.6 10.8 5.8 12 3z" />
+      </svg>
+    );
+  }
+  if (/food|eat|meal/.test(key)) {
+    return (
+      <svg {...common}>
+        <path d="M7 3v7.5a2 2 0 0 0 2 2V21M5 3v5.5M9 3v5.5" />
+        <path d="M16.5 21V3c2.4 1.2 3.5 4.3 3.5 8.5h-3.5" />
+      </svg>
+    );
+  }
+  if (/indoor|game/.test(key)) {
+    return (
+      <svg {...common}>
+        <rect x="3" y="7" width="18" height="11" rx="4.5" />
+        <path d="M7.5 11v3M6 12.5h3" />
+        <circle cx="15.5" cy="11.3" r=".6" />
+        <circle cx="17.3" cy="13.7" r=".6" />
+      </svg>
+    );
+  }
+  if (/spirit|faith|prayer|worship/.test(key)) {
+    return (
+      <svg {...common}>
+        <path d="M12 3.5v17M7 8.5h10" />
+      </svg>
+    );
+  }
+  if (/outdoor|trail|walk|nature/.test(key)) {
+    return (
+      <svg {...common}>
+        <path d="M12 3l5 7h-3l4 6H6l4-6H7z" />
+        <path d="M12 16v4.5" />
+      </svg>
+    );
+  }
+  if (/rest|quiet/.test(key)) {
+    return (
+      <svg {...common}>
+        <path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.5 6.5 0 0 0 10 10z" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6-5.3-3-5.3 3 1.2-6L3.4 9.3l6-.7z" />
+    </svg>
   );
 }
 
