@@ -38,7 +38,7 @@ const KINDS = ["person", "vendor", "equipment", "supply", "deliverable"];
 
 const revalidate = (clientSlug: string, eventSlug: string, edition: string) => {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
-  for (const path of ["/plan", "/schedule", "/actions", "/budget", ""]) {
+  for (const path of ["/plan", "/schedule", "/actions", "/budget", "/team", ""]) {
     revalidatePath(`${base}${path}`);
   }
 };

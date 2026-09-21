@@ -151,24 +151,74 @@ test("membership of one edition does not carry to another of the same event", ()
   );
 });
 
-test("every role reaches the schedule of its own workspace", () => {
+test("every role reaches the weekend guide of its own workspace", () => {
   for (const who of [shineClient, shineGuest, shinePlanner]) {
-    assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, who), { allow: true });
+    assert.deepEqual(authorizeSparkPath(SHINE, who), { allow: true });
   }
+});
+
+test("the calendar is for working members; a guest reads the guide instead", () => {
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shinePlanner), { allow: true });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shineClient), { allow: true });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shineGuest), {
+    allow: false,
+    redirectTo: SHINE,
+  });
+});
+
+/* ------------------------------------------------------- the weekend guide */
+
+test("a published guide is open to anyone, with no session at all", () => {
+  assert.deepEqual(authorizeSparkPath(SHINE, null, { publicGuide: true }), { allow: true });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/`, null, { publicGuide: true }), { allow: true });
+  assert.deepEqual(authorizeSparkPath(SHINE, stranger, { publicGuide: true }), { allow: true });
+});
+
+test("an unpublished guide is as closed as the rest of the workspace", () => {
+  assert.deepEqual(authorizeSparkPath(SHINE, null), REFUSED);
+  assert.deepEqual(authorizeSparkPath(SHINE, null, { publicGuide: false }), REFUSED);
+  assert.deepEqual(authorizeSparkPath(SHINE, stranger), REFUSED);
+});
+
+test("publishing the guide opens the root and nothing beneath it", () => {
+  /* The team address is navigation, not permission: publishing the guest
+     guide must never carry the run of show out with it. */
+  for (const section of ["/team", "/schedule", "/budget", "/plan", "/actions"]) {
+    assert.deepEqual(
+      authorizeSparkPath(`${SHINE}${section}`, null, { publicGuide: true }),
+      REFUSED,
+      section,
+    );
+  }
+  assert.deepEqual(
+    authorizeSparkPath(`${SHINE}/team`, shineGuest, { publicGuide: true }),
+    { allow: false, redirectTo: SHINE },
+  );
+});
+
+test("the team guide is for working members only", () => {
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, shinePlanner), { allow: true });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, shineClient), { allow: true });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, shineGuest), {
+    allow: false,
+    redirectTo: SHINE,
+  });
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, stranger), REFUSED);
+  assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, null), REFUSED);
 });
 
 /* --------------------------------------------------- roles within a workspace */
 
-test("a guest is held to the schedule, and sent there rather than away", () => {
-  const home = { allow: false as const, redirectTo: `${SHINE}/schedule` };
+test("a guest is held to the guide, and sent there rather than away", () => {
+  const home = { allow: false as const, redirectTo: SHINE };
 
-  for (const section of ["", "/budget", "/plan", "/actions", "/sparks", "/tasks", "/resources"]) {
+  for (const section of ["/schedule", "/team", "/budget", "/plan", "/actions", "/sparks", "/tasks", "/resources"]) {
     assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineGuest), home, section);
   }
 });
 
 test("a client reaches the working surfaces but not the retired planner paths", () => {
-  for (const section of ["", "/budget", "/plan", "/actions", "/schedule"]) {
+  for (const section of ["", "/team", "/budget", "/plan", "/actions", "/schedule"]) {
     assert.deepEqual(
       authorizeSparkPath(`${SHINE}${section}`, shineClient),
       { allow: true },
@@ -176,18 +226,18 @@ test("a client reaches the working surfaces but not the retired planner paths", 
     );
   }
 
-  /* Decisions and the run of show are no longer routes; their old paths
+  /* Decisions and the old run of show are no longer routes; their old paths
      fall to the planner-only default and reveal nothing. */
   for (const retired of ["/run-of-show", "/decisions", "/sparks", "/tasks", "/resources"]) {
     assert.deepEqual(authorizeSparkPath(`${SHINE}${retired}`, shineClient), {
       allow: false,
-      redirectTo: SHINE,
+      redirectTo: `${SHINE}/team`,
     }, retired);
   }
 });
 
 test("a planner reaches everything in their own engagement", () => {
-  for (const section of ["", "/budget", "/plan", "/actions", "/schedule", "/review"]) {
+  for (const section of ["", "/team", "/budget", "/plan", "/actions", "/schedule", "/review"]) {
     assert.deepEqual(
       authorizeSparkPath(`${SHINE}${section}`, shinePlanner),
       { allow: true },
@@ -202,25 +252,26 @@ test("a section nobody has named yet is planner only, not public", () => {
   });
   assert.deepEqual(authorizeSparkPath(`${SHINE}/invoices`, shineClient), {
     allow: false,
-    redirectTo: SHINE,
+    redirectTo: `${SHINE}/team`,
   });
   assert.deepEqual(authorizeSparkPath(`${SHINE}/invoices`, shineGuest), {
     allow: false,
-    redirectTo: `${SHINE}/schedule`,
+    redirectTo: SHINE,
   });
 });
 
 test("the route rules match the lines the database draws", () => {
-  /* run_of_show_cues is planner only in RLS; sparks, budget, tasks and
-     resources are planner and client; schedule is every member. If these
-     ever disagree, one of the two layers is lying about what is private. */
+  /* run_of_show_cues is planner only in RLS; sparks, budget, tasks,
+     resources and the team's run of show detail are planner and client; a
+     guest reads public moments only, through the guide. If these ever
+     disagree, one of the two layers is lying about what is private. */
   assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineGuest).allow, false);
   assert.deepEqual(authorizeSparkPath(`${SHINE}/run-of-show`, shineClient).allow, false);
-  for (const section of ["/budget", "/actions", "/plan"]) {
+  for (const section of ["/budget", "/actions", "/plan", "/team", "/schedule"]) {
     assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineGuest).allow, false, section);
     assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineClient).allow, true, section);
   }
-  assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shineGuest).allow, true);
+  assert.deepEqual(authorizeSparkPath(SHINE, shineGuest).allow, true);
 });
 
 /* ------------------------------------------------------- platform home */
@@ -266,7 +317,7 @@ test("a client's own index is a working surface, not a member surface", () => {
      rollups. Sent to their own home in it, not out of Spark. */
   assert.deepEqual(authorizeSparkPath("/spark/c/shine", shineGuest), {
     allow: false,
-    redirectTo: `${SHINE}/schedule`,
+    redirectTo: SHINE,
   });
 
   assert.deepEqual(authorizeSparkPath("/spark/c/shine", stranger), REFUSED);
@@ -280,17 +331,17 @@ test("a client's own index is a working surface, not a member surface", () => {
 
 /* ------------------------------------------------------------- landing */
 
-test("one membership goes straight in", () => {
-  assert.deepEqual(landingFor(shineClient), { kind: "workspace", href: SHINE });
+test("one membership goes straight in, and the team lands on the team guide", () => {
+  assert.deepEqual(landingFor(shineClient), { kind: "workspace", href: `${SHINE}/team` });
 });
 
-test("a planner lands on Plan, which is the screen the meeting works on", () => {
+test("a planner lands on the calendar, where the weekend is edited", () => {
   assert.deepEqual(landingFor(shinePlanner), { kind: "workspace", href: `${SHINE}/schedule` });
 });
 
-test("a guest lands on the schedule, not on a page they would be refused", () => {
+test("a guest lands on the guide, not on a page they would be refused", () => {
   const landing = landingFor(shineGuest);
-  assert.deepEqual(landing, { kind: "workspace", href: `${SHINE}/schedule` });
+  assert.deepEqual(landing, { kind: "workspace", href: SHINE });
   /* The landing must itself be allowed, or arriving would bounce forever. */
   assert.deepEqual(
     authorizeSparkPath((landing as { href: string }).href, shineGuest),

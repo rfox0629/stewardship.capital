@@ -90,3 +90,15 @@ const CLIENT_SEGMENT = new RegExp(`^${SPARK_BASE}/c/([^/]+)`);
 /** The client segment of a Spark path, when it has one. */
 export const clientSlugOf = (pathname: string): string | null =>
   pathname.match(CLIENT_SEGMENT)?.[1] ?? null;
+
+const WORKSPACE_ROOT = new RegExp(`^${SPARK_BASE}/c/([^/]+)/e/([^/]+)/([^/]+)/?$`);
+
+/**
+ * The engagement a path names when it is exactly a workspace's root, which is
+ * where its weekend guide lives. Anything deeper, including /team, is not.
+ */
+export const workspaceRootOf = (pathname: string): WorkspaceRef | null => {
+  const match = pathname.match(WORKSPACE_ROOT);
+  if (!match) return null;
+  return { clientSlug: match[1], eventSlug: match[2], editionSlug: match[3] };
+};

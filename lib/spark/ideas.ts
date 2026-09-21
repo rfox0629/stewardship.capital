@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { DAY_NAMES, parseTimeLabel } from "@lib/spark/days";
-import { toIdeaState } from "@spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/plan/idea-state";
-import type { Idea } from "@spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/plan/board";
+import { toIdeaState } from "@spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/(work)/plan/idea-state";
+import type { Idea } from "@spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/(work)/plan/board";
 
 /**
  * Everything each idea has become, gathered in one pass.

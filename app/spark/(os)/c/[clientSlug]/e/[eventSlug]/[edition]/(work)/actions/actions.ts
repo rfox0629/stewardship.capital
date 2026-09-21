@@ -25,7 +25,7 @@ const plannerContext = async (clientSlug: string, eventSlug: string, edition: st
 
 const revalidate = (clientSlug: string, eventSlug: string, edition: string) => {
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
-  for (const path of ["/actions", "/budget", "/plan", "/schedule", ""]) {
+  for (const path of ["/actions", "/budget", "/plan", "/schedule", "/team", ""]) {
     revalidatePath(`${base}${path}`);
   }
 };

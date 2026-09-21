@@ -54,21 +54,19 @@ export default async function EngagementLayout({ children, params }: LayoutProps
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
   const working = role === "planner" || role === "client";
 
-  /* Two doors. Plan is where the weekend is built and Budget is what it
-     costs, and nothing else has earned a tab yet: the weekend overview and
-     the actions list were both competing with the one surface that is
-     actually working. Neither is deleted. Their routes still resolve and
-     their data is untouched, so putting a door back is a line of this array
-     rather than a rebuild.
+  /* The team guide is the weekend as the team reads it: the guest guide plus
+     the run of show and duties. The calendar is the one place it is edited.
+     Budget is what it costs. The idea bank and the planning resources are no
+     longer doors; their data is untouched and their routes still resolve.
 
-     A guest's only door is the schedule, and a link a reader cannot open is
-     never rendered for them. */
+     A guest has no door here at all: their weekend is the guide. */
   const nav: EventNavItem[] = working
     ? [
-        { href: `${base}/schedule`, label: "Plan", also: [`${base}/plan`, base] },
+        { href: `${base}/team`, label: "Team guide" },
+        { href: `${base}/schedule`, label: "Calendar", also: [`${base}/plan`] },
         { href: `${base}/budget`, label: "Budget" },
       ]
-    : [{ href: `${base}/schedule`, label: "Schedule" }];
+    : [{ href: base, label: "Weekend guide" }];
 
   const dates = dateRangeLabel(engagement.startsOn, engagement.endsOn);
 

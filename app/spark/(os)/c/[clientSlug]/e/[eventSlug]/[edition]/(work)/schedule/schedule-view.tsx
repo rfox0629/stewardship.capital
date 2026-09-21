@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
 import { parseTimeLabel } from "@lib/spark/days";
-import { ideasStillOpen, pendingBlocks, timedOn, type Leaving } from "@lib/spark/weekend";
+import { pendingBlocks, timedOn, type Leaving } from "@lib/spark/weekend";
 import { Select } from "@spark/_components/select";
 import { AddIdea } from "../plan/add-idea";
 import { IdeaPanel } from "../plan/idea-panel";
-import { Resources } from "../plan/resources";
 import type { Idea } from "../plan/board";
-import type { EngagementReference } from "@lib/spark/engagement";
 import { addIdea, placeIdea } from "../plan/actions";
 
 import { scheduleIdea } from "../plan/actions";
@@ -154,12 +152,6 @@ const TIGHT_PX = 40;
 const DURATIONS = [15, 30, 45, 60, 90, 120];
 /* The bank shows a handful and offers the rest, so it stays a strip rather
    than becoming the board it replaced. */
-/* How many rows of ideas the bank shows before it offers the rest. Rows, not
-   a handful: thirty two ideas is what a planning meeting is actually working
-   through, and eight of them with a grey +24 beside it was a scrollbar
-   pretending to be a decision. */
-const IDEA_ROWS = 3;
-
 /* Two drags exist on this screen and they mean opposite things. Carrying an
    idea creates a moment; carrying a moment moves that exact row. They use
    different machinery on purpose, and the one that creates says so in its own
@@ -986,7 +978,6 @@ export function ScheduleView({
   ideas = [],
   momentOptions = [],
   amenities = [],
-  reference,
 }: {
   /** What this surface is called for this reader. */
   title: string;
@@ -1004,8 +995,6 @@ export function ScheduleView({
   momentOptions?: Array<{ id: string; label: string }>;
   /** What the property offers. Reference until somebody chooses one. */
   amenities?: Amenity[];
-  /** The libraries behind the weekend, offered inside an idea. */
-  reference?: EngagementReference;
 }) {
   const planner = role === "planner";
   const hydrated = useHydrated();
@@ -1052,10 +1041,8 @@ export function ScheduleView({
   /* The bank of what is still only being considered, and the idea opened out
      of it. Both live here so a planning meeting never leaves this screen. */
   const [openIdea, setOpenIdea] = useState<string | null>(null);
-  const [allIdeas, setAllIdeas] = useState(false);
   const [addingIdea, setAddingIdea] = useState(false);
-  const [addMenu, setAddMenu] = useState(false);
-  const [captured, setCaptured] = useState<string[]>([]);
+  const [, setCaptured] = useState<string[]>([]);
   const [placed, setPlaced] = useState<
     Array<{
       key: string; ideaId: string; title: string; day: string; minutes: number; length: number;
@@ -1068,7 +1055,7 @@ export function ScheduleView({
   >([]);
   /* Ideas taken out of the bank the instant they were dropped, held out only
      until the server answers. */
-  const [leaving, setLeaving] = useState<Leaving[]>([]);
+  const [, setLeaving] = useState<Leaving[]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
   const router = useRouter();
@@ -1373,10 +1360,6 @@ export function ScheduleView({
      idea itself, one click away. */
   /* A captured idea is drawn the instant it is typed and stops being drawn
      the instant the real one arrives under the same name. */
-  const landedTitles = new Set(ideas.map((idea) => idea.title));
-  const capturing = captured.filter((title) => !landedTitles.has(title));
-  const unplacedIdeas = ideasStillOpen(ideas, leaving);
-  const bankIsLong = unplacedIdeas.length > 0;
   const openedIdea = hydrated ? ideas.find((idea) => idea.id === openIdea) ?? null : null;
 
   /* ------------------------------------------- an idea dropped onto an hour */
@@ -1538,31 +1521,15 @@ export function ScheduleView({
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
           {/* Capture is the dominant action, so it says what it captures. A
               moment is still one item down, in the planner's own words. */}
+          {/* One way to add to the calendar: a moment. Ideas and the planning
+              resources have left this screen; the weekend is built here from
+              what is actually happening. */}
           {planner ? (
-            <div className="ev-bar-menu">
-              <button type="button" className="ev-bar-add" aria-expanded={addMenu}
-                onClick={() => setAddMenu((open) => !open)}>
-                <span aria-hidden="true">+</span> Idea
-              </button>
-              {addMenu ? (
-                <div className="ev-add-menu" role="menu">
-                  <button type="button" role="menuitem"
-                    onClick={() => { setAddMenu(false); setAddingIdea(true); }}>
-                    Idea
-                    <em>Something we are considering</em>
-                  </button>
-                  <button type="button" role="menuitem"
-                    onClick={() => { setAddMenu(false); setAddDay(activeDay?.key ?? "thu"); }}>
-                    Moment
-                    <em>Something happening this weekend</em>
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <button type="button" className="ev-bar-add"
+              onClick={() => setAddDay(activeDay?.key ?? "thu")}>
+              <span aria-hidden="true">+</span> Moment
+            </button>
           ) : null}
-          {/* The material behind the weekend, one button away from the ideas
-              it turns into. Reading it changes nothing. */}
-          {planner && reference ? <Resources reference={reference} route={route} /> : null}
           <button type="button" className="ev-bar-quiet"
             onClick={() => setView(shownView === "weekend" ? "day" : "weekend")}>
             {shownView === "weekend" ? "Day view" : "Whole weekend"}
@@ -1574,61 +1541,6 @@ export function ScheduleView({
           ) : null}
         </div>
       </div>
-
-      {/* What is still only being considered, above what is decided but
-          untimed, above the clock. One flow, top to bottom, and none of it a
-          separate screen. */}
-      {planner && (unplacedIdeas.length > 0 || capturing.length > 0) ? (
-        <div className={`ev-bank ev-bank-ideas ${allIdeas ? "ev-bank-open" : ""}`}>
-          <p className="ev-bank-label">
-            Ideas <span>{unplacedIdeas.length + capturing.length}</span>
-          </p>
-          <div className="ev-bank-cards" style={{ "--ev-bank-rows": IDEA_ROWS } as React.CSSProperties}>
-            {capturing.map((title) => (
-              <span key={title} className="ev-bank-chip ev-bank-idea ev-bank-pending">
-                <span>{title}</span>
-              </span>
-            ))}
-            {unplacedIdeas.map((idea) => (
-              <button
-                key={idea.id}
-                type="button"
-                className={`ev-bank-chip ev-bank-idea ${
-                  carrying?.id === idea.id ? "ev-bank-carried" : ""}`}
-                draggable={hydrated}
-                title="Drag onto an hour, or click to open it"
-                onDragStart={(event) => {
-                  event.dataTransfer.setData(IDEA_DRAG, idea.id);
-                  event.dataTransfer.setData("text/plain", idea.title);
-                  event.dataTransfer.effectAllowed = "copy";
-                  setCarrying({
-                    id: idea.id, title: idea.title, status: "captured",
-                    day: idea.day ?? "", daypart: idea.daypart ?? "anytime", scheduled: 0,
-                  });
-                }}
-                onDragEnd={() => { setCarrying(null); setLanding(null); }}
-                onClick={() => setOpenIdea(idea.id)}
-              >
-                <span>{idea.title}</span>
-                {idea.question ? <i title="Needs an answer">?</i> : null}
-                {idea.day && idea.day !== "all" ? <i>{idea.day}</i> : null}
-              </button>
-            ))}
-          </div>
-          {/* The bank keeps three rows and offers the rest by name. It only
-              appears when there is actually more than fits, which it works
-              out from the height rather than from a count, so a short title
-              and a long one are treated the same. */}
-          {bankIsLong ? (
-            <button type="button" className="ev-bank-more" aria-expanded={allIdeas}
-              onClick={() => setAllIdeas((open) => !open)}>
-              {allIdeas
-                ? "Show fewer"
-                : `Show all ${unplacedIdeas.length + capturing.length} ideas`}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
 
       {shownView === "weekend" ? (
         <div className="ev-grid-wrap">

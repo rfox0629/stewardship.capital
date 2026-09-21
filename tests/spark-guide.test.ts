@@ -1,0 +1,235 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  byPhase,
+  clock,
+  dayAgenda,
+  detailCue,
+  dutiesFor,
+  everyoneIn,
+  guestTitle,
+  peopleOf,
+  readActivities,
+  readDrinks,
+  readGuestCopy,
+  readOps,
+  timingConflicts,
+  UNASSIGNED,
+  type GuideMoment,
+} from "../lib/spark/guide.ts";
+
+/**
+ * The weekend guide, held still.
+ *
+ * Guests and the team read the same calendar. These cover the rules that
+ * decide what each reads: order, labels, who a duty belongs to, and which
+ * moments collide after somebody moves one.
+ */
+
+const moment = (over: Partial<GuideMoment> = {}): GuideMoment => ({
+  id: "m1",
+  day: "fri",
+  starts: "9:00 am",
+  ends: null,
+  title: "Worship",
+  location: null,
+  window: false,
+  guide: null,
+  ...over,
+});
+
+/* ---------------------------------------------------------------- times */
+
+test("a clock time prints the way the schedule does", () => {
+  assert.equal(clock("7:30 am"), "7:30 AM");
+  assert.equal(clock("12:00 pm"), "12:00 PM");
+  assert.equal(clock("5 pm"), "5:00 PM");
+  assert.equal(clock(null), "");
+});
+
+/* --------------------------------------------------------------- agenda */
+
+test("a day reads in the order it happens", () => {
+  const day = dayAgenda(
+    [
+      moment({ id: "lunch", starts: "12:00 pm", title: "Lunch" }),
+      moment({ id: "bkfst", starts: "7:30 am", title: "Breakfast" }),
+      moment({ id: "sat", day: "sat", starts: "6:00 am", title: "Elsewhere" }),
+    ],
+    "fri",
+  );
+  assert.deepEqual(day.map((m) => m.id), ["bkfst", "lunch"]);
+});
+
+test("free time appears where it begins, and what happens inside it follows", () => {
+  const day = dayAgenda(
+    [
+      moment({ id: "bingo", starts: "2:00 pm", title: "Bingo" }),
+      moment({ id: "free", starts: "1:00 pm", ends: "5:00 pm", title: "Free time", window: true }),
+      moment({ id: "coffee", starts: "4:00 pm", title: "Open coffee bar" }),
+    ],
+    "fri",
+  );
+  assert.deepEqual(day.map((m) => m.id), ["free", "bingo", "coffee"]);
+});
+
+test("at the same minute a window reads first, because it is the frame", () => {
+  const day = dayAgenda(
+    [
+      moment({ id: "game", starts: "1:00 pm", title: "A game" }),
+      moment({ id: "free", starts: "1:00 pm", title: "Free time", window: true }),
+    ],
+    "fri",
+  );
+  assert.deepEqual(day.map((m) => m.id), ["free", "game"]);
+});
+
+/* ------------------------------------------------------------ guest copy */
+
+test("a guest reads the guest title when the calendar's is written for the team", () => {
+  const cleanup = moment({ title: "Clean up and get ready for worship", guide: { title: "Get ready for worship" } });
+  assert.equal(guestTitle(cleanup), "Get ready for worship");
+  assert.equal(guestTitle(moment()), "Worship");
+});
+
+test("a meal says Menu, free time says Activities, the coffee bar says Coffee menu", () => {
+  assert.equal(detailCue(moment({ guide: { menu: ["Brisket"] } })), "Menu");
+  assert.equal(detailCue(moment({ guide: { opens: ["activities"] } })), "Activities");
+  assert.equal(detailCue(moment({ guide: { opens: ["coffee", "activities"] } })), "Coffee menu");
+  assert.equal(detailCue(moment({ guide: { summary: "Optional" } })), "Details");
+  assert.equal(detailCue(moment()), null);
+});
+
+test("guest copy from the database keeps only what it can recognise", () => {
+  const copy = readGuestCopy({
+    kind: "meal",
+    menu: ["Brisket", "", 7, "Rolls"],
+    opens: ["coffee", "run of show", "activities"],
+    owner: "should not survive",
+  });
+  assert.deepEqual(copy?.menu, ["Brisket", "Rolls"]);
+  assert.deepEqual(copy?.opens, ["coffee", "activities"]);
+  assert.equal("owner" in (copy ?? {}), false);
+  assert.equal(readGuestCopy(null), null);
+  assert.equal(readGuestCopy(["not", "an", "object"]), null);
+});
+
+test("an empty operations record reads as nothing, not as blanks", () => {
+  assert.equal(readOps({}), null);
+  assert.equal(readOps({ owner: "  " }), null);
+  assert.equal(readOps({ owner: "Brooke" })?.owner, "Brooke");
+});
+
+test("activities and drinks without a name are dropped rather than drawn empty", () => {
+  assert.equal(readActivities([{ name: "Kayaks", category: "Water" }, { category: "Water" }]).length, 1);
+  assert.equal(readDrinks([{ name: "Honeycomb", ingredients: ["Espresso"] }, { feel: "x" }]).length, 1);
+});
+
+/* --------------------------------------------------------------- duties */
+
+test("a team written the way people talk is read as people", () => {
+  assert.deepEqual(peopleOf("Alice, Keta, Emma & Scott"), ["Alice", "Keta", "Emma", "Scott"]);
+  assert.deepEqual(peopleOf("Ryan & Brooke & Junior"), ["Ryan", "Brooke", "Junior"]);
+  assert.deepEqual(peopleOf("Mike and Victor"), ["Mike", "Victor"]);
+  assert.deepEqual(peopleOf("Keta"), ["Keta"]);
+});
+
+test("an unassigned duty is its own bucket, so it is never lost", () => {
+  assert.deepEqual(peopleOf("To assign"), [UNASSIGNED]);
+  assert.deepEqual(peopleOf(null), [UNASSIGNED]);
+  assert.deepEqual(peopleOf("  "), [UNASSIGNED]);
+});
+
+test("a name that contains 'and' is not split in half", () => {
+  assert.deepEqual(peopleOf("Alexander & Sandra"), ["Alexander", "Sandra"]);
+});
+
+const duties = [
+  { id: "1", owner: "Alice", phase: "fri", order: 33, title: "Clean bathrooms" },
+  { id: "2", owner: "Keta", phase: "fri", order: 37, title: "Clean bathrooms" },
+  { id: "3", owner: "Emma", phase: "sat", order: 40, title: "Clean bathrooms" },
+  { id: "4", owner: "Scott", phase: "sat", order: 44, title: "Clean bathrooms" },
+  { id: "5", owner: "Alice, Keta, Emma & Scott", phase: "fri", order: 34, title: "Clean up after breakfast" },
+  { id: "6", owner: "To assign", phase: "sun", order: 52, title: "Final cleanup" },
+  { id: "7", owner: "Emma", phase: "before", order: 4, title: "Name tags" },
+];
+
+test("the bathroom rotation reads back exactly as assigned", () => {
+  const rotation = duties
+    .filter((duty) => duty.title === "Clean bathrooms")
+    .map((duty) => `${duty.phase}:${duty.owner}`);
+  assert.deepEqual(rotation, ["fri:Alice", "fri:Keta", "sat:Emma", "sat:Scott"]);
+});
+
+test("choosing a person shows their own duties and shared ones", () => {
+  assert.deepEqual(dutiesFor(duties, "Keta").map((d) => d.id), ["2", "5"]);
+  assert.deepEqual(dutiesFor(duties, "Scott").map((d) => d.id), ["4", "5"]);
+});
+
+test("choosing nobody shows everything", () => {
+  assert.equal(dutiesFor(duties, null).length, duties.length);
+});
+
+test("everyone named anywhere is offered, with the unassigned bucket last", () => {
+  assert.deepEqual(everyoneIn(duties), ["Alice", "Emma", "Keta", "Scott", UNASSIGNED]);
+});
+
+test("duties read by phase in the order the weekend happens", () => {
+  const groups = byPhase(duties);
+  assert.deepEqual(groups.map((g) => g.phase), ["before", "fri", "sat", "sun"]);
+  assert.deepEqual(groups[1].duties.map((d) => d.id), ["1", "5", "2"]);
+});
+
+/* ------------------------------------------------------------ conflicts */
+
+test("a moment that starts inside another is flagged on both", () => {
+  const found = timingConflicts([
+    moment({ id: "reset", starts: "6:30 pm", ends: "7:00 pm" }),
+    moment({ id: "impact", starts: "6:50 pm" }),
+  ]);
+  assert.deepEqual(found.get("reset"), ["impact"]);
+  assert.deepEqual(found.get("impact"), ["reset"]);
+});
+
+test("moments that simply follow each other are not a conflict", () => {
+  const found = timingConflicts([
+    moment({ id: "a", starts: "5:00 pm", ends: "5:30 pm" }),
+    moment({ id: "b", starts: "5:30 pm", ends: "6:30 pm" }),
+  ]);
+  assert.equal(found.size, 0);
+});
+
+test("something inside free time is not a conflict: that is what free time is for", () => {
+  const found = timingConflicts([
+    moment({ id: "free", starts: "1:00 pm", ends: "5:00 pm", window: true }),
+    moment({ id: "bingo", starts: "2:00 pm", ends: "3:00 pm" }),
+  ]);
+  assert.equal(found.size, 0);
+});
+
+test("two moments at the same minute collide, even without end times", () => {
+  const found = timingConflicts([
+    moment({ id: "a", starts: "7:00 pm" }),
+    moment({ id: "b", starts: "7:00 pm" }),
+  ]);
+  assert.deepEqual(found.get("a"), ["b"]);
+});
+
+test("the same times on different days never collide", () => {
+  const found = timingConflicts([
+    moment({ id: "a", day: "fri", starts: "7:00 pm", ends: "8:00 pm" }),
+    moment({ id: "b", day: "sat", starts: "7:00 pm", ends: "8:00 pm" }),
+  ]);
+  assert.equal(found.size, 0);
+});
+
+test("a move that lands one moment on another is caught", () => {
+  const before = [
+    moment({ id: "dinner", starts: "5:30 pm", ends: "6:30 pm" }),
+    moment({ id: "worship", starts: "7:00 pm", ends: "7:50 pm" }),
+  ];
+  assert.equal(timingConflicts(before).size, 0);
+  const moved = before.map((m) => (m.id === "worship" ? { ...m, starts: "6:00 pm", ends: "6:50 pm" } : m));
+  assert.deepEqual(timingConflicts(moved).get("worship"), ["dinner"]);
+});

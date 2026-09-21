@@ -9,6 +9,7 @@ import {
   pathBelongsToWorkspace,
   sectionOf,
   workspacePath,
+  workspaceRootOf,
 } from "./paths.ts";
 import type { SparkAccess, SparkRole, SparkWorkspace } from "./types.ts";
 
@@ -51,10 +52,15 @@ const PLANNER_ONLY: SparkRole[] = ["planner"];
  * private by default rather than public by accident.
  */
 const SECTIONS: Record<string, SparkRole[]> = {
-  /* The weekend carries budget figures, so it is working members. A
-     stakeholder's home is the schedule instead, see workspaceHome. */
-  "": WORKING,
-  schedule: EVERYONE,
+  /* The weekend guide. Every member may read it, and when the engagement
+     publishes it so may anyone at all; see authorizeSparkPath. It carries
+     nothing a guest may not see. */
+  "": EVERYONE,
+  /* The team's reading of the same weekend: run of show and duties. */
+  team: WORKING,
+  /* The calendar itself. A guest reads the guide instead, which is the same
+     schedule without the internal parts. */
+  schedule: WORKING,
   plan: WORKING,
   actions: WORKING,
   budget: WORKING,
@@ -69,29 +75,32 @@ const allowedRoles = (section: string): SparkRole[] =>
 /**
  * Where a person's own workspace starts, for them.
  *
- * A planner starts on Plan. It is the screen a planning meeting works on and
- * the one that goes on the television, and arriving anywhere else made the
- * product look like it had an opinion about which came first. The weekend
- * page is still there and still says which weekend this is.
- *
- * Guests and speakers begin at the schedule too, but for a different reason:
- * the overview is not theirs to see, and landing somewhere you are refused is
- * indistinguishable from being locked out. A client still starts on the
- * overview, which is what they came for.
+ * A planner starts on the calendar, which is where the weekend is built. The
+ * rest of the team starts on the team guide: the same weekend with the run of
+ * show and their duties, and no editing. A guest with an account starts on
+ * the guest guide, which is what they would see without one.
  */
-export const workspaceHome = (workspace: SparkWorkspace): string =>
-  workspace.role === "client"
-    ? workspacePath(workspace)
-    : `${workspacePath(workspace)}/schedule`;
+export const workspaceHome = (workspace: SparkWorkspace): string => {
+  if (workspace.role === "planner") return `${workspacePath(workspace)}/schedule`;
+  if (workspace.role === "client") return `${workspacePath(workspace)}/team`;
+  return workspacePath(workspace);
+};
 
 /* Every refusal lands on the front door, which then routes the person to
    wherever they do belong. One destination means a refusal never becomes a
    redirect loop, and never hints at what else exists. */
 const REFUSE: AuthorizationDecision = { allow: false, redirectTo: SPARK_ENTRY };
 
+export type PathContext = {
+  /** Whether the engagement at this workspace root has published its guide.
+   *  Asked of the database by the caller, and only for a root path. */
+  publicGuide?: boolean;
+};
+
 export const authorizeSparkPath = (
   pathname: string,
   access: SparkAccess | null,
+  context: PathContext = {},
 ): AuthorizationDecision => {
   if (!isSparkPath(pathname)) return ALLOW;
 
@@ -99,6 +108,12 @@ export const authorizeSparkPath = (
      have to be: one is where refusals land, the other is how a person who has
      no account yet gets one. */
   if (isOpenSparkPath(pathname)) return ALLOW;
+
+  /* A published weekend guide is public by design: it is what the QR code on
+     the table opens. Only the exact root, never anything beneath it, and only
+     when the engagement itself says so. An unpublished guide stays as closed
+     as the rest of the workspace. */
+  if (context.publicGuide === true && workspaceRootOf(pathname)) return ALLOW;
 
   if (!access) return REFUSE;
 

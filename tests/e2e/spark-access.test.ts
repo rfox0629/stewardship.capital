@@ -385,10 +385,10 @@ test("Spark access model, end to end against production schema", async (t) => {
       const jar = newJar();
       const landed = await signIn(jar, w.client.email);
       assert.equal(landed.status, 307);
-      assert.equal(landed.location, A_HOME);
+      assert.equal(landed.location, `${A_HOME}/team`);
 
       const entry = await visit(jar, ENTRY);
-      assert.equal(entry.location, A_HOME, "returning goes straight back in");
+      assert.equal(entry.location, `${A_HOME}/team`, "returning goes straight back in");
     });
 
     await t.test("several memberships offer only that person's own", async () => {
@@ -542,25 +542,25 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.equal((await visit(jar, A_HOME)).location, ENTRY);
     });
 
-    await t.test("a guest reaches the schedule, and only the schedule", async () => {
+    await t.test("a guest reaches the guide, and only the guide", async () => {
       const jar = await adopt(w.guest.email);
 
-      assert.equal((await visit(jar, `${A_HOME}/schedule`)).status, 200);
+      assert.equal((await visit(jar, A_HOME)).status, 200);
       assert.equal((await visit(jar, PLATFORM)).location, ENTRY);
 
       /* Inside their own workspace, held to their own part of it, and sent to
          it rather than out of Spark. */
-      for (const section of ["", "/budget", "/plan", "/actions", "/sparks", "/tasks", "/resources"]) {
+      for (const section of ["/schedule", "/team", "/budget", "/plan", "/actions", "/sparks", "/tasks", "/resources"]) {
         const hit = await visit(jar, `${A_HOME}${section}`);
         assert.equal(hit.status, 307, section);
-        assert.equal(hit.location, `${A_HOME}/schedule`, section);
+        assert.equal(hit.location, A_HOME, section);
       }
 
       /* B1 regression: the client index carries budget rollups, and being a
          member of the client is not enough to see them. */
       const index = await visit(jar, `/spark/c/${A_SLUG}`);
       assert.equal(index.status, 307, "the client index is a working surface");
-      assert.equal(index.location, `${A_HOME}/schedule`);
+      assert.equal(index.location, A_HOME);
     });
 
     await t.test("a client works the engagement but never sees the run of show", async () => {
@@ -573,7 +573,7 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.notEqual(index.location, ENTRY, "authorized at the client index");
       assert.ok([200, 404].includes(index.status), `unexpected ${index.status}`);
 
-      for (const section of ["", "/budget", "/plan", "/schedule", "/actions"]) {
+      for (const section of ["", "/team", "/budget", "/plan", "/schedule", "/actions"]) {
         assert.equal((await visit(jar, `${A_HOME}${section}`)).status, 200, section);
       }
 
@@ -581,8 +581,61 @@ test("Spark access model, end to end against production schema", async (t) => {
       for (const retired of ["/run-of-show", "/decisions", "/sparks", "/tasks", "/resources"]) {
         const hit = await visit(jar, `${A_HOME}${retired}`);
         assert.equal(hit.status, 307, retired);
-        assert.equal(hit.location, A_HOME, retired);
+        assert.equal(hit.location, `${A_HOME}/team`, retired);
       }
+    });
+
+    /* ---------------------------------------------------- the weekend guide */
+
+    await t.test("a published guide is open to anyone, and carries nothing internal", async () => {
+      const [confirmed] = (await admin
+        .from("schedule_items")
+        .select("id")
+        .eq("engagement_id", w.alphaId)
+        .eq("status", "confirmed")).data ?? [];
+      assert.ok(confirmed, "the confirmed moment exists");
+      await admin.from("schedule_item_ops").insert({
+        schedule_item_id: confirmed.id,
+        engagement_id: w.alphaId,
+        detail: { notes: `${CLEAN} internal note`, owner: `${CLEAN} owner` },
+      });
+      await admin.from("engagements").update({ reference: { guide: { public: true } } }).eq("id", w.alphaId);
+
+      try {
+        const anon = newJar();
+        const guest = await visit(anon, A_HOME);
+        assert.equal(guest.status, 200, "no account needed");
+        assert.match(guest.body, new RegExp(`${CLEAN} confirmed`));
+        for (const secret of [`${CLEAN} draft`, `${CLEAN} cue`, `${CLEAN} internal note`, `${CLEAN} owner`]) {
+          assert.doesNotMatch(guest.body, new RegExp(secret), secret);
+        }
+
+        /* Publishing opens the root and nothing beneath it. The team address
+           is navigation, not permission. */
+        for (const section of ["/team", "/schedule", "/budget", "/plan", "/actions"]) {
+          const hit = await visit(anon, `${A_HOME}${section}`);
+          assert.equal(hit.status, 307, section);
+          assert.equal(hit.location, ENTRY, section);
+        }
+
+        /* Nor does the database hand the team detail to an anonymous key. */
+        const { data: ops } = await anonClient().from("schedule_item_ops").select("detail");
+        assert.equal((ops ?? []).length, 0);
+
+        /* One calendar, two readings: a time changed once shows in both. */
+        await admin.from("schedule_items").update({ starts_label: "4:15 pm" }).eq("id", confirmed.id);
+        assert.match((await visit(anon, A_HOME)).body, /4:15/);
+        const team = await visit(await adopt(w.client.email), `${A_HOME}/team`);
+        assert.equal(team.status, 200);
+        assert.match(team.body, /4:15/);
+        assert.match(team.body, new RegExp(`${CLEAN} internal note`), "the team reads the detail");
+      } finally {
+        await admin.from("schedule_items").update({ starts_label: "3:00 pm" }).eq("id", confirmed.id);
+        await admin.from("schedule_item_ops").delete().eq("schedule_item_id", confirmed.id);
+        await admin.from("engagements").update({ reference: {} }).eq("id", w.alphaId);
+      }
+
+      assert.equal((await visit(newJar(), A_HOME)).location, ENTRY, "unpublishing closes it again");
     });
 
     /* -------------------------------------------------------- invitations */
@@ -636,7 +689,7 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       const accepted = await visit(jar, `/spark/i/${token}`);
       assert.equal(accepted.status, 307);
-      assert.equal(accepted.location, A_HOME, "acceptance lands in the workspace");
+      assert.equal(accepted.location, `${A_HOME}/team`, "acceptance lands in the workspace");
       assert.equal((await visit(jar, A_HOME)).status, 200);
 
       const { data: row } = await admin
@@ -701,7 +754,7 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       const hit = await visit(reopened, A_HOME);
       assert.equal(hit.status, 200, "no fresh code needed on the next visit");
-      assert.equal((await visit(reopened, ENTRY)).location, A_HOME);
+      assert.equal((await visit(reopened, ENTRY)).location, `${A_HOME}/team`);
     });
 
     await t.test("an expired access token refreshes itself, silently", async () => {
@@ -799,7 +852,7 @@ test("Spark access model, end to end against production schema", async (t) => {
 
     await t.test("revoking membership locks someone out while their session is still valid", async () => {
       const jar = await adopt(w.guest.email);
-      const home = `${A_HOME}/schedule`;
+      const home = A_HOME;
       assert.equal((await visit(jar, home)).status, 200);
 
       await admin
