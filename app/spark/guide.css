@@ -483,60 +483,200 @@ button.gd-row-hit:active {
 
 /* ---------------------------------------------------------- activities */
 
-.gd-actgroup + .gd-actgroup {
-  margin-top: 20px;
+/* Each category carries a tone, so the page reads by color and icon before
+   anyone reads a word. Tones stay inside the SHINE palette. */
+.gd [data-tone="lake"] { --tone: var(--gd-lake); }
+.gd [data-tone="sage"] { --tone: #5f7a5a; }
+.gd [data-tone="ember"] { --tone: var(--gd-rust); }
+.gd [data-tone="plum"] { --tone: #6c4f6e; }
+.gd [data-tone="gold"] { --tone: #86621c; }
+.gd [data-tone="forest"] { --tone: var(--gd-forest); }
+
+.gd-caticon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.gd .gd-actgroup h3 {
-  margin-bottom: 8px;
-  font-family: var(--ev-sub), system-ui, sans-serif;
-  font-size: 0.78rem;
+/* Jump row: one line, scrolls sideways inside itself, never the page. */
+.gd-actjump {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 2px 0 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.gd-actjump::-webkit-scrollbar {
+  display: none;
+}
+
+.gd-actjump a {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  border: 1px solid color-mix(in srgb, var(--tone) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 9%, var(--gd-paper));
+  color: var(--tone);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
+  scroll-snap-align: start;
+}
+
+.gd-actjump a .gd-caticon {
+  width: 18px;
+  height: 18px;
+}
+
+.gd-actcards {
+  display: grid;
+  gap: 16px;
+}
+
+.gd-actcard {
+  scroll-margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid var(--gd-line);
+  border-radius: 20px;
+  background: var(--gd-paper);
+  box-shadow: 0 1px 0 rgba(43, 44, 42, 0.03), 0 8px 24px -18px rgba(43, 44, 42, 0.25);
+}
+
+.gd-actcard header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  border-top: 4px solid var(--tone);
+  background: color-mix(in srgb, var(--tone) 6%, var(--gd-paper));
+}
+
+.gd-actbadge {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--tone);
+  color: #fffdf9;
+}
+
+.gd .gd-actcard h3 {
+  flex: 1;
+  font-family: var(--ev-display), Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 560;
+  line-height: 1.15;
+  color: var(--gd-ink);
+}
+
+.gd-actcount {
+  min-width: 28px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 14%, var(--gd-paper));
+  color: var(--tone);
+  font-size: 0.85rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--gd-forest);
+  text-align: center;
 }
 
-.gd-actgroup ul {
+.gd-actcard ul {
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  padding: 4px 18px 8px;
 }
 
-.gd-actgroup li {
+.gd-actcard li {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   min-height: 52px;
-  padding: 10px 12px;
-  border: 1px solid var(--gd-line);
-  border-radius: 12px;
-  background: var(--gd-paper);
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 12px 0 12px 22px;
+  position: relative;
+}
+
+.gd-actcard li + li {
+  border-top: 1px solid var(--gd-line-soft);
+}
+
+.gd-actcard li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--tone);
+  opacity: 0.85;
+}
+
+.gd-actcard li:has(.gd-actnote)::before {
+  top: 22px;
+  margin-top: 0;
+}
+
+.gd-actname {
+  font-size: 1.02rem;
+  font-weight: 650;
   line-height: 1.3;
   color: var(--gd-ink);
 }
 
-.gd-actgroup li em {
-  font-style: normal;
-  font-size: 0.82rem;
-  font-weight: 500;
+.gd-actnote {
+  font-size: 0.9rem;
+  line-height: 1.45;
   color: var(--gd-ink-2);
 }
 
-.gd-activities-compact .gd-actgroup + .gd-actgroup {
-  margin-top: 14px;
+/* Inside a moment's detail sheet: the same families, told in a sentence. */
+.gd-activities-compact {
+  display: grid;
+  gap: 10px;
 }
 
-.gd-activities-compact .gd-actgroup li {
-  min-height: 0;
-  padding: 8px 10px;
-  font-size: 0.9rem;
+.gd-actmini {
+  padding: 12px 14px;
+  border-left: 3px solid var(--tone);
+  border-radius: 4px 12px 12px 4px;
+  background: color-mix(in srgb, var(--tone) 7%, var(--gd-paper));
+}
+
+.gd .gd-actmini h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--tone);
+}
+
+.gd .gd-actmini h4 .gd-caticon {
+  width: 18px;
+  height: 18px;
+}
+
+.gd .gd-actmini p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--gd-ink);
 }
 
 /* --------------------------------------------------------------- coffee */
@@ -1367,16 +1507,21 @@ button.gd-row-hit:active {
 
 /* ----------------------------------------------------------- wider screens */
 
-@media (min-width: 420px) {
-  .gd-actgroup ul {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .gd-activities-compact .gd-actgroup ul {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (min-width: 760px) {
+  .gd-actcards {
+    display: block;
+    columns: 2;
+    column-gap: 16px;
+  }
+  .gd-actcard {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    scroll-margin-top: calc(var(--gd-tabbar) + 16px);
+  }
+  .gd-actjump {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
   .gd-hero {
     min-height: 320px;
   }
