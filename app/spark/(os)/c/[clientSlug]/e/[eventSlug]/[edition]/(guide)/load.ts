@@ -9,7 +9,6 @@ import {
   type Duty,
   type Guide,
   type GuideMoment,
-  type OpenDecision,
 } from "@lib/spark/guide";
 import { parseEngagementTheme, type EngagementTheme } from "@lib/spark/theme";
 import { createClient } from "@lib/supabase/server";
@@ -83,8 +82,10 @@ export const loadGuide = cache(
 
 export type TeamReading = {
   moments: GuideMoment[];
-  duties: Duty[];
-  decisions: OpenDecision[];
+  /** Preparation that belongs to no day of the weekend. */
+  prep: Duty[];
+  /** Completion, keyed by the moment a duty came from. */
+  statuses: Record<string, { taskId: string; status: string }>;
   /** Only planners edit the calendar or tick duties off. */
   canEdit: boolean;
 };
@@ -104,7 +105,7 @@ export const loadTeam = cache(
     if (!working) return null;
 
     const engagementId = context.engagement.id;
-    const [momentsQ, opsQ, tasksQ, decisionsQ, questionsQ] = await Promise.all([
+    const [momentsQ, opsQ, tasksQ] = await Promise.all([
       context.supabase
         .from("schedule_items")
         .select("id, day_key, starts_label, ends_label, title, location, display_mode, audience, status, guest_guide")
@@ -118,17 +119,6 @@ export const loadTeam = cache(
         .select("id, title, owner_name, status, schedule_item_id, duty")
         .eq("engagement_id", engagementId)
         .not("duty", "is", null),
-      context.supabase
-        .from("decisions")
-        .select("id, question, context, owner_name, status")
-        .eq("engagement_id", engagementId)
-        .eq("status", "open")
-        .order("created_at", { ascending: true }),
-      context.supabase
-        .from("sparks")
-        .select("id, title, open_question, status")
-        .eq("engagement_id", engagementId)
-        .not("open_question", "is", null),
     ]);
 
     const ops = new Map(
@@ -150,47 +140,42 @@ export const loadTeam = cache(
         ops: ops.get(String(row.id)) ?? null,
       }));
 
-    const duties: Duty[] = ((tasksQ.data ?? []) as Row[]).map((row) => {
+    /* A day-of duty is the operations row it came from, so the panel reads
+       times, lead and team from the moment and only completion from the task.
+       Preparation tasks name no day and are kept to one side. */
+    const statuses: Record<string, { taskId: string; status: string }> = {};
+    const prep: Duty[] = [];
+
+    for (const row of (tasksQ.data ?? []) as Row[]) {
       const duty = (row.duty ?? {}) as Row;
-      return {
+      const phase = str(duty.phase) ?? "tbd";
+      const momentId = str(row.schedule_item_id);
+      const status = String(row.status ?? "todo");
+
+      if (momentId && phase !== "before") {
+        statuses[momentId] = { taskId: String(row.id), status };
+        continue;
+      }
+
+      prep.push({
         id: String(row.id),
         title: String(row.title ?? ""),
         owner: str(row.owner_name),
-        phase: str(duty.phase) ?? "tbd",
+        phase,
         when: str(duty.when),
         notes: str(duty.notes),
-        status: String(row.status ?? "todo"),
-        momentId: str(row.schedule_item_id),
+        status,
+        momentId,
         order: typeof duty.order === "number" ? duty.order : 999,
-      };
-    });
+      });
+    }
 
-    const decisions: OpenDecision[] = [
-      ...((decisionsQ.data ?? []) as Row[]).map((row) => ({
-        id: String(row.id),
-        question: String(row.question ?? ""),
-        context: str(row.context),
-        owner: str(row.owner_name),
-        fromIdea: false,
-      })),
-      /* Questions still carried on ideas. The idea bank is no longer on
-         screen, so what it was asking is surfaced here instead of vanishing
-         with it. */
-      ...((questionsQ.data ?? []) as Row[])
-        .filter((row) => row.status !== "parked")
-        .map((row) => ({
-          id: String(row.id),
-          question: String(row.open_question ?? ""),
-          context: `From the idea "${String(row.title ?? "")}"`,
-          owner: null,
-          fromIdea: true,
-        })),
-    ];
+    prep.sort((a, b) => a.order - b.order);
 
     return {
       moments,
-      duties,
-      decisions,
+      prep,
+      statuses,
       canEdit: context.staff || context.role === "planner",
     };
   },

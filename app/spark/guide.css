@@ -997,22 +997,6 @@ button.gd-row-hit:active {
 
 /* ------------------------------------------------------------------ team */
 
-.gd-team-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-}
-
-.gd-team-edit {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--gd-forest);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 .gd-seg {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1023,8 +1007,13 @@ button.gd-row-hit:active {
   background: var(--gd-raised);
 }
 
+.gd-seg-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .gd-seg button {
   min-height: 44px;
+  padding: 4px 2px;
   border: 0;
   border-radius: 10px;
   background: none;
@@ -1032,6 +1021,11 @@ button.gd-row-hit:active {
   font-size: 0.95rem;
   color: var(--gd-ink-2);
   cursor: pointer;
+}
+
+.gd-seg-three button {
+  font-size: 0.85rem;
+  line-height: 1.2;
 }
 
 .gd-seg button[aria-selected="true"] {
@@ -1065,6 +1059,14 @@ button.gd-row-hit:active {
   border-radius: 16px;
   background: var(--gd-paper);
   overflow: hidden;
+}
+
+.gd-cat-program {
+  border-left: 3px solid #4b7fae;
+}
+
+.gd-cat-operations {
+  border-left: 3px solid #6c8b56;
 }
 
 .gd-ros-team {
@@ -1137,8 +1139,9 @@ button.gd-row-hit:active {
   display: none;
 }
 
+.gd-badge,
 .gd-tag {
-  padding: 1px 8px;
+  padding: 2px 9px;
   border-radius: 999px;
   background: var(--gd-raised);
   font-style: normal;
@@ -1146,6 +1149,43 @@ button.gd-row-hit:active {
   font-weight: 800;
   letter-spacing: 0.03em;
   color: var(--gd-ink-2);
+}
+
+.gd-badge-program {
+  background: #e2ebf4;
+  color: #1f4a70;
+}
+
+.gd-badge-operations {
+  background: #e4eddc;
+  color: #335a24;
+}
+
+.gd-badge-leading {
+  background: var(--gd-forest);
+  color: #fffdf9;
+}
+
+.gd-badge-assigned,
+.gd-badge-transition {
+  background: #ece5d6;
+  color: #574a33;
+}
+
+.gd-badge-team {
+  background: #ebe4d3;
+  color: #5b4a2c;
+}
+
+.gd-badge-confirm,
+.gd-badge-clash {
+  background: #fbe7d8;
+  color: #8a3d12;
+}
+
+.gd-badge-done {
+  background: #e3eddc;
+  color: #2f5a22;
 }
 
 .gd-tag-team {
@@ -1297,83 +1337,6 @@ button.gd-row-hit:active {
   margin-bottom: 12px;
   font-weight: 700;
   color: #8a3d12;
-}
-
-.gd-decisions {
-  margin-bottom: 16px;
-  border: 1px solid #ecd2b8;
-  border-radius: 16px;
-  background: #fdf5ea;
-  overflow: hidden;
-}
-
-.gd-decisions-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 52px;
-  padding: 0 16px;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-}
-
-.gd-decisions-head b {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #6b3517;
-}
-
-.gd-decisions-head span {
-  padding: 1px 9px;
-  border-radius: 999px;
-  background: #f2dcc4;
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #6b3517;
-}
-
-.gd-decisions-head svg {
-  width: 12px;
-  height: 8px;
-  margin-left: auto;
-  fill: none;
-  stroke: #6b3517;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-}
-
-.gd-decisions ul {
-  list-style: none;
-  margin: 0;
-  padding: 0 16px 12px;
-  display: grid;
-  gap: 10px;
-}
-
-.gd-decisions li {
-  display: grid;
-  gap: 2px;
-  padding-top: 10px;
-  border-top: 1px solid #efdcc7;
-  font-size: 0.93rem;
-}
-
-.gd-decisions li b {
-  font-size: 0.98rem;
-  color: var(--gd-ink);
-}
-
-.gd-decisions li span {
-  color: #5a4a3a;
-}
-
-.gd-decisions li em {
-  font-style: normal;
-  font-weight: 700;
-  color: var(--gd-rust);
 }
 
 .gd-dutygroup + .gd-dutygroup {
@@ -1611,4 +1574,130 @@ button.gd-row-hit:active {
   .gd-sheet-grip {
     display: none;
   }
+}
+
+/* -------------------------------------------------- duties and my schedule */
+
+.gd-duties {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.gd-duty {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+}
+
+.gd-duty-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.gd-duty button.gd-duty-body {
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  min-height: 44px;
+}
+
+.gd-duty .gd-ros-owner {
+  padding: 0;
+}
+
+.gd-duty .gd-ros-body {
+  padding: 0 14px 14px;
+}
+
+.gd-prep {
+  margin-top: 28px;
+}
+
+.gd .gd-prep h3 {
+  font-family: var(--ev-display), Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 560;
+}
+
+.gd-prep ul {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.gd-prep .gd-duty {
+  border: 1px solid var(--gd-line);
+  border-radius: 14px;
+  background: var(--gd-paper);
+}
+
+.gd-pick {
+  padding: 4px 0 8px;
+}
+
+.gd .gd-pick h3,
+.gd .gd-mine-head h3 {
+  font-family: var(--ev-display), Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 560;
+}
+
+.gd-pick .gd-people {
+  margin-top: 12px;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.gd-mine-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.gd-mine-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gd-mine-actions .gd-link {
+  font-size: 0.9rem;
+}
+
+.gd .gd-clash {
+  margin: 0 14px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fbe7d8;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #7a3a13;
+}
+
+.gd .gd-clash b {
+  font-weight: 800;
+}
+
+.gd-ros-owner b {
+  display: block;
+  font-weight: 700;
+  color: var(--gd-forest);
+}
+
+.gd-ros-owner span {
+  display: block;
+  font-weight: 500;
+  color: var(--gd-ink-2);
 }
