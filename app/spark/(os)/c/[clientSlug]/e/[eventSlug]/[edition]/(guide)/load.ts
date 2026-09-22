@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { cache } from "react";
 
 import { resolveEngagement } from "@lib/spark/engagement";
+import { EVENT_COOKIE, sha256 } from "@lib/spark/event-code";
 import {
   readActivities,
   readDrinks,
@@ -97,8 +99,73 @@ export type TeamReading = {
  * guard already refused them: a page that trusted the guard alone would be
  * one misconfigured matcher away from showing a guest the run of show.
  */
+/**
+ * The team's reading for someone holding the weekend's code.
+ *
+ * One database function decides what a code may read and returns exactly
+ * that. It is asked for the hash of the cookie, never the cookie, and it
+ * answers nothing at all unless that hash belongs to a live session for this
+ * engagement.
+ */
+const loadTeamByCode = async (
+  clientSlug: string,
+  eventSlug: string,
+  edition: string,
+): Promise<TeamReading | null> => {
+  const token = (await cookies()).get(EVENT_COOKIE)?.value;
+  if (!token) return null;
+
+  const supabase = await createClient().catch(() => null);
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("weekend_team_guide", {
+    p_client: clientSlug,
+    p_series: eventSlug,
+    p_edition: edition,
+    p_token_hash: sha256(token),
+  });
+  if (error || !data || typeof data !== "object") return null;
+
+  const raw = data as Row;
+  const moments: GuideMoment[] = (Array.isArray(raw.moments) ? (raw.moments as Row[]) : []).map((row) => ({
+    id: String(row.id),
+    day: String(row.day),
+    starts: str(row.starts),
+    ends: str(row.ends),
+    title: String(row.title ?? ""),
+    location: str(row.location),
+    window: row.window === true,
+    guide: readGuestCopy(row.guide),
+    teamOnly: row.teamOnly === true,
+    ops: readOps(row.ops),
+  }));
+
+  const statuses: Record<string, { taskId: string; status: string }> = {};
+  for (const row of (Array.isArray(raw.duties) ? (raw.duties as Row[]) : [])) {
+    const momentId = str(row.momentId);
+    if (momentId) statuses[momentId] = { taskId: String(row.taskId), status: String(row.status ?? "todo") };
+  }
+
+  const prep: Duty[] = (Array.isArray(raw.prep) ? (raw.prep as Row[]) : []).map((row) => ({
+    id: String(row.id),
+    title: String(row.title ?? ""),
+    owner: str(row.owner),
+    phase: "before",
+    when: str(row.when),
+    notes: str(row.notes),
+    status: String(row.status ?? "todo"),
+    momentId: null,
+    order: typeof row.order === "number" ? row.order : 999,
+  }));
+
+  return { moments, prep, statuses, canEdit: raw.canEdit === true };
+};
+
 export const loadTeam = cache(
   async (clientSlug: string, eventSlug: string, edition: string): Promise<TeamReading | null> => {
+    const byCode = await loadTeamByCode(clientSlug, eventSlug, edition);
+    if (byCode) return byCode;
+
     const context = await resolveEngagement(clientSlug, eventSlug, edition);
     if (!context) return null;
     const working = context.staff || context.role === "planner" || context.role === "client";

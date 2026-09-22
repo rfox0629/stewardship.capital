@@ -31,10 +31,11 @@ export const SITE_ORIGIN = (
  * picture needs a new name to be fetched at all.
  */
 export const SOCIAL_IMAGE = {
-  url: `${SITE_ORIGIN}/clients/shine/social/founders-weekend-2026-v2.jpg`,
+  url: `${SITE_ORIGIN}/clients/shine/social/founders-weekend-2026-v3.jpg`,
   width: 1200,
   height: 630,
   alt: "SHINE, over the lake house at dusk at Spooner Lake Island Oasis",
+  type: "image/jpeg",
 };
 
 export const GUEST_TITLE = "SHINE Founders Weekend 2026";

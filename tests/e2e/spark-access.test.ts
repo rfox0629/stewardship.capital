@@ -619,14 +619,17 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.equal(team.status, 200, "a crawler gets a page, not a redirect");
       assert.match(team.body, /SHINE Founders Weekend 2026 \| Team/);
       assert.match(team.body, /run of show, volunteer duties, and personal schedule/);
-      assert.match(team.body, /Sign in/);
+      assert.match(team.body, /Welcome, SHINE Team/, "the weekend's own door");
+      assert.match(team.body, /Enter the team code/);
+      assert.doesNotMatch(team.body, /Spark/i, "nobody is sent to a product they have not heard of");
+      assert.doesNotMatch(team.body, /SHINE2026/, "the code is never on the page");
       for (const secret of ["Run of show", "Volunteer duties", "My schedule", "Catering Team", "Assigned team"]) {
         assert.doesNotMatch(team.body, new RegExp(secret), secret);
       }
 
       /* The preview carries whole URLs, or a messaging app has nothing to
          fetch, and the photograph is the weekend's own. */
-      assert.match(team.body, /og:image"? content="https:\/\/[^"]+founders-weekend-2026-v2\.jpg/);
+      assert.match(team.body, /og:image"? content="https:\/\/[^"]+founders-weekend-2026-v3\.jpg/);
       assert.match(team.body, /summary_large_image/);
 
       /* And the short namespace reaches the guide only: the working surfaces
@@ -634,6 +637,70 @@ test("Spark access model, end to end against production schema", async (t) => {
       for (const section of ["/schedule", "/budget", "/plan", "/actions"]) {
         const hit = await visit(newJar(), `${SHORT}${section}`);
         assert.equal(hit.status, 404, section);
+      }
+    });
+
+    /* -------------------------------------------------- the weekend's code */
+
+    await t.test("the weekend's code opens the team guide, and only that", async () => {
+      const SHORT = "/shine/2026";
+      const SHINE = "/spark/c/shine/e/founders-weekend/2026";
+      /* The code is never written down here either: this is its hash, which
+         is the only form the database ever sees. */
+      const CODE_HASH = "331e5f5ebf68fd8615720d980e06af87609bd9beccf4a83fbfcdbb5be24166a1";
+
+      const open = async (hash: string, caller: string) => {
+        const { data } = await admin.rpc("open_event_session", {
+          p_client: "shine", p_series: "founders-weekend", p_edition: "2026",
+          p_code_hash: hash, p_client_hash: caller,
+        });
+        return data as string | null;
+      };
+
+      assert.equal(await open("not-the-code", `${RUN}-wrong`), null, "a wrong code opens nothing");
+
+      const token = await open(CODE_HASH, `${RUN}-right`);
+      assert.ok(token && token.length >= 32, "the right code returns a session");
+
+      try {
+        const jar = newJar();
+        jar.set("shine_team", { value: token!, persistent: true });
+
+        /* It opens the team guide: the page carries the team only rows and
+           the operational detail that the door does not. */
+        const team = await visit(jar, `${SHORT}/team`);
+        assert.equal(team.status, 200);
+        assert.doesNotMatch(team.body, /Welcome, SHINE Team/, "past the door");
+        assert.match(team.body, /Morning bathroom cleaning/, "a team only row");
+        assert.match(team.body, /Wipe countertops/, "the operational detail");
+
+        /* Without the cookie, the same address has none of it. */
+        const closed = await visit(newJar(), `${SHORT}/team`);
+        assert.match(closed.body, /Welcome, SHINE Team/);
+        assert.doesNotMatch(closed.body, /Morning bathroom cleaning/);
+
+        /* And nothing else. Not the calendar, not the budget, not the
+           workspace, not another client, not the platform. */
+        for (const path of [`${SHINE}/schedule`, `${SHINE}/budget`, `${SHINE}/plan`,
+                            "/spark/c/shine", `${SHORT}/schedule`]) {
+          const hit = await visit(jar, path);
+          assert.notEqual(hit.status, 200, path);
+        }
+
+        /* The platform home renders its own door to a stranger, and the code
+           does not make the holder any less of a stranger there. */
+        const platform = await visit(jar, PLATFORM);
+        assert.doesNotMatch(platform.body, /Morning bathroom cleaning/);
+        assert.doesNotMatch(platform.body, /Founders Weekend/);
+
+        /* The cookie is scoped to the guide, so it is not even sent to Spark. */
+        const entry = await visit(jar, ENTRY);
+        assert.doesNotMatch(entry.body, /Run of show/);
+      } finally {
+        await admin.from("event_sessions").delete().eq("engagement_id",
+          (await admin.from("engagements").select("id").eq("series_slug", "founders-weekend")
+            .eq("edition_label", "2026").single()).data!.id);
+        await admin.from("event_code_attempts").delete().like("client_hash", `${RUN}%`);
       }
     });
 

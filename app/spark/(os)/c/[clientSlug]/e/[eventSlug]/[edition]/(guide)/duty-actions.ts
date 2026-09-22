@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
+import { cookies } from "next/headers";
+
 import { resolveEngagement } from "@lib/spark/engagement";
+import { EVENT_COOKIE, sha256 } from "@lib/spark/event-code";
+import { createClient } from "@lib/supabase/server";
 
 /**
  * Ticking a duty off, as the person who did it.
@@ -26,15 +30,24 @@ export async function completeDuty(
   taskId: string,
   done: boolean,
 ): Promise<Outcome> {
+  const token = (await cookies()).get(EVENT_COOKIE)?.value ?? null;
   const context = await resolveEngagement(clientSlug, eventSlug, edition);
-  if (!context) return { ok: false };
+  const working = Boolean(
+    context && (context.staff || context.role === "planner" || context.role === "client"),
+  );
 
-  const working = context.staff || context.role === "planner" || context.role === "client";
-  if (!working) return { ok: false };
+  /* Either credential is enough to record work: a working membership, or the
+     weekend's code. Neither is enough for anything else, which the function
+     below decides rather than this one. */
+  if (!working && !token) return { ok: false };
 
-  const { data, error } = await context.supabase.rpc("set_duty_done", {
+  const supabase = context?.supabase ?? (await createClient().catch(() => null));
+  if (!supabase) return { ok: false };
+
+  const { data, error } = await supabase.rpc("set_duty_done", {
     p_task: taskId,
     p_done: done,
+    p_token_hash: token ? sha256(token) : null,
   });
 
   if (error || data !== true) return { ok: false, message: "That did not save." };
