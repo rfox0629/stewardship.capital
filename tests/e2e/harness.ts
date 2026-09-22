@@ -87,6 +87,8 @@ export const restartBrowser = (jar: Jar): Jar => {
 export type Hit = {
   status: number;
   location: string | null;
+  /** The query string of a redirect, which a move must not drop. */
+  locationSearch: string | null;
   body: string;
 };
 
@@ -114,6 +116,7 @@ export const visit = async (
   return {
     status: response.status,
     location: location ? new URL(location, BASE_URL).pathname : null,
+    locationSearch: location ? new URL(location, BASE_URL).search : null,
     body,
   };
 };

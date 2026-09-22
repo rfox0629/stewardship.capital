@@ -30,8 +30,6 @@ export default async function TeamGuidePage({ params }: PageProps) {
   ]);
   if (!loaded || !team) notFound();
 
-  const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
-
   return (
     <GuideApp
       storeKey={`gd:${clientSlug}:${eventSlug}:${edition}:team`}
@@ -40,7 +38,6 @@ export default async function TeamGuidePage({ params }: PageProps) {
       activities={loaded.guide.activities}
       coffee={loaded.guide.coffee}
       team={{
-        base,
         route: { clientSlug, eventSlug, edition },
         startsOn: loaded.guide.startsOn,
         moments: team.moments,

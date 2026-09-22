@@ -3,6 +3,9 @@ import test from "node:test";
 
 import { authorizeSparkPath, landingFor } from "../lib/spark/authorize.ts";
 import {
+  canonicalGuidePath,
+  preferShortPath,
+  shortGuidePath,
   SPARK_BASE,
   PLATFORM_HOME,
   SPARK_PLATFORM,
@@ -162,7 +165,7 @@ test("the calendar is for working members; a guest reads the guide instead", () 
   assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shineClient), { allow: true });
   assert.deepEqual(authorizeSparkPath(`${SHINE}/schedule`, shineGuest), {
     allow: false,
-    redirectTo: SHINE,
+    redirectTo: "/shine/2026",
   });
 });
 
@@ -192,7 +195,7 @@ test("publishing the guide opens the root and nothing beneath it", () => {
   }
   assert.deepEqual(
     authorizeSparkPath(`${SHINE}/team`, shineGuest, { publicGuide: true }),
-    { allow: false, redirectTo: SHINE },
+    { allow: false, redirectTo: "/shine/2026" },
   );
 });
 
@@ -201,7 +204,7 @@ test("the team guide is for working members only", () => {
   assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, shineClient), { allow: true });
   assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, shineGuest), {
     allow: false,
-    redirectTo: SHINE,
+    redirectTo: "/shine/2026",
   });
   assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, stranger), REFUSED);
   assert.deepEqual(authorizeSparkPath(`${SHINE}/team`, null), REFUSED);
@@ -210,7 +213,7 @@ test("the team guide is for working members only", () => {
 /* --------------------------------------------------- roles within a workspace */
 
 test("a guest is held to the guide, and sent there rather than away", () => {
-  const home = { allow: false as const, redirectTo: SHINE };
+  const home = { allow: false as const, redirectTo: "/shine/2026" };
 
   for (const section of ["/schedule", "/team", "/budget", "/plan", "/actions", "/sparks", "/tasks", "/resources"]) {
     assert.deepEqual(authorizeSparkPath(`${SHINE}${section}`, shineGuest), home, section);
@@ -231,7 +234,7 @@ test("a client reaches the working surfaces but not the retired planner paths", 
   for (const retired of ["/run-of-show", "/decisions", "/sparks", "/tasks", "/resources"]) {
     assert.deepEqual(authorizeSparkPath(`${SHINE}${retired}`, shineClient), {
       allow: false,
-      redirectTo: `${SHINE}/team`,
+      redirectTo: "/shine/2026/team",
     }, retired);
   }
 });
@@ -252,11 +255,11 @@ test("a section nobody has named yet is planner only, not public", () => {
   });
   assert.deepEqual(authorizeSparkPath(`${SHINE}/invoices`, shineClient), {
     allow: false,
-    redirectTo: `${SHINE}/team`,
+    redirectTo: "/shine/2026/team",
   });
   assert.deepEqual(authorizeSparkPath(`${SHINE}/invoices`, shineGuest), {
     allow: false,
-    redirectTo: SHINE,
+    redirectTo: "/shine/2026",
   });
 });
 
@@ -317,7 +320,7 @@ test("a client's own index is a working surface, not a member surface", () => {
      rollups. Sent to their own home in it, not out of Spark. */
   assert.deepEqual(authorizeSparkPath("/spark/c/shine", shineGuest), {
     allow: false,
-    redirectTo: SHINE,
+    redirectTo: "/shine/2026",
   });
 
   assert.deepEqual(authorizeSparkPath("/spark/c/shine", stranger), REFUSED);
@@ -332,7 +335,7 @@ test("a client's own index is a working surface, not a member surface", () => {
 /* ------------------------------------------------------------- landing */
 
 test("one membership goes straight in, and the team lands on the team guide", () => {
-  assert.deepEqual(landingFor(shineClient), { kind: "workspace", href: `${SHINE}/team` });
+  assert.deepEqual(landingFor(shineClient), { kind: "workspace", href: "/shine/2026/team" });
 });
 
 test("a planner lands on the calendar, where the weekend is edited", () => {
@@ -341,7 +344,7 @@ test("a planner lands on the calendar, where the weekend is edited", () => {
 
 test("a guest lands on the guide, not on a page they would be refused", () => {
   const landing = landingFor(shineGuest);
-  assert.deepEqual(landing, { kind: "workspace", href: SHINE });
+  assert.deepEqual(landing, { kind: "workspace", href: "/shine/2026" });
   /* The landing must itself be allowed, or arriving would bounce forever. */
   assert.deepEqual(
     authorizeSparkPath((landing as { href: string }).href, shineGuest),
@@ -482,4 +485,43 @@ test("only the hash is ever storable, and it does not contain the token", async 
   /* Stable, or an existing invitation would stop being findable. */
   assert.equal(await hashInvitationToken(token), hash);
   assert.notEqual(await hashInvitationToken(randomInvitationToken()), hash);
+});
+
+/* --------------------------------------------------------- short addresses */
+
+test("the printed address stands for the workspace path, and only for the guide", () => {
+  assert.equal(canonicalGuidePath("/shine/2026"), SHINE);
+  assert.equal(canonicalGuidePath("/shine/2026/"), SHINE);
+  assert.equal(canonicalGuidePath("/shine/2026/team"), `${SHINE}/team`);
+
+  /* A short address cannot be widened into the working surfaces by adding a
+     segment. Those keep the long path, so nothing is published at the top
+     level that was never meant to be. */
+  for (const section of ["/schedule", "/budget", "/plan", "/actions", "/team/extra"]) {
+    assert.equal(canonicalGuidePath(`/shine/2026${section}`), null, section);
+  }
+  assert.equal(canonicalGuidePath("/spark"), null);
+  assert.equal(canonicalGuidePath("/login"), null);
+});
+
+test("the old guide addresses map back to the short ones, and nothing else does", () => {
+  assert.equal(shortGuidePath(SHINE), "/shine/2026");
+  assert.equal(shortGuidePath(`${SHINE}/`), "/shine/2026");
+  assert.equal(shortGuidePath(`${SHINE}/team`), "/shine/2026/team");
+
+  assert.equal(shortGuidePath(`${SHINE}/schedule`), null, "the calendar keeps its path");
+  assert.equal(shortGuidePath("/spark/c/other/e/retreat/2026"), null, "another client is untouched");
+  assert.equal(preferShortPath(`${SHINE}/schedule`), `${SHINE}/schedule`);
+  assert.equal(preferShortPath(SPARK_BASE), SPARK_BASE);
+});
+
+test("arrivals land on the printed address, never on the old one", () => {
+  assert.deepEqual(landingFor(shineGuest), { kind: "workspace", href: "/shine/2026" });
+  assert.deepEqual(landingFor(shineClient), { kind: "workspace", href: "/shine/2026/team" });
+  /* The planner lands on the calendar, which is not a printed address. */
+  assert.deepEqual(landingFor(shinePlanner), { kind: "workspace", href: `${SHINE}/schedule` });
+
+  /* A refusal inside the workspace is sent to the short address too. */
+  const refused = authorizeSparkPath(`${SHINE}/budget`, shineGuest);
+  assert.deepEqual(refused, { allow: false, redirectTo: "/shine/2026" });
 });

@@ -11,6 +11,8 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           "/internal/",
           "/spark/",
+          // The weekend guide is for invited guests with the link, not search.
+          "/shine/",
           "/dashboard/",
           "/assessment",
           "/login",

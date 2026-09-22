@@ -102,3 +102,65 @@ export const workspaceRootOf = (pathname: string): WorkspaceRef | null => {
   if (!match) return null;
   return { clientSlug: match[1], eventSlug: match[2], editionSlug: match[3] };
 };
+
+/* ------------------------------------------------------------ short paths */
+
+/**
+ * Short addresses for a guide, because these two go on printed things.
+ *
+ * `/shine/2026` is readable over a shoulder and survives being typed from a
+ * card; the workspace path it stands for is not. Only the guest guide and the
+ * team guide get one. The planner surfaces keep the long address, so nothing
+ * is published at the top level by accident, and a short path can never be
+ * widened into the calendar or the budget by adding a segment.
+ *
+ * The map is the whole feature: a guide either has a short address here or it
+ * does not, and every other part of the system keeps working in workspace
+ * paths as before.
+ */
+const SHORT_GUIDES: Array<{ short: string; workspace: WorkspaceRef }> = [
+  {
+    short: "/shine/2026",
+    workspace: { clientSlug: "shine", eventSlug: "founders-weekend", editionSlug: "2026" },
+  },
+];
+
+/** The only sections a short address reaches: the guide, and the team's. */
+const SHORT_SECTIONS = ["", "/team"] as const;
+
+const trimSlash = (pathname: string) =>
+  pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+
+/** The workspace path a short address stands for, if it is one. */
+export const canonicalGuidePath = (pathname: string): string | null => {
+  const path = trimSlash(pathname);
+  for (const guide of SHORT_GUIDES) {
+    for (const section of SHORT_SECTIONS) {
+      if (path === `${guide.short}${section}`) {
+        return `${workspacePath(guide.workspace)}${section}`;
+      }
+    }
+  }
+  return null;
+};
+
+/** The short address for a workspace path, if it has one. */
+export const shortGuidePath = (pathname: string): string | null => {
+  const path = trimSlash(pathname);
+  for (const guide of SHORT_GUIDES) {
+    const base = workspacePath(guide.workspace);
+    for (const section of SHORT_SECTIONS) {
+      if (path === `${base}${section}`) return `${guide.short}${section}`;
+    }
+  }
+  return null;
+};
+
+/**
+ * Where to send someone, preferring the short address.
+ *
+ * Every redirect and every link in the product goes through here, so nobody
+ * is ever handed the old address, not even for the moment before a redirect.
+ */
+export const preferShortPath = (pathname: string): string =>
+  shortGuidePath(pathname) ?? pathname;

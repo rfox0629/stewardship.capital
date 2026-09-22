@@ -10,6 +10,7 @@ import "@spark/workspace.css";
 import { SiteNav } from "@app/(www)/_components/site-nav";
 import { eventBody, eventDisplay, eventSub } from "@app/fonts";
 import { dateRangeLabel, resolveEngagement } from "@lib/spark/engagement";
+import { preferShortPath } from "@lib/spark/paths";
 import { themeVariables } from "@lib/spark/theme";
 import { EventNav, type EventNavItem } from "./event-nav";
 
@@ -62,11 +63,11 @@ export default async function EngagementLayout({ children, params }: LayoutProps
      A guest has no door here at all: their weekend is the guide. */
   const nav: EventNavItem[] = working
     ? [
-        { href: `${base}/team`, label: "Team guide" },
+        { href: preferShortPath(`${base}/team`), label: "Team guide" },
         { href: `${base}/schedule`, label: "Calendar", also: [`${base}/plan`] },
         { href: `${base}/budget`, label: "Budget" },
       ]
-    : [{ href: base, label: "Weekend guide" }];
+    : [{ href: preferShortPath(base), label: "Weekend guide" }];
 
   const dates = dateRangeLabel(engagement.startsOn, engagement.endsOn);
 

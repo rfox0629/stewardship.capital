@@ -585,6 +585,44 @@ test("Spark access model, end to end against production schema", async (t) => {
       }
     });
 
+    /* ------------------------------------------------- the printed address */
+
+    await t.test("the short address is the SHINE guide, and the old one redirects", async () => {
+      /* This engagement is the real one, so everything here is a read. The
+         guest guide is published, which is why an anonymous visitor may see
+         it at all. */
+      const SHORT = "/shine/2026";
+      const LONG = "/spark/c/shine/e/founders-weekend/2026";
+
+      const anon = newJar();
+      const guide = await visit(anon, SHORT);
+      assert.equal(guide.status, 200, "no account needed at the short address");
+      assert.match(guide.body, /Founders Weekend/);
+
+      /* The old addresses are retired, and a query string survives the move. */
+      const moved = await visit(newJar(), LONG);
+      assert.equal(moved.status, 307);
+      assert.equal(moved.location, SHORT);
+
+      const movedTeam = await visit(newJar(), `${LONG}/team?day=fri&open=abc`);
+      assert.equal(movedTeam.status, 307);
+      assert.equal(movedTeam.location, `${SHORT}/team`);
+      assert.match(movedTeam.locationSearch ?? "", /day=fri/, "the query string comes along");
+      assert.match(movedTeam.locationSearch ?? "", /open=abc/);
+
+      /* A different address is navigation, not permission. */
+      const team = await visit(newJar(), `${SHORT}/team`);
+      assert.equal(team.status, 307);
+      assert.equal(team.location, ENTRY);
+
+      /* And the short namespace reaches the guide only: the working surfaces
+         are not quietly published at the top level. */
+      for (const section of ["/schedule", "/budget", "/plan", "/actions"]) {
+        const hit = await visit(newJar(), `${SHORT}${section}`);
+        assert.equal(hit.status, 404, section);
+      }
+    });
+
     /* ---------------------------------------------------- the weekend guide */
 
     await t.test("a published guide is open to anyone, and carries nothing internal", async () => {
