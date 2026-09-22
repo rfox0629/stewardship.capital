@@ -43,7 +43,6 @@ type Route = { clientSlug: string; eventSlug: string; edition: string };
 export type TeamStatus = { taskId: string; status: string };
 
 export type TeamProps = {
-  base: string;
   route: Route;
   startsOn: string | null;
   moments: GuideMoment[];

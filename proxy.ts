@@ -5,8 +5,11 @@ import { authorizeSparkPath } from "./lib/spark/authorize";
 import {
   PLATFORM_HOME,
   SPARK_ENTRY,
+  canonicalGuidePath,
   isOpenSparkPath,
   isSparkPath,
+  preferShortPath,
+  shortGuidePath,
   workspaceRootOf,
 } from "./lib/spark/paths";
 import { createProxyClient, hasIdentity } from "./lib/supabase/proxy";
@@ -37,12 +40,26 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const { supabase, box } = createProxyClient(request);
 
-  if (isSparkPath(pathname)) {
+  /* The guide has a short address now, and the workspace path it replaced is
+     retired. Anyone arriving on the old one, from a bookmark or an older
+     printed card, is moved across with their query string intact. */
+  const shortened = shortGuidePath(pathname);
+  if (shortened) {
+    const target = request.nextUrl.clone();
+    target.pathname = shortened;
+    return NextResponse.redirect(target);
+  }
+
+  /* A short address is authorized as the workspace path it stands for, so
+     there is one set of rules rather than two that can disagree. */
+  const canonical = canonicalGuidePath(pathname) ?? pathname;
+
+  if (isSparkPath(canonical)) {
     /* The front door, invitation links, the emailed link callback, and signing
        out are reachable without a session by design. Refreshing the session is
        still worth doing on them: it is how the front door knows a returning
        person is already signed in. */
-    if (isOpenSparkPath(pathname)) {
+    if (isOpenSparkPath(canonical)) {
       if (supabase) await hasIdentity(supabase);
       return box.response;
     }
@@ -55,7 +72,7 @@ export async function proxy(request: NextRequest) {
     /* A workspace root is where the weekend guide lives, and a published
        guide is public. Ask the database, only for that one path, whether this
        engagement has published it. */
-    const root = workspaceRootOf(pathname);
+    const root = workspaceRootOf(canonical);
     let publicGuide = false;
     if (root && supabase) {
       const { data } = await supabase.rpc("weekend_guide_published", {
@@ -66,11 +83,11 @@ export async function proxy(request: NextRequest) {
       publicGuide = data === true;
     }
 
-    const decision = authorizeSparkPath(pathname, access, { publicGuide });
+    const decision = authorizeSparkPath(canonical, access, { publicGuide });
 
     if (!decision.allow) {
       const refusal = NextResponse.redirect(
-        new URL(decision.redirectTo, request.url),
+        new URL(preferShortPath(decision.redirectTo), request.url),
       );
       /* Carry any refreshed session cookies onto the redirect, so a refusal
          does not quietly sign someone out of the workspace they do belong to. */

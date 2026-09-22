@@ -7,6 +7,7 @@ import {
   isOpenSparkPath,
   isSparkPath,
   pathBelongsToWorkspace,
+  preferShortPath,
   sectionOf,
   workspacePath,
   workspaceRootOf,
@@ -81,9 +82,11 @@ const allowedRoles = (section: string): SparkRole[] =>
  * the guest guide, which is what they would see without one.
  */
 export const workspaceHome = (workspace: SparkWorkspace): string => {
+  /* Through preferShortPath, so an arrival lands on the printed address
+     rather than passing through the old one on the way. */
   if (workspace.role === "planner") return `${workspacePath(workspace)}/schedule`;
-  if (workspace.role === "client") return `${workspacePath(workspace)}/team`;
-  return workspacePath(workspace);
+  if (workspace.role === "client") return preferShortPath(`${workspacePath(workspace)}/team`);
+  return preferShortPath(workspacePath(workspace));
 };
 
 /* Every refusal lands on the front door, which then routes the person to
