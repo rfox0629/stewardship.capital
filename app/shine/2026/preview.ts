@@ -20,11 +20,21 @@ export const SITE_ORIGIN = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://stewardship.capital"
 ).replace(/\/$/, "");
 
-export const HERO_IMAGE = {
-  url: `${SITE_ORIGIN}/clients/shine/venue/hero-lakehouse-dusk-1920.jpg`,
-  width: 1920,
-  height: 1080,
-  alt: "The lake house at dusk, Spooner Lake Island Oasis",
+/**
+ * The card a shared link shows: the property at dusk with the SHINE mark
+ * across the middle, baked into the file rather than drawn over it, because
+ * a messaging app renders an image and nothing else.
+ *
+ * Sized 1200 by 630, the shape the cards expect, with the mark inside the
+ * centre square so it survives the square crop some apps use. The version in
+ * the filename is deliberate: apps cache a preview by its URL, so a new
+ * picture needs a new name to be fetched at all.
+ */
+export const SOCIAL_IMAGE = {
+  url: `${SITE_ORIGIN}/clients/shine/social/founders-weekend-2026-v2.jpg`,
+  width: 1200,
+  height: 630,
+  alt: "SHINE, over the lake house at dusk at Spooner Lake Island Oasis",
 };
 
 export const GUEST_TITLE = "SHINE Founders Weekend 2026";
@@ -51,13 +61,13 @@ export const previewMetadata = (
     description,
     siteName: GUEST_TITLE,
     url: `${SITE_ORIGIN}${path}`,
-    images: [HERO_IMAGE],
+    images: [SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: [HERO_IMAGE.url],
+    images: [SOCIAL_IMAGE.url],
   },
   /* An unlisted guide, as it was before it had a short address. Unfurling a
      link someone was given is not the same as being found in search. */

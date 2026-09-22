@@ -626,7 +626,7 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       /* The preview carries whole URLs, or a messaging app has nothing to
          fetch, and the photograph is the weekend's own. */
-      assert.match(team.body, /property=?"?og:image"? content="https:\/\/[^"]+hero-lakehouse-dusk/);
+      assert.match(team.body, /og:image"? content="https:\/\/[^"]+founders-weekend-2026-v2\.jpg/);
       assert.match(team.body, /summary_large_image/);
 
       /* And the short namespace reaches the guide only: the working surfaces

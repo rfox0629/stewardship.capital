@@ -8,11 +8,9 @@ import {
   DAY_SHORT,
   TEAM_DAYS,
   UNASSIGNED,
-  categoryOf,
   clock,
   dayAgenda,
   guestTitle,
-  INVOLVEMENT_LABEL,
   personalAgenda,
   personalOverlaps,
   rosterOf,
@@ -21,21 +19,22 @@ import {
   type OpsDetail,
 } from "@lib/spark/guide";
 
-import { updateAction } from "../(work)/actions/actions";
+import { completeDuty } from "./duty-actions";
 
 /**
  * What the team needs that a guest does not.
  *
- * Three readings of one calendar. The run of show is the whole day, program
- * and operations side by side, because work that happens at the same time has
- * to look like it does. The duties are the operations rows, ticked off with
- * the control the rest of the product uses. My schedule is one person's own
- * thread through both, so nobody reads the duty list and misses that they are
- * also speaking at ten.
+ * Three readings of one calendar, from the glance to the job in hand.
+ * Schedule is the whole weekend, compact, so anyone can see where the day is.
+ * Run of show is the same rows with the execution detail already on the face
+ * of them, because mid weekend nobody has a spare hand for tapping. Volunteer
+ * duties is the work that is actually assigned, filtered to a name and ticked
+ * off as it is finished.
  *
- * Nothing here is a second copy: every row is a schedule_items record, so a
- * time changed in the calendar is changed in all of them at once. Choosing a
- * name is a filter. It signs nobody in as anybody.
+ * Nothing here is a second copy: every row is a schedule_items record. Picking
+ * a name filters a list and proves nothing; the server goes by the session,
+ * and completing a duty is deliberately not the same permission as editing
+ * the weekend.
  */
 
 type Route = { clientSlug: string; eventSlug: string; edition: string };
@@ -46,7 +45,7 @@ export type TeamProps = {
   route: Route;
   startsOn: string | null;
   moments: GuideMoment[];
-  /** Tasks that belong to no day, kept apart from the weekend itself. */
+  /** Preparation that belongs to no day of the weekend. */
   prep: Duty[];
   /** Completion, by the moment the duty came from. */
   statuses: Record<string, TeamStatus>;
@@ -54,12 +53,12 @@ export type TeamProps = {
   storeKey?: string;
 };
 
-type Tab = "ros" | "duties" | "mine";
+type Tab = "schedule" | "ros" | "duties";
 
 const TABS: Array<[Tab, string]> = [
+  ["schedule", "Schedule"],
   ["ros", "Run of show"],
   ["duties", "Volunteer duties"],
-  ["mine", "My schedule"],
 ];
 
 const noopSubscribe = () => () => {};
@@ -85,9 +84,9 @@ export function TeamPanel(props: TeamProps) {
   const hydrated = useHydrated();
 
   const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "ros";
+    if (typeof window === "undefined") return "schedule";
     const stored = recall(`${key}:team`);
-    return stored === "duties" || stored === "mine" ? stored : "ros";
+    return stored === "ros" || stored === "duties" ? stored : "schedule";
   });
   const [day, setDay] = useState<string>(() => {
     if (typeof window === "undefined") return "thu";
@@ -95,7 +94,8 @@ export function TeamPanel(props: TeamProps) {
     return stored && (TEAM_DAYS as readonly string[]).includes(stored) ? stored : "thu";
   });
 
-  const shownTab = hydrated ? tab : "ros";
+  const shownTab = hydrated ? tab : "schedule";
+  /* One day for all three tabs, so switching tab keeps the day you were on. */
   const shownDay = hydrated ? day : "thu";
 
   const chooseTab = (next: Tab) => {
@@ -127,11 +127,9 @@ export function TeamPanel(props: TeamProps) {
 
       <DaySelector startsOn={props.startsOn} day={shownDay} onDay={chooseDay} />
 
+      {shownTab === "schedule" ? <TeamSchedule {...props} day={shownDay} /> : null}
       {shownTab === "ros" ? <RunOfShow {...props} day={shownDay} /> : null}
       {shownTab === "duties" ? <Duties {...props} day={shownDay} storeKey={key} /> : null}
-      {shownTab === "mine" ? (
-        <MySchedule {...props} day={shownDay} storeKey={key} onFullTimeline={() => chooseTab("ros")} />
-      ) : null}
     </section>
   );
 }
@@ -171,36 +169,6 @@ function DaySelector({
   );
 }
 
-/** Program or Operations, said in words as well as in colour. */
-function CategoryBadge({ moment }: { moment: GuideMoment }) {
-  const category = categoryOf(moment);
-  return (
-    <em className={`gd-badge gd-badge-${category}`}>
-      {category === "program" ? "Program" : "Operations"}
-    </em>
-  );
-}
-
-function ConfirmBadge({ ops }: { ops: OpsDetail | null | undefined }) {
-  if (!ops?.confirm) return null;
-  return (
-    <em className="gd-badge gd-badge-confirm">
-      {ops.confirm === "time" ? "Time to confirm" : "Assignment to confirm"}
-    </em>
-  );
-}
-
-/** Lead first, then the people the row is assigned to. */
-function Who({ ops }: { ops: OpsDetail | null | undefined }) {
-  if (!ops?.owner && !ops?.support) return null;
-  return (
-    <span className="gd-ros-owner">
-      {ops?.owner ? <b>{ops.owner}</b> : null}
-      {ops?.support ? <span>{ops.support}</span> : null}
-    </span>
-  );
-}
-
 function Chevron() {
   return (
     <svg className="gd-ros-chev" viewBox="0 0 12 8" aria-hidden="true">
@@ -209,9 +177,70 @@ function Chevron() {
   );
 }
 
-/* ------------------------------------------------------------ run of show */
+const span = (moment: GuideMoment) =>
+  `${clock(moment.starts)}${moment.ends ? ` to ${clock(moment.ends)}` : ""}`;
 
-function RunOfShow({ moments, day, statuses }: TeamProps & { day: string }) {
+/** Names as words: "Lead: Brooke" says more than a coloured pill. */
+function Roles({ ops }: { ops: OpsDetail | null | undefined }) {
+  if (!ops?.owner && !ops?.support) return null;
+  return (
+    <span className="gd-roles">
+      {ops?.owner ? <span><b>Lead:</b> {ops.owner}</span> : null}
+      {ops?.support ? <span><b>Team:</b> {ops.support}</span> : null}
+    </span>
+  );
+}
+
+/**
+ * What the source could not settle, said once where the answer is needed.
+ *
+ * It reads inside an opened row rather than as a badge on every card: the
+ * timeline should show the weekend, not a wall of warnings.
+ */
+function Unresolved({ ops }: { ops: OpsDetail | null | undefined }) {
+  if (!ops?.confirm) return null;
+  return (
+    <p className="gd-unresolved">
+      <b>{ops.confirm === "time" ? "Time to confirm." : "Assignment to confirm."}</b>{" "}
+      {ops.notes ?? "The master calendar disagrees with itself here."}
+    </p>
+  );
+}
+
+const DETAIL_ROWS: Array<[keyof OpsDetail, string]> = [
+  ["purpose", "What happens"],
+  ["owner", "Lead"],
+  ["support", "Team"],
+  ["emcee", "Emcee and transitions"],
+  ["location", "Location"],
+  ["materials", "Setup"],
+  ["next", "Next"],
+  ["notes", "Notes"],
+];
+
+function Details({ ops, skip = [] }: { ops: OpsDetail | null; skip?: Array<keyof OpsDetail> }) {
+  const rows = DETAIL_ROWS.filter(([field]) => ops?.[field] && !skip.includes(field));
+  return (
+    <>
+      <Unresolved ops={ops} />
+      {rows.length > 0 ? (
+        <dl className="gd-ops">
+          {rows.map(([field, label]) => (
+            <div key={field}>
+              <dt>{label}</dt>
+              <dd>{ops![field]}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+    </>
+  );
+}
+
+/* -------------------------------------------------------------- schedule */
+
+/** The whole weekend at a glance: when, what, and who has it. */
+function TeamSchedule({ moments, day }: TeamProps & { day: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const agenda = dayAgenda(moments, day);
 
@@ -220,12 +249,8 @@ function RunOfShow({ moments, day, statuses }: TeamProps & { day: string }) {
       <ol className="gd-ros">
         {agenda.map((moment) => {
           const expanded = openId === moment.id;
-          const done = statuses[moment.id]?.status === "done";
           return (
-            <li
-              key={moment.id}
-              className={`gd-ros-item gd-cat-${categoryOf(moment)} ${moment.teamOnly ? "gd-ros-team" : ""}`}
-            >
+            <li key={moment.id} className="gd-ros-item">
               <button
                 type="button"
                 className="gd-ros-head"
@@ -238,20 +263,17 @@ function RunOfShow({ moments, day, statuses }: TeamProps & { day: string }) {
                 </span>
                 <span className="gd-ros-main">
                   <span className="gd-ros-title">{moment.title}</span>
-                  <span className="gd-ros-tags">
-                    <CategoryBadge moment={moment} />
-                    {moment.teamOnly ? <em className="gd-badge gd-badge-team">Team only</em> : null}
-                    <ConfirmBadge ops={moment.ops} />
-                    {done ? <em className="gd-badge gd-badge-done">Done</em> : null}
-                  </span>
-                  <Who ops={moment.ops} />
+                  {moment.ops?.owner ? (
+                    <span className="gd-roles">
+                      <span><b>Lead:</b> {moment.ops.owner}</span>
+                    </span>
+                  ) : null}
                 </span>
                 <Chevron />
               </button>
-
               {expanded ? (
                 <div className="gd-ros-body">
-                  <OpsList ops={moment.ops ?? null} />
+                  <Details ops={moment.ops ?? null} />
                   {!moment.teamOnly && guestTitle(moment) !== moment.title ? (
                     <p className="gd-ros-guest">Guests see this as &ldquo;{guestTitle(moment)}&rdquo;.</p>
                   ) : null}
@@ -266,56 +288,87 @@ function RunOfShow({ moments, day, statuses }: TeamProps & { day: string }) {
   );
 }
 
-const OPS_ROWS: Array<[keyof OpsDetail, string]> = [
-  ["purpose", "What happens"],
-  ["owner", "Lead"],
-  ["support", "Assigned team"],
-  ["emcee", "Emcee and transitions"],
-  ["location", "Location"],
-  ["materials", "Setup and notes"],
-  ["next", "Next cue"],
-  ["notes", "Notes"],
-  ["status", "Status"],
-];
+/* ------------------------------------------------------------ run of show */
 
-function OpsList({ ops }: { ops: OpsDetail | null }) {
-  if (!ops) return <p className="gd-empty">No detail on this row yet.</p>;
+/** The same rows, with what it takes to run them already on screen. */
+function RunOfShow({ moments, day }: TeamProps & { day: string }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const agenda = dayAgenda(moments, day);
+
   return (
-    <dl className="gd-ops">
-      {OPS_ROWS.filter(([field]) => ops[field]).map(([field, label]) => (
-        <div key={field}>
-          <dt>{label}</dt>
-          <dd>{ops[field]}</dd>
-        </div>
-      ))}
-    </dl>
+    <>
+      <ol className="gd-ros gd-ros-full">
+        {agenda.map((moment) => {
+          const ops = moment.ops;
+          const expanded = openId === moment.id;
+          const more = Boolean(ops?.notes || ops?.confirm || ops?.location || ops?.emcee);
+          return (
+            <li key={moment.id} className="gd-ros-item">
+              <div className="gd-ros-head gd-ros-static">
+                <span className="gd-ros-time">
+                  {clock(moment.starts)}
+                  {moment.ends ? <i>{clock(moment.ends)}</i> : null}
+                </span>
+                <span className="gd-ros-main">
+                  <span className="gd-ros-title">{moment.title}</span>
+                  {ops?.purpose ? <span className="gd-ros-purpose">{ops.purpose}</span> : null}
+                  <Roles ops={ops} />
+                  {ops?.materials ? (
+                    <span className="gd-ros-setup"><b>Setup:</b> {ops.materials}</span>
+                  ) : null}
+                  {ops?.next ? <span className="gd-ros-setup"><b>Next:</b> {ops.next}</span> : null}
+                </span>
+              </div>
+
+              {more ? (
+                <button
+                  type="button"
+                  className="gd-more"
+                  aria-expanded={expanded}
+                  onClick={() => setOpenId(expanded ? null : moment.id)}
+                >
+                  {expanded ? "Less" : "More"}
+                  <Chevron />
+                </button>
+              ) : null}
+
+              {expanded ? (
+                <div className="gd-ros-body">
+                  <Details ops={ops ?? null} skip={["purpose", "owner", "support", "materials", "next"]} />
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+      {agenda.length === 0 ? <p className="gd-empty">Nothing planned for {DAY_LONG[day]}.</p> : null}
+    </>
   );
 }
 
 /* ----------------------------------------------------------------- duties */
 
-const STATUS_LABEL: Record<string, string> = {
-  todo: "Not started",
-  doing: "In progress",
-  blocked: "Needs decision",
-  done: "Done",
-};
-
-/** The completion control, planner only, checked again on the server. */
+/**
+ * Completion, as the person who did the work.
+ *
+ * Optimistic on screen and checked on the server, which takes a status change
+ * from any working member and nothing else from anybody. A volunteer records
+ * what they finished without being handed the calendar.
+ */
 function useCompletion(route: Route) {
-  const [local, setLocal] = useState<Map<string, string>>(new Map());
+  const [local, setLocal] = useState<Map<string, boolean>>(new Map());
   const [failure, setFailure] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const statusOf = (taskId: string, given: string) => local.get(taskId) ?? given;
+  const doneOf = (taskId: string, given: string) => local.get(taskId) ?? given === "done";
 
   const toggle = (taskId: string, given: string, title: string) => {
-    const next = statusOf(taskId, given) === "done" ? "todo" : "done";
+    const next = !doneOf(taskId, given);
     setLocal((prev) => new Map(prev).set(taskId, next));
     setFailure(null);
     startTransition(async () => {
-      const outcome = await updateAction(
-        route.clientSlug, route.eventSlug, route.edition, taskId, { status: next },
+      const outcome = await completeDuty(
+        route.clientSlug, route.eventSlug, route.edition, taskId, next,
       );
       if (!outcome.ok) {
         setLocal((prev) => {
@@ -328,230 +381,171 @@ function useCompletion(route: Route) {
     });
   };
 
-  return { statusOf, toggle, failure };
+  return { doneOf, toggle, failure };
 }
 
-function Duties({ moments, prep, statuses, canEdit, route, day }: TeamProps & { day: string; storeKey: string }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const { statusOf, toggle, failure } = useCompletion(route);
+function DutyCheck({ done, title, onToggle }: { done: boolean; title: string; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className="gd-duty-check"
+      aria-pressed={done}
+      aria-label={done ? `Mark ${title} not done` : `Mark ${title} done`}
+      onClick={onToggle}
+    >
+      <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.5l2.6 2.6L11 4.5" /></svg>
+    </button>
+  );
+}
 
-  const duties = dayAgenda(moments, day).filter((moment) => statuses[moment.id]);
+function Duties({ moments, prep, statuses, route, day, storeKey }: TeamProps & { day: string; storeKey: string }) {
+  const hydrated = useHydrated();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [mine, setMine] = useState(false);
+  const [person, setPerson] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return recall(`${storeKey}:me`);
+  });
+  const { doneOf, toggle, failure } = useCompletion(route);
+
+  /* A duty is a row the master calendar gave a job to. Being at a meal is not
+     a job, so the meals, the fellowship and free time stay on the schedule
+     and out of this list. */
+  const duties = moments.filter((moment) => statuses[moment.id]);
+  const people = rosterOf(duties);
+  const shownPerson = hydrated && person && people.includes(person) ? person : null;
+  const showMine = hydrated && mine;
+
+  const choose = (name: string) => {
+    setPerson(name);
+    remember(`${storeKey}:me`, name);
+    setOpenId(null);
+  };
+
+  const ofPerson = shownPerson
+    ? personalAgenda(duties, shownPerson).filter((entry) => entry.involvement !== "team")
+    : [];
+  const clashes = personalOverlaps(ofPerson);
+  const mineToday = ofPerson.filter((entry) => entry.moment.day === day).map((entry) => entry.moment);
+  const shown = showMine ? mineToday : dayAgenda(duties, day);
+  const titleOf = new Map(duties.map((moment) => [moment.id, moment.title]));
 
   return (
     <>
+      <div className="gd-seg gd-seg-two" role="tablist" aria-label="Whose duties">
+        <button type="button" role="tab" aria-selected={!showMine} onClick={() => setMine(false)}>
+          All duties
+        </button>
+        <button type="button" role="tab" aria-selected={showMine} onClick={() => setMine(true)}>
+          Your duties
+        </button>
+      </div>
+
+      {showMine ? (
+        <div className="gd-people-pick">
+          <p className="gd-hint">Select your name, then check off duties as you finish.</p>
+          <div className="gd-people">
+            {people.map((name) => (
+              <button
+                key={name}
+                type="button"
+                aria-pressed={shownPerson === name}
+                onClick={() => choose(name)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {failure ? <p className="gd-failure" role="status">{failure}</p> : null}
 
-      <ul className="gd-duties">
-        {duties.map((moment) => {
-          const record = statuses[moment.id]!;
-          const status = statusOf(record.taskId, record.status);
-          const expanded = openId === moment.id;
-          return (
-            <li key={moment.id} className={`gd-duty gd-duty-${status}`}>
-              <div className="gd-duty-row">
-                {canEdit ? (
+      {showMine && !shownPerson ? (
+        <p className="gd-empty">Choose your name to see your duties.</p>
+      ) : (
+        <ul className="gd-duties">
+          {shown.map((moment) => {
+            const record = statuses[moment.id]!;
+            const done = doneOf(record.taskId, record.status);
+            const expanded = openId === moment.id;
+            const against = showMine ? clashes.get(moment.id) ?? [] : [];
+            return (
+              <li key={moment.id} className={`gd-duty ${done ? "gd-duty-done" : ""}`}>
+                <div className="gd-duty-row">
+                  <DutyCheck
+                    done={done}
+                    title={moment.title}
+                    onToggle={() => toggle(record.taskId, record.status, moment.title)}
+                  />
                   <button
                     type="button"
-                    className="gd-duty-check"
-                    aria-pressed={status === "done"}
-                    aria-label={status === "done" ? `Mark ${moment.title} not done` : `Mark ${moment.title} done`}
-                    onClick={() => toggle(record.taskId, record.status, moment.title)}
+                    className="gd-duty-body"
+                    aria-expanded={expanded}
+                    onClick={() => setOpenId(expanded ? null : moment.id)}
                   >
-                    <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.5l2.6 2.6L11 4.5" /></svg>
+                    <b className="gd-duty-title">{moment.title}</b>
+                    <span className="gd-duty-when">{span(moment)}</span>
+                    <Roles ops={moment.ops} />
+                    {done ? <span className="gd-done">Done</span> : null}
                   </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="gd-duty-body"
-                  aria-expanded={expanded}
-                  onClick={() => setOpenId(expanded ? null : moment.id)}
-                >
-                  <b className="gd-duty-title">{moment.title}</b>
-                  <span className="gd-duty-when">
-                    {clock(moment.starts)}
-                    {moment.ends ? ` to ${clock(moment.ends)}` : ""}
-                  </span>
-                  <Who ops={moment.ops} />
-                  <span className="gd-ros-tags">
-                    <ConfirmBadge ops={moment.ops} />
-                    <em className={`gd-badge gd-status-${status}`}>{STATUS_LABEL[status] ?? status}</em>
-                  </span>
-                </button>
-                <Chevron />
-              </div>
-              {expanded ? (
-                <div className="gd-ros-body">
-                  <OpsList ops={moment.ops ?? null} />
+                  <Chevron />
                 </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-      {duties.length === 0 ? <p className="gd-empty">No duties on {DAY_LONG[day]}.</p> : null}
 
-      {prep.length > 0 ? (
+                {against.length > 0 ? (
+                  <p className="gd-clash">
+                    <b>Overlapping assignments.</b> This runs {span(moment)}, at the same time as{" "}
+                    {against.map((id) => titleOf.get(id) ?? "another duty").join(", ")}.
+                  </p>
+                ) : null}
+
+                {expanded ? (
+                  <div className="gd-ros-body">
+                    <Details ops={moment.ops ?? null} skip={["owner", "support"]} />
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {shown.length > 0 || (showMine && !shownPerson) ? null : (
+        <p className="gd-empty">
+          {showMine ? `Nothing assigned to ${shownPerson} on ${DAY_LONG[day]}.` : `No duties on ${DAY_LONG[day]}.`}
+        </p>
+      )}
+
+      {!showMine && prep.length > 0 ? (
         <section className="gd-prep">
           <h3>Before the event</h3>
           <p className="gd-hint">Preparation that belongs to no single day.</p>
           <ul>
             {prep.map((duty) => {
-              const status = statusOf(duty.id, duty.status);
+              const done = doneOf(duty.id, duty.status);
               return (
-                <li key={duty.id} className={`gd-duty gd-duty-${status}`}>
+                <li key={duty.id} className={`gd-duty ${done ? "gd-duty-done" : ""}`}>
                   <div className="gd-duty-row">
-                    {canEdit ? (
-                      <button
-                        type="button"
-                        className="gd-duty-check"
-                        aria-pressed={status === "done"}
-                        aria-label={status === "done" ? `Mark ${duty.title} not done` : `Mark ${duty.title} done`}
-                        onClick={() => toggle(duty.id, duty.status, duty.title)}
-                      >
-                        <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.5l2.6 2.6L11 4.5" /></svg>
-                      </button>
-                    ) : null}
+                    <DutyCheck
+                      done={done}
+                      title={duty.title}
+                      onToggle={() => toggle(duty.id, duty.status, duty.title)}
+                    />
                     <div className="gd-duty-body">
                       <b className="gd-duty-title">{duty.title}</b>
                       <span className="gd-duty-when">{duty.when ?? "Timing to confirm"}</span>
-                      <span className="gd-ros-owner"><b>{duty.owner ?? UNASSIGNED}</b></span>
+                      <span className="gd-roles">
+                        <span><b>Lead:</b> {duty.owner ?? UNASSIGNED}</span>
+                      </span>
                       {duty.notes ? <span className="gd-duty-notes">{duty.notes}</span> : null}
+                      {done ? <span className="gd-done">Done</span> : null}
                     </div>
-                    <em className={`gd-badge gd-status-${status}`}>{STATUS_LABEL[status] ?? status}</em>
                   </div>
                 </li>
               );
             })}
           </ul>
         </section>
-      ) : null}
-    </>
-  );
-}
-
-/* ------------------------------------------------------------ my schedule */
-
-function MySchedule({
-  moments,
-  day,
-  storeKey,
-  onFullTimeline,
-}: TeamProps & { day: string; storeKey: string; onFullTimeline: () => void }) {
-  const hydrated = useHydrated();
-  const people = rosterOf(moments);
-  const [person, setPerson] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const stored = recall(`${storeKey}:me`);
-    return stored && stored.length > 0 ? stored : null;
-  });
-  const [openId, setOpenId] = useState<string | null>(null);
-  const shownPerson = hydrated && person && people.includes(person) ? person : null;
-
-  const choose = (next: string) => {
-    setPerson(next);
-    remember(`${storeKey}:me`, next);
-    setOpenId(null);
-  };
-
-  if (!shownPerson) {
-    return (
-      <div className="gd-pick">
-        <h3>Choose your name</h3>
-        <p className="gd-hint">
-          Your own list of everything you lead, support and are assigned to.
-        </p>
-        <div className="gd-people">
-          {people.map((name) => (
-            <button key={name} type="button" onClick={() => choose(name)}>{name}</button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const everything = personalAgenda(moments, shownPerson);
-  const clashes = personalOverlaps(everything);
-  const today = everything.filter((entry) => entry.moment.day === day);
-  const titleOf = new Map(moments.map((moment) => [moment.id, moment.title]));
-  const timeOf = new Map(
-    moments.map((moment) => [
-      moment.id,
-      `${clock(moment.starts)}${moment.ends ? ` to ${clock(moment.ends)}` : ""}`,
-    ]),
-  );
-
-  return (
-    <>
-      <div className="gd-mine-head">
-        <div>
-          <h3>{shownPerson}</h3>
-          <p className="gd-hint">{DAY_LONG[day]}. Choosing a name changes nothing but this list.</p>
-        </div>
-        <div className="gd-mine-actions">
-          <button type="button" className="gd-link" onClick={() => setPerson(null)}>
-            Someone else
-          </button>
-          <button type="button" className="gd-link" onClick={onFullTimeline}>
-            Full team timeline
-          </button>
-        </div>
-      </div>
-
-      <ol className="gd-ros gd-mine">
-        {today.map((entry) => {
-          const moment = entry.moment;
-          const expanded = openId === moment.id;
-          const against = clashes.get(moment.id) ?? [];
-          return (
-            <li key={moment.id} className={`gd-ros-item gd-cat-${categoryOf(moment)}`}>
-              <button
-                type="button"
-                className="gd-ros-head"
-                aria-expanded={expanded}
-                onClick={() => setOpenId(expanded ? null : moment.id)}
-              >
-                <span className="gd-ros-time">
-                  {clock(moment.starts)}
-                  {moment.ends ? <i>{clock(moment.ends)}</i> : null}
-                </span>
-                <span className="gd-ros-main">
-                  <span className="gd-ros-title">{moment.title}</span>
-                  <span className="gd-ros-tags">
-                    <em className={`gd-badge gd-badge-${entry.involvement}`}>
-                      {INVOLVEMENT_LABEL[entry.involvement]}
-                    </em>
-                    <CategoryBadge moment={moment} />
-                    <ConfirmBadge ops={moment.ops} />
-                    {against.length > 0 ? (
-                      <em className="gd-badge gd-badge-clash">Overlapping assignments</em>
-                    ) : null}
-                  </span>
-                  {entry.because ? <span className="gd-ros-owner"><span>{entry.because}</span></span> : null}
-                </span>
-                <Chevron />
-              </button>
-
-              {against.length > 0 ? (
-                <p className="gd-clash">
-                  <b>Overlapping assignments.</b> This runs {timeOf.get(moment.id)}, at the same time as{" "}
-                  {against
-                    .map((id) => `${titleOf.get(id) ?? "another row"} (${timeOf.get(id) ?? ""})`)
-                    .join(", ")}
-                  . Both are listed as yours.
-                </p>
-              ) : null}
-
-              {expanded ? (
-                <div className="gd-ros-body">
-                  <OpsList ops={moment.ops ?? null} />
-                </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ol>
-      {today.length === 0 ? (
-        <p className="gd-empty">Nothing assigned to {shownPerson} on {DAY_LONG[day]}.</p>
       ) : null}
     </>
   );
