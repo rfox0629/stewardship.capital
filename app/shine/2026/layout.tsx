@@ -7,7 +7,7 @@ import GuideLayout, {
   viewport as guideViewport,
 } from "@app/spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/(guide)/layout";
 
-import { HERO_IMAGE, SITE_ORIGIN } from "./preview";
+import { SITE_ORIGIN, SOCIAL_IMAGE } from "./preview";
 import { SHINE_2026 } from "./route-params";
 
 /**
@@ -28,8 +28,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...metadata,
     metadataBase: new URL(SITE_ORIGIN),
-    openGraph: { type: "website", images: [HERO_IMAGE] },
-    twitter: { card: "summary_large_image", images: [HERO_IMAGE.url] },
+    openGraph: { type: "website", images: [SOCIAL_IMAGE] },
+    twitter: { card: "summary_large_image", images: [SOCIAL_IMAGE.url] },
     robots: { index: false, follow: false, nocache: true },
   };
 }

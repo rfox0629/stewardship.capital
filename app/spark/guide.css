@@ -1061,24 +1061,6 @@ button.gd-row-hit:active {
   overflow: hidden;
 }
 
-.gd-cat-program {
-  border-left: 3px solid #4b7fae;
-}
-
-.gd-cat-operations {
-  border-left: 3px solid #6c8b56;
-}
-
-.gd-ros-team {
-  border-style: dashed;
-  border-color: #c9bda6;
-  background: #fbf8f1;
-}
-
-.gd-ros-window {
-  background: #f3f1e6;
-}
-
 .gd-ros-head {
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr) 16px;
@@ -1139,7 +1121,6 @@ button.gd-row-hit:active {
   display: none;
 }
 
-.gd-badge,
 .gd-tag {
   padding: 2px 9px;
   border-radius: 999px;
@@ -1149,43 +1130,6 @@ button.gd-row-hit:active {
   font-weight: 800;
   letter-spacing: 0.03em;
   color: var(--gd-ink-2);
-}
-
-.gd-badge-program {
-  background: #e2ebf4;
-  color: #1f4a70;
-}
-
-.gd-badge-operations {
-  background: #e4eddc;
-  color: #335a24;
-}
-
-.gd-badge-leading {
-  background: var(--gd-forest);
-  color: #fffdf9;
-}
-
-.gd-badge-assigned,
-.gd-badge-transition {
-  background: #ece5d6;
-  color: #574a33;
-}
-
-.gd-badge-team {
-  background: #ebe4d3;
-  color: #5b4a2c;
-}
-
-.gd-badge-confirm,
-.gd-badge-clash {
-  background: #fbe7d8;
-  color: #8a3d12;
-}
-
-.gd-badge-done {
-  background: #e3eddc;
-  color: #2f5a22;
 }
 
 .gd-tag-team {
@@ -1432,28 +1376,6 @@ button.gd-row-hit:active {
   font-size: 0.9rem;
   line-height: 1.4;
   color: var(--gd-ink-2);
-}
-
-.gd-duty-status {
-  flex: none;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--gd-raised);
-  font-style: normal;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--gd-ink-2);
-  white-space: nowrap;
-}
-
-.gd-status-blocked {
-  background: #fbe7d8;
-  color: #8a3d12;
-}
-
-.gd-status-done {
-  background: #e3eddc;
-  color: #2f5a22;
 }
 
 /* --------------------------------------------------------------- footer */
@@ -1724,4 +1646,106 @@ button.gd-row-hit:active {
 .gd .gd-locked .gd-hint a {
   color: var(--gd-forest);
   font-weight: 700;
+}
+
+/* ------------------------------------------------- the team's three views */
+
+.gd-seg-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 4px;
+}
+
+.gd-ros-static {
+  width: 100%;
+  cursor: default;
+}
+
+.gd-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--gd-ink-2);
+}
+
+.gd-roles b {
+  font-weight: 700;
+  color: var(--gd-ink);
+}
+
+.gd-ros-purpose {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--gd-ink);
+}
+
+.gd-ros-setup {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--gd-ink-2);
+}
+
+.gd-ros-setup b {
+  font-weight: 700;
+  color: var(--gd-ink);
+}
+
+.gd-ros-full .gd-ros-main {
+  gap: 6px;
+}
+
+.gd-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0 0 4px 14px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gd-forest);
+  cursor: pointer;
+}
+
+.gd-more .gd-ros-chev {
+  width: 11px;
+}
+
+.gd-more[aria-expanded="true"] .gd-ros-chev {
+  transform: rotate(180deg);
+}
+
+.gd .gd-unresolved {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fbe7d8;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #7a3a13;
+}
+
+.gd-done {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #2f5a22;
+}
+
+.gd-people-pick {
+  margin: 4px 0 14px;
+}
+
+.gd-people-pick .gd-people {
+  flex-wrap: wrap;
+  overflow: visible;
+  margin-top: 8px;
+}
+
+.gd-duty-done .gd-duty-title {
+  text-decoration: line-through;
+  text-decoration-color: #b9ad97;
+  color: var(--gd-ink-2);
 }
