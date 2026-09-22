@@ -1624,30 +1624,6 @@ button.gd-row-hit:active {
   color: var(--gd-ink-2);
 }
 
-/* ------------------------------------------------- the team guide, locked */
-
-.gd-locked {
-  padding-bottom: 32px;
-}
-
-.gd-locked-go {
-  display: inline-flex;
-  align-items: center;
-  min-height: 48px;
-  margin: 4px 0 16px;
-  padding: 0 22px;
-  border-radius: 999px;
-  background: var(--gd-forest);
-  color: #fffdf9;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.gd .gd-locked .gd-hint a {
-  color: var(--gd-forest);
-  font-weight: 700;
-}
-
 /* ------------------------------------------------- the team's three views */
 
 .gd-seg-two {
@@ -1748,4 +1724,178 @@ button.gd-row-hit:active {
   text-decoration: line-through;
   text-decoration-color: #b9ad97;
   color: var(--gd-ink-2);
+}
+
+/* ----------------------------------------------------------- the code gate */
+
+/* The door is the whole point of the page, so on a phone the photograph
+   makes room for it rather than the other way round. */
+.gd:has(.gd-gate) .gd-hero {
+  min-height: 190px;
+}
+
+.gd:has(.gd-gate) .gd-title {
+  font-size: clamp(1.7rem, 7.5vw, 2.3rem);
+}
+
+/* The date and the venue stack rather than squeeze, and the form is the
+   first thing a thumb reaches. */
+.gd:has(.gd-gate) .gd-meta {
+  flex-direction: column;
+  gap: 2px;
+}
+
+@media (min-width: 520px) {
+  .gd:has(.gd-gate) .gd-meta {
+    flex-direction: row;
+    gap: 16px;
+  }
+}
+
+.gd-gate {
+  padding-bottom: 40px;
+}
+
+.gd-gate-card {
+  max-width: 420px;
+  margin: 4px auto 0;
+  padding: 22px 20px 24px;
+  border: 1px solid var(--gd-line);
+  border-radius: 20px;
+  background: var(--gd-paper);
+  box-shadow: 0 1px 0 rgba(43, 44, 42, 0.03), 0 14px 34px -26px rgba(43, 44, 42, 0.4);
+}
+
+.gd .gd-gate-head {
+  font-family: var(--ev-display), Georgia, serif;
+  font-size: 1.65rem;
+  font-weight: 560;
+  line-height: 1.15;
+  color: var(--gd-ink);
+}
+
+.gd .gd-gate-lede {
+  margin: 8px 0 18px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--gd-ink-2);
+}
+
+.gd-code {
+  display: flex;
+  flex-direction: column;
+}
+
+.gd-code-label {
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gd-forest);
+}
+
+.gd-code-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0 6px 0 0;
+  border: 1.5px solid var(--gd-line);
+  border-radius: 14px;
+  background: var(--gd-cream);
+}
+
+.gd-code-field:focus-within {
+  border-color: var(--gd-forest);
+}
+
+.gd-code-field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--gd-ink);
+}
+
+.gd-code-field input:focus {
+  outline: none;
+}
+
+.gd-code-peek {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gd-forest);
+  cursor: pointer;
+}
+
+.gd .gd-code-error {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #8a3d12;
+}
+
+.gd-code-go {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--gd-forest);
+  color: #fffdf9;
+  font-size: 1.02rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gd-code-go[disabled] {
+  opacity: 0.72;
+}
+
+.gd-code-guest {
+  align-self: center;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gd-forest);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* With the keyboard open there is very little room left, so the photograph
+   gives most of what it has to the field being typed into. */
+@media (max-height: 560px) {
+  .gd:has(.gd-gate) .gd-hero {
+    min-height: 120px;
+  }
+
+  .gd:has(.gd-gate) .gd-title {
+    font-size: 1.4rem;
+  }
+
+  .gd:has(.gd-gate) .gd-tagline,
+  .gd:has(.gd-gate) .gd-meta {
+    display: none;
+  }
+
+  .gd-gate-card {
+    padding: 16px 16px 18px;
+  }
 }

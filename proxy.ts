@@ -15,6 +15,17 @@ import {
 } from "./lib/spark/paths";
 import { createProxyClient, hasIdentity } from "./lib/supabase/proxy";
 
+/* The guide's own credential, checked here so no team page renders without
+   one. Hashing in the edge runtime, where node:crypto is not available. */
+const EVENT_COOKIE = "shine_team";
+
+const hashToken = async (token: string): Promise<string> => {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
+
 /**
  * Spark is invitation only, so the gate lives at the route.
  *
@@ -55,6 +66,24 @@ export async function proxy(request: NextRequest) {
      there is one set of rules rather than two that can disagree. */
   const canonical = canonicalGuidePath(pathname) ?? pathname;
 
+  /* The weekend's code opens the team guide and nothing else. It is checked
+     against the database on every request, like a membership is, so a session
+     that has expired or been cleared stops working at once. */
+  const asksForTeam = lockedPreviewPath(pathname) !== null;
+  if (asksForTeam && supabase) {
+    const token = request.cookies.get(EVENT_COOKIE)?.value;
+    const root = workspaceRootOf(canonical.replace(/\/team$/, ""));
+    if (token && root) {
+      const { data } = await supabase.rpc("event_session_active", {
+        p_token_hash: await hashToken(token),
+        p_client: root.clientSlug,
+        p_series: root.eventSlug,
+        p_edition: root.editionSlug,
+      });
+      if (data === true) return box.response;
+    }
+  }
+
   if (isSparkPath(canonical)) {
     /* The front door, invitation links, the emailed link callback, and signing
        out are reachable without a session by design. Refreshing the session is
@@ -93,7 +122,10 @@ export async function proxy(request: NextRequest) {
          is a different page, and no team content is loaded for it. */
       const locked = lockedPreviewPath(pathname);
       if (locked) {
-        const preview = NextResponse.rewrite(new URL(locked, request.url));
+        const door = request.nextUrl.clone();
+        door.pathname = locked;
+        door.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+        const preview = NextResponse.rewrite(door);
         box.response.cookies.getAll().forEach((cookie) => {
           preview.cookies.set(cookie);
         });
