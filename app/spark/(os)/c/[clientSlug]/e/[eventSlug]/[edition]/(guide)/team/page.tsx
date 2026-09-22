@@ -44,8 +44,8 @@ export default async function TeamGuidePage({ params }: PageProps) {
         route: { clientSlug, eventSlug, edition },
         startsOn: loaded.guide.startsOn,
         moments: team.moments,
-        duties: team.duties,
-        decisions: team.decisions,
+        prep: team.prep,
+        statuses: team.statuses,
         canEdit: team.canEdit,
       }}
     />

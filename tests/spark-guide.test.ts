@@ -14,6 +14,10 @@ import {
   readDrinks,
   readGuestCopy,
   readOps,
+  categoryOf,
+  personalAgenda,
+  personalOverlaps,
+  rosterOf,
   timingConflicts,
   UNASSIGNED,
   type GuideMoment,
@@ -232,4 +236,139 @@ test("a move that lands one moment on another is caught", () => {
   assert.equal(timingConflicts(before).size, 0);
   const moved = before.map((m) => (m.id === "worship" ? { ...m, starts: "6:00 pm", ends: "6:50 pm" } : m));
   assert.deepEqual(timingConflicts(moved).get("worship"), ["dinner"]);
+});
+
+/* ------------------------------------------------- one person's weekend */
+
+const run = (
+  day: string,
+  starts: string,
+  ends: string | null,
+  title: string,
+  owner: string,
+  support: string,
+  over: Partial<GuideMoment> = {},
+): GuideMoment =>
+  moment({
+    id: `${day}-${starts}-${title}`,
+    day,
+    starts,
+    ends,
+    title,
+    ops: { owner, support, category: "operations" },
+    ...over,
+  });
+
+const WEEKEND: GuideMoment[] = [
+  run("fri", "9:00 am", "9:20 am", "Worship", "JonCarlos", "Scott audio; Junior AV and coverage",
+    { ops: { owner: "JonCarlos", support: "Scott audio; Junior AV and coverage", category: "program" } }),
+  run("fri", "11:30 am", "12:00 pm", "Word from Sammy and Suzanne", "Sammy and Suzanne",
+    "Ryan transition; Junior coverage",
+    { ops: { owner: "Sammy and Suzanne", support: "Ryan transition; Junior coverage", category: "program" } }),
+  run("fri", "11:30 am", "12:00 pm", "Morning bathroom cleaning", "Alice", "Scott"),
+  run("fri", "11:45 am", "12:15 pm", "AV reset", "Junior", "Scott"),
+  run("fri", "9:20 am", "9:30 am", "Devotional", "Tito", "Scott"),
+  run("fri", "12:00 pm", "1:00 pm", "Lunch", "Brooke", "Catering Team"),
+  run("fri", "12:45 pm", "1:15 pm", "Lunch cleanup", "Keta", "Alice, Keta, Emma and Scott"),
+  run("thu", "12:00 pm", "1:00 pm", "Team lunch", "Brooke", "Full team"),
+];
+
+test("the roster comes from the leads, who are written plainly", () => {
+  assert.deepEqual(rosterOf(WEEKEND), [
+    "Alice", "Brooke", "JonCarlos", "Junior", "Keta", "Sammy", "Suzanne", "Tito",
+  ]);
+});
+
+test("a compound lead is two people, and the wording is left alone", () => {
+  const sammy = personalAgenda(WEEKEND, "Sammy");
+  const suzanne = personalAgenda(WEEKEND, "Suzanne");
+  assert.equal(sammy.length, 2, "the word plus the shared team lunch");
+  assert.equal(sammy[0].involvement, "leading");
+  assert.equal(sammy[0].because, "Sammy and Suzanne", "shown as the source wrote it");
+  assert.equal(suzanne[0].involvement, "leading");
+});
+
+test("a supporting clause is read as support, and a transition says so", () => {
+  const ryan = personalAgenda(WEEKEND, "Ryan");
+  const entry = ryan.find((item) => item.moment.title.startsWith("Word from"));
+  assert.equal(entry?.involvement, "transition");
+  assert.equal(entry?.because, "Ryan transition");
+
+  const junior = personalAgenda(WEEKEND, "Junior");
+  assert.equal(junior[0].involvement, "assigned");
+  assert.equal(junior[0].because, "Junior AV and coverage");
+});
+
+test("a vague group is never expanded into people", () => {
+  /* Nobody is quietly made a member of the catering team. */
+  assert.equal(rosterOf(WEEKEND).includes("Catering Team"), false, "not a person");
+  for (const person of ["Keta", "Scott", "Emma"]) {
+    const lunch = personalAgenda(WEEKEND, person).find((entry) => entry.moment.title === "Lunch");
+    assert.equal(lunch, undefined, `${person} is not quietly made catering`);
+  }
+  const brooke = personalAgenda(WEEKEND, "Brooke");
+  assert.equal(brooke.find((entry) => entry.moment.title === "Lunch")?.involvement, "leading");
+});
+
+test("full team commitments are shared, and reach everyone", () => {
+  for (const person of ["Scott", "Keta", "Junior"]) {
+    const shared = personalAgenda(WEEKEND, person).find((entry) => entry.moment.title === "Team lunch");
+    assert.equal(shared?.involvement, "team", person);
+  }
+});
+
+test("a person's day is in time order", () => {
+  const scott = personalAgenda(WEEKEND, "Scott").filter((entry) => entry.moment.day === "fri");
+  assert.deepEqual(scott.map((entry) => entry.moment.starts),
+    ["9:00 am", "9:20 am", "11:30 am", "11:45 am", "12:45 pm"]);
+});
+
+test("competing responsibilities are flagged; a handoff is not", () => {
+  const scott = personalAgenda(WEEKEND, "Scott");
+  const clash = personalOverlaps(scott);
+  const bathrooms = scott.find((entry) => entry.moment.title.startsWith("Morning bathroom"))!;
+  const av = scott.find((entry) => entry.moment.title === "AV reset")!;
+  assert.deepEqual(clash.get(bathrooms.moment.id), [av.moment.id], "11:45 lands inside 11:30 to 12:00");
+
+  /* Worship ends at 9:20 and the devotional begins at 9:20. That is a handoff,
+     and Scott is on both without any clash. */
+  const worship = scott.find((entry) => entry.moment.title === "Worship")!;
+  const devotional = scott.find((entry) => entry.moment.title === "Devotional")!;
+  assert.equal(clash.has(worship.moment.id), false);
+  assert.equal(clash.has(devotional.moment.id), false);
+
+  /* Lunch cleanup starts at 12:45 while lunch runs to 1:00, but Keta is not
+     on lunch: one view showing both is not two assignments. */
+  assert.equal(personalOverlaps(personalAgenda(WEEKEND, "Keta")).size, 0);
+});
+
+test("free time and optional activities are not conflicts", () => {
+  const withFree = [
+    ...WEEKEND,
+    run("fri", "1:00 pm", "4:00 pm", "Free time", "Brooke", "As needed",
+      { guide: { kind: "free" } }),
+    run("fri", "2:00 pm", "4:00 pm", "Bingo", "Brooke", "Keta and Emma",
+      { guide: { kind: "game", optional: true } }),
+  ];
+  const brooke = personalAgenda(withFree, "Brooke");
+  assert.equal(personalOverlaps(brooke).size, 0);
+});
+
+test("a row shown in two views is still one assignment", () => {
+  const keta = personalAgenda(WEEKEND, "Keta");
+  const ids = keta.map((entry) => entry.moment.id);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("the category decides the badge, and defaults to operations", () => {
+  assert.equal(categoryOf(WEEKEND[0]), "program");
+  assert.equal(categoryOf(WEEKEND[3]), "operations");
+  assert.equal(categoryOf(moment({})), "operations");
+});
+
+test("the confirm flag survives a round trip", () => {
+  const parsed = readOps({ purpose: "x", category: "program", confirm: "time" });
+  assert.equal(parsed?.category, "program");
+  assert.equal(parsed?.confirm, "time");
+  assert.equal(readOps({ purpose: "x", confirm: "nonsense" })?.confirm, undefined);
 });

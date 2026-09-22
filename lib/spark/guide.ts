@@ -50,6 +50,10 @@ export type OpsDetail = {
   next?: string;
   notes?: string;
   status?: string;
+  /** How the master calendar classifies the row. */
+  category?: "program" | "operations";
+  /** Where the source contradicts itself and a person has to decide. */
+  confirm?: "time" | "assignment";
 };
 
 export type GuideMoment = {
@@ -338,6 +342,8 @@ export const readOps = (raw: unknown): OpsDetail | null => {
     next: text(source.next),
     notes: text(source.notes),
     status: text(source.status),
+    category: text(source.category) === "program" ? "program" : text(source.category) === "operations" ? "operations" : undefined,
+    confirm: text(source.confirm) === "time" ? "time" : text(source.confirm) === "assignment" ? "assignment" : undefined,
   };
   return Object.values(detail).some(Boolean) ? detail : null;
 };
@@ -359,3 +365,144 @@ export const readDrinks = (raw: unknown): Drink[] =>
     if (!name) return [];
     return [{ name, art: text(source.art) ?? "", ingredients: list(source.ingredients), feel: text(source.feel) ?? "" }];
   });
+
+/* ------------------------------------------------- one person's weekend */
+
+/**
+ * Who a row belongs to.
+ *
+ * The master calendar writes people the way people talk: "Keta and Emma",
+ * "Scott audio; Junior AV and coverage", "Emma prepares; full group
+ * participates". The roster is taken from the Lead column, which is written
+ * plainly, and those names are then found inside the looser Assigned Team
+ * text. Nothing is guessed: a group like "Catering Team" or "As needed" stays
+ * a group, keeps its wording on screen, and is never expanded into people.
+ */
+
+export const FULL_TEAM = /\b(full team|all available team|remaining team|full group)\b/i;
+
+const NAME_SPLIT = /\s*(?:,|&|\band\b|;)\s*/i;
+
+/** A lead cell, split into the people it names. */
+export const leadsOf = (lead: string | null | undefined): string[] =>
+  (lead ?? "")
+    .split(NAME_SPLIT)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0 && !FULL_TEAM.test(part) && !/^as needed$/i.test(part));
+
+/** Everyone the Lead column names anywhere, which is the roster to match on. */
+export const rosterOf = (moments: readonly GuideMoment[]): string[] => {
+  const names = new Set<string>();
+  for (const moment of moments) for (const name of leadsOf(moment.ops?.owner)) names.add(name);
+  return [...names].toSorted((a, b) => a.localeCompare(b));
+};
+
+/** Whether a name appears in a free text cell, on a word boundary. */
+export const mentions = (text: string | null | undefined, name: string): boolean => {
+  if (!text || !name) return false;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^\\p{L}])${escaped}([^\\p{L}]|$)`, "iu").test(text);
+};
+
+export type Involvement = "leading" | "assigned" | "transition" | "team";
+
+export const INVOLVEMENT_LABEL: Record<Involvement, string> = {
+  leading: "Leading",
+  assigned: "Assigned team",
+  transition: "Transition",
+  team: "Full team",
+};
+
+export type PersonalEntry = {
+  moment: GuideMoment;
+  involvement: Involvement;
+  /** The source wording, unchanged, that put this person on the row. */
+  because: string | null;
+};
+
+/** The clause of an assigned team cell that names this person. */
+const clauseFor = (support: string | null | undefined, name: string): string | null => {
+  for (const clause of (support ?? "").split(/\s*;\s*/)) {
+    if (mentions(clause, name)) return clause.trim();
+  }
+  return null;
+};
+
+/**
+ * One person's weekend, in order: what they lead, what they support, the
+ * duties they are assigned, and the commitments the whole team shares.
+ */
+export const personalAgenda = (
+  moments: readonly GuideMoment[],
+  person: string,
+): PersonalEntry[] => {
+  const entries: PersonalEntry[] = [];
+  for (const moment of moments) {
+    const ops = moment.ops;
+    if (!ops) continue;
+
+    if (leadsOf(ops.owner).some((lead) => lead.toLowerCase() === person.toLowerCase())) {
+      entries.push({ moment, involvement: "leading", because: ops.owner ?? null });
+      continue;
+    }
+
+    const clause = clauseFor(ops.support, person);
+    if (clause) {
+      const involvement: Involvement = /transition/i.test(clause) ? "transition" : "assigned";
+      entries.push({ moment, involvement, because: clause });
+      continue;
+    }
+
+    if (FULL_TEAM.test(ops.support ?? "")) {
+      entries.push({ moment, involvement: "team", because: ops.support ?? null });
+    }
+  }
+
+  return entries.toSorted((a, b) => {
+    const ma = parseTimeLabel(a.moment.starts) ?? 24 * 60;
+    const mb = parseTimeLabel(b.moment.starts) ?? 24 * 60;
+    if (ma !== mb) return ma - mb;
+    return a.moment.title.localeCompare(b.moment.title);
+  });
+};
+
+/**
+ * Two responsibilities the same person cannot both keep.
+ *
+ * Only genuinely competing work counts. Tasks that merely touch at an endpoint
+ * are not a clash, free time and optional activities are not assignments, and
+ * a row is never in conflict with itself because another view also shows it.
+ */
+export const personalOverlaps = (entries: readonly PersonalEntry[]): Map<string, string[]> => {
+  const found = new Map<string, string[]>();
+  const claims = entries
+    .filter((entry) => entry.involvement !== "team")
+    .filter((entry) => !entry.moment.window && !entry.moment.guide?.optional)
+    .filter((entry) => entry.moment.guide?.kind !== "free")
+    .map((entry) => ({
+      id: entry.moment.id,
+      day: entry.moment.day,
+      start: parseTimeLabel(entry.moment.starts),
+      end: parseTimeLabel(entry.moment.ends),
+    }))
+    .filter((claim): claim is { id: string; day: string; start: number; end: number } =>
+      claim.start !== null && claim.end !== null && claim.end > claim.start);
+
+  for (let i = 0; i < claims.length; i += 1) {
+    for (let j = i + 1; j < claims.length; j += 1) {
+      const a = claims[i];
+      const b = claims[j];
+      if (a.day !== b.day || a.id === b.id) continue;
+      /* Touching at an endpoint is a handoff, not a clash. */
+      if (a.start < b.end && b.start < a.end) {
+        found.set(a.id, [...(found.get(a.id) ?? []), b.id]);
+        found.set(b.id, [...(found.get(b.id) ?? []), a.id]);
+      }
+    }
+  }
+  return found;
+};
+
+/** Program rows read blue, operations green, as the master calendar does. */
+export const categoryOf = (moment: GuideMoment): "program" | "operations" =>
+  moment.ops?.category === "program" ? "program" : "operations";
