@@ -4,6 +4,7 @@ import test from "node:test";
 import { authorizeSparkPath, landingFor } from "../lib/spark/authorize.ts";
 import {
   canonicalGuidePath,
+  lockedPreviewPath,
   preferShortPath,
   shortGuidePath,
   SPARK_BASE,
@@ -513,6 +514,21 @@ test("the old guide addresses map back to the short ones, and nothing else does"
   assert.equal(shortGuidePath("/spark/c/other/e/retreat/2026"), null, "another client is untouched");
   assert.equal(preferShortPath(`${SHINE}/schedule`), `${SHINE}/schedule`);
   assert.equal(preferShortPath(SPARK_BASE), SPARK_BASE);
+});
+
+test("the team address has a public front door, and only that address does", () => {
+  assert.equal(lockedPreviewPath("/shine/2026/team"), "/shine/2026/team-locked");
+  assert.equal(lockedPreviewPath("/shine/2026/team/"), "/shine/2026/team-locked");
+
+  /* Nothing else gets one: a refusal anywhere else is still a refusal. */
+  assert.equal(lockedPreviewPath("/shine/2026"), null);
+  assert.equal(lockedPreviewPath("/shine/2026/schedule"), null);
+  assert.equal(lockedPreviewPath(`${SHINE}/team`), null, "the old address redirects first");
+  assert.equal(lockedPreviewPath("/spark/c/other/e/retreat/2026/team"), null);
+
+  /* The page it serves is a public page of its own, so the guard must leave
+     it alone rather than sending it back through itself. */
+  assert.equal(canonicalGuidePath("/shine/2026/team-locked"), null);
 });
 
 test("arrivals land on the printed address, never on the old one", () => {

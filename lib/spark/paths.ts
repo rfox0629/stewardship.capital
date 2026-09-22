@@ -157,6 +157,23 @@ export const shortGuidePath = (pathname: string): string | null => {
 };
 
 /**
+ * The public page a short team address shows to anyone who is not on the team.
+ *
+ * A messaging app fetching a link has no session, and a redirect to the sign
+ * in screen makes a shared link preview as "Spark". So the guard serves this
+ * instead, at the same address: the name of the weekend, a line about what
+ * the page is, and a way to sign in. It is a different page, not the team
+ * guide with pieces removed, so there is no operational detail in it to leak.
+ */
+export const lockedPreviewPath = (pathname: string): string | null => {
+  const path = trimSlash(pathname);
+  for (const guide of SHORT_GUIDES) {
+    if (path === `${guide.short}/team`) return `${guide.short}/team-locked`;
+  }
+  return null;
+};
+
+/**
  * Where to send someone, preferring the short address.
  *
  * Every redirect and every link in the product goes through here, so nobody

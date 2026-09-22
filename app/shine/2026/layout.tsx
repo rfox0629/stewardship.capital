@@ -7,6 +7,7 @@ import GuideLayout, {
   viewport as guideViewport,
 } from "@app/spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/(guide)/layout";
 
+import { HERO_IMAGE, SITE_ORIGIN } from "./preview";
 import { SHINE_2026 } from "./route-params";
 
 /**
@@ -22,10 +23,13 @@ export const viewport: Viewport = guideViewport;
 
 export async function generateMetadata(): Promise<Metadata> {
   const metadata = await guideMetadata({ params: Promise.resolve(SHINE_2026) });
+  /* The pages below say what they are; this is the fallback for anything that
+     does not, and the base every preview URL is resolved against. */
   return {
     ...metadata,
-    alternates: { canonical: "/shine/2026" },
-    /* A guide for invited guests, as it was under the old address. */
+    metadataBase: new URL(SITE_ORIGIN),
+    openGraph: { type: "website", images: [HERO_IMAGE] },
+    twitter: { card: "summary_large_image", images: [HERO_IMAGE.url] },
     robots: { index: false, follow: false, nocache: true },
   };
 }

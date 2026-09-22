@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { loadGuide } from "@app/spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/(guide)/load";
 import TeamGuidePage from "@app/spark/(os)/c/[clientSlug]/e/[eventSlug]/[edition]/(guide)/team/page";
 
+import { previewMetadata, TEAM_DESCRIPTION, TEAM_TITLE } from "../preview";
 import { SHINE_2026 } from "../route-params";
 
 /**
@@ -10,16 +10,14 @@ import { SHINE_2026 } from "../route-params";
  *
  * A different address is navigation, not permission: the route guard checks
  * this path as the workspace path it stands for, and the page below asks the
- * database again before it renders a single operational row.
+ * database again before it renders a single operational row. Anyone without a
+ * working membership never reaches this file; the guard serves the public
+ * preview at the same URL instead.
  */
 
-export async function generateMetadata(): Promise<Metadata> {
-  const loaded = await loadGuide(SHINE_2026.clientSlug, SHINE_2026.eventSlug, SHINE_2026.edition);
-  return {
-    title: { absolute: loaded ? `Team guide | ${loaded.guide.name}` : "Team guide" },
-    alternates: { canonical: "/shine/2026/team" },
-  };
-}
+export const metadata: Metadata = previewMetadata(
+  TEAM_TITLE, TEAM_DESCRIPTION, "/shine/2026/team",
+);
 
 export default async function ShineTeamGuide() {
   return TeamGuidePage({ params: Promise.resolve(SHINE_2026) });

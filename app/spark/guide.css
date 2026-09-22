@@ -1701,3 +1701,27 @@ button.gd-row-hit:active {
   font-weight: 500;
   color: var(--gd-ink-2);
 }
+
+/* ------------------------------------------------- the team guide, locked */
+
+.gd-locked {
+  padding-bottom: 32px;
+}
+
+.gd-locked-go {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  margin: 4px 0 16px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: var(--gd-forest);
+  color: #fffdf9;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gd .gd-locked .gd-hint a {
+  color: var(--gd-forest);
+  font-weight: 700;
+}

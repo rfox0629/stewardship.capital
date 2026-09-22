@@ -610,10 +610,24 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.match(movedTeam.locationSearch ?? "", /day=fri/, "the query string comes along");
       assert.match(movedTeam.locationSearch ?? "", /open=abc/);
 
-      /* A different address is navigation, not permission. */
+      /* A different address is navigation, not permission. Signed out, the
+         team address answers with its own public front door so that a link
+         pasted into a message previews as the weekend rather than as a sign
+         in screen. What it says is the name of the weekend and nothing else:
+         no run of show, no duties, no names. */
       const team = await visit(newJar(), `${SHORT}/team`);
-      assert.equal(team.status, 307);
-      assert.equal(team.location, ENTRY);
+      assert.equal(team.status, 200, "a crawler gets a page, not a redirect");
+      assert.match(team.body, /SHINE Founders Weekend 2026 \| Team/);
+      assert.match(team.body, /run of show, volunteer duties, and personal schedule/);
+      assert.match(team.body, /Sign in/);
+      for (const secret of ["Run of show", "Volunteer duties", "My schedule", "Catering Team", "Assigned team"]) {
+        assert.doesNotMatch(team.body, new RegExp(secret), secret);
+      }
+
+      /* The preview carries whole URLs, or a messaging app has nothing to
+         fetch, and the photograph is the weekend's own. */
+      assert.match(team.body, /property=?"?og:image"? content="https:\/\/[^"]+hero-lakehouse-dusk/);
+      assert.match(team.body, /summary_large_image/);
 
       /* And the short namespace reaches the guide only: the working surfaces
          are not quietly published at the top level. */
