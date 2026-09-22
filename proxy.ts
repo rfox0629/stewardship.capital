@@ -7,6 +7,7 @@ import {
   SPARK_ENTRY,
   canonicalGuidePath,
   isOpenSparkPath,
+  lockedPreviewPath,
   isSparkPath,
   preferShortPath,
   shortGuidePath,
@@ -86,6 +87,19 @@ export async function proxy(request: NextRequest) {
     const decision = authorizeSparkPath(canonical, access, { publicGuide });
 
     if (!decision.allow) {
+      /* The team guide answers a stranger with its own public front door,
+         served at the same address, rather than a redirect that would make a
+         shared link preview as the sign in screen. The refusal stands: this
+         is a different page, and no team content is loaded for it. */
+      const locked = lockedPreviewPath(pathname);
+      if (locked) {
+        const preview = NextResponse.rewrite(new URL(locked, request.url));
+        box.response.cookies.getAll().forEach((cookie) => {
+          preview.cookies.set(cookie);
+        });
+        return preview;
+      }
+
       const refusal = NextResponse.redirect(
         new URL(preferShortPath(decision.redirectTo), request.url),
       );
