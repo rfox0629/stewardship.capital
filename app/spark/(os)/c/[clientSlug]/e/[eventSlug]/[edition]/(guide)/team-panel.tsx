@@ -127,7 +127,7 @@ export function TeamPanel(props: TeamProps) {
 
       <DaySelector startsOn={props.startsOn} day={shownDay} onDay={chooseDay} />
 
-      {shownTab === "schedule" ? <TeamSchedule {...props} day={shownDay} /> : null}
+      {shownTab === "schedule" ? <TeamSchedule {...props} day={shownDay} storeKey={key} /> : null}
       {shownTab === "ros" ? <RunOfShow {...props} day={shownDay} /> : null}
       {shownTab === "duties" ? <Duties {...props} day={shownDay} storeKey={key} /> : null}
     </section>
@@ -176,6 +176,12 @@ function Chevron() {
     </svg>
   );
 }
+
+/* The three tabs are three readings of one calendar, split the way the
+   weekend actually divides: the programme that happens in front of guests,
+   and the work that makes it possible. Schedule is both. */
+const isProgram = (moment: GuideMoment) => moment.ops?.category === "program";
+const isOperations = (moment: GuideMoment) => moment.ops?.category === "operations";
 
 const span = (moment: GuideMoment) =>
   `${clock(moment.starts)}${moment.ends ? ` to ${clock(moment.ends)}` : ""}`;
@@ -239,13 +245,66 @@ function Details({ ops, skip = [] }: { ops: OpsDetail | null; skip?: Array<keyof
 
 /* -------------------------------------------------------------- schedule */
 
-/** The whole weekend at a glance: when, what, and who has it. */
-function TeamSchedule({ moments, day }: TeamProps & { day: string }) {
+/**
+ * The whole weekend at a glance: when, what, and who has it.
+ *
+ * Everything, programme and operations together, because this is the tab
+ * somebody opens to find out where the day is. Choosing a name narrows it to
+ * one person's own thread through the same rows, which is the only way to see
+ * a speaking slot and a cleanup in one list.
+ */
+function TeamSchedule({ moments, day, storeKey }: TeamProps & { day: string; storeKey: string }) {
+  const hydrated = useHydrated();
   const [openId, setOpenId] = useState<string | null>(null);
-  const agenda = dayAgenda(moments, day);
+  const [mine, setMine] = useState(false);
+  const [person, setPerson] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return recall(`${storeKey}:me`);
+  });
+
+  const people = rosterOf(moments);
+  const shownPerson = hydrated && person && people.includes(person) ? person : null;
+  const showMine = hydrated && mine;
+
+  const ofPerson = shownPerson ? personalAgenda(moments, shownPerson) : [];
+  const agenda = showMine
+    ? ofPerson.filter((entry) => entry.moment.day === day).map((entry) => entry.moment)
+    : dayAgenda(moments, day);
 
   return (
     <>
+      <div className="gd-seg gd-seg-two" role="tablist" aria-label="Whose schedule">
+        <button type="button" role="tab" aria-selected={!showMine} onClick={() => setMine(false)}>
+          Full team
+        </button>
+        <button type="button" role="tab" aria-selected={showMine} onClick={() => setMine(true)}>
+          Your schedule
+        </button>
+      </div>
+
+      {showMine ? (
+        <div className="gd-people-pick">
+          <p className="gd-hint">Select your name to see only what you are part of.</p>
+          <div className="gd-people">
+            {people.map((name) => (
+              <button
+                key={name}
+                type="button"
+                aria-pressed={shownPerson === name}
+                onClick={() => {
+                  setPerson(name);
+                  remember(`${storeKey}:me`, name);
+                  setOpenId(null);
+                }}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {showMine && !shownPerson ? <p className="gd-empty">Choose your name to see your schedule.</p> : null}
       <ol className="gd-ros">
         {agenda.map((moment) => {
           const expanded = openId === moment.id;
@@ -283,17 +342,29 @@ function TeamSchedule({ moments, day }: TeamProps & { day: string }) {
           );
         })}
       </ol>
-      {agenda.length === 0 ? <p className="gd-empty">Nothing planned for {DAY_LONG[day]}.</p> : null}
+      {agenda.length === 0 && (!showMine || shownPerson) ? (
+        <p className="gd-empty">
+          {showMine
+            ? `Nothing for ${shownPerson} on ${DAY_LONG[day]}.`
+            : `Nothing planned for ${DAY_LONG[day]}.`}
+        </p>
+      ) : null}
     </>
   );
 }
 
 /* ------------------------------------------------------------ run of show */
 
-/** The same rows, with what it takes to run them already on screen. */
+/**
+ * The programme, with what it takes to run it already on screen.
+ *
+ * Only the rows that happen in front of the room: worship, teaching, the
+ * illustrations, the handovers. The work around them is the other tab, and
+ * anyone who needs both at once has the Schedule.
+ */
 function RunOfShow({ moments, day }: TeamProps & { day: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const agenda = dayAgenda(moments, day);
+  const agenda = dayAgenda(moments.filter(isProgram), day);
 
   return (
     <>
@@ -341,7 +412,9 @@ function RunOfShow({ moments, day }: TeamProps & { day: string }) {
           );
         })}
       </ol>
-      {agenda.length === 0 ? <p className="gd-empty">Nothing planned for {DAY_LONG[day]}.</p> : null}
+      {agenda.length === 0 ? (
+        <p className="gd-empty">No program on {DAY_LONG[day]}.</p>
+      ) : null}
     </>
   );
 }
@@ -408,10 +481,11 @@ function Duties({ moments, prep, statuses, route, day, storeKey }: TeamProps & {
   });
   const { doneOf, toggle, failure } = useCompletion(route);
 
-  /* A duty is a row the master calendar gave a job to. Being at a meal is not
-     a job, so the meals, the fellowship and free time stay on the schedule
-     and out of this list. */
-  const duties = moments.filter((moment) => statuses[moment.id]);
+  /* The operational work, and only that: a job somebody does, with a box to
+     tick when it is finished. Being at a meal is not a job, and neither is a
+     speaking slot, which belongs to the run of show and to the person's own
+     schedule. */
+  const duties = moments.filter((moment) => statuses[moment.id] && isOperations(moment));
   const people = rosterOf(duties);
   const shownPerson = hydrated && person && people.includes(person) ? person : null;
   const showMine = hydrated && mine;
@@ -487,7 +561,7 @@ function Duties({ moments, prep, statuses, route, day, storeKey }: TeamProps & {
                     <b className="gd-duty-title">{moment.title}</b>
                     <span className="gd-duty-when">{span(moment)}</span>
                     <Roles ops={moment.ops} />
-                    {done ? <span className="gd-done">Done</span> : null}
+                    {done ? <span className="gd-done">Completed</span> : null}
                   </button>
                   <Chevron />
                 </div>
@@ -538,7 +612,7 @@ function Duties({ moments, prep, statuses, route, day, storeKey }: TeamProps & {
                         <span><b>Lead:</b> {duty.owner ?? UNASSIGNED}</span>
                       </span>
                       {duty.notes ? <span className="gd-duty-notes">{duty.notes}</span> : null}
-                      {done ? <span className="gd-done">Done</span> : null}
+                      {done ? <span className="gd-done">Completed</span> : null}
                     </div>
                   </div>
                 </li>

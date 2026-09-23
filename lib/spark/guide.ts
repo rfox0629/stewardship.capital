@@ -381,7 +381,10 @@ export const readDrinks = (raw: unknown): Drink[] =>
 
 export const FULL_TEAM = /\b(full team|all available team|remaining team|full group)\b/i;
 
-const NAME_SPLIT = /\s*(?:,|&|\band\b|;)\s*/i;
+/* "or" splits too: the sheet sometimes names two candidates for one job,
+   and both of them need to see it while it is being settled. The row still
+   reads exactly as the sheet wrote it. */
+const NAME_SPLIT = /\s*(?:,|&|\band\b|\bor\b|;)\s*/i;
 
 /** A lead cell, split into the people it names. */
 export const leadsOf = (lead: string | null | undefined): string[] =>

@@ -15,6 +15,7 @@ import {
   readGuestCopy,
   readOps,
   categoryOf,
+  leadsOf,
   personalAgenda,
   personalOverlaps,
   rosterOf,
@@ -371,4 +372,24 @@ test("the confirm flag survives a round trip", () => {
   assert.equal(parsed?.category, "program");
   assert.equal(parsed?.confirm, "time");
   assert.equal(readOps({ purpose: "x", confirm: "nonsense" })?.confirm, undefined);
+});
+
+test("two candidates for one job are both offered the row, as written", () => {
+  /* The sheet says "Mike or Brooke" because it has not been settled. The
+     wording stays exactly that on screen; the filter offers it to each of
+     them rather than to neither. */
+  assert.deepEqual(leadsOf("Mike or Brooke"), ["Mike", "Brooke"]);
+  assert.deepEqual(leadsOf("Mike and Ryan"), ["Mike", "Ryan"]);
+
+  const sector = moment({
+    id: "sector", day: "wed", starts: "6:30 pm", ends: "7:00 pm",
+    title: "Sector Assignment",
+    ops: { category: "operations", owner: "Mike or Brooke", confirm: "assignment" },
+  });
+  for (const name of ["Mike", "Brooke"]) {
+    const mine = personalAgenda([sector], name);
+    assert.equal(mine.length, 1, name);
+    assert.equal(mine[0].involvement, "leading");
+  }
+  assert.equal(personalAgenda([sector], "Keta").length, 0, "nobody else is assigned it");
 });
