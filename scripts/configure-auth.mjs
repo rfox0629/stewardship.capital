@@ -109,7 +109,11 @@ const get = async () => {
   return response.json();
 };
 
-const SITE_URL = "https://stewardship.capital";
+/* The product's own domain. Emailed links carry {{ .SiteURL }}, so this is
+   what arrives in somebody's inbox; the company's domain stays on the allow
+   list below so that every link already sent keeps working. */
+const SITE_URL = "https://tentmaiker.com";
+const LEGACY_SITE_URL = "https://stewardship.capital";
 
 const MAGIC_LINK_TEMPLATE = [
   '<h2 style="font-family:sans-serif;font-weight:600">Your Spark code</h2>',
@@ -123,7 +127,13 @@ const base = {
   disable_signup: true,
   site_url: SITE_URL,
   uri_allow_list: [
+    /* The product, at its clean address and at the path that implements it. */
+    `${SITE_URL}/auth/callback`,
     `${SITE_URL}/spark/auth/callback`,
+    "https://www.tentmaiker.com/auth/callback",
+    "https://www.tentmaiker.com/spark/auth/callback",
+    /* Kept, deliberately: links already in people's inboxes point here. */
+    `${LEGACY_SITE_URL}/spark/auth/callback`,
     "https://*-ryan-foxs-projects-9a51a4d5.vercel.app/spark/auth/callback",
     "http://localhost:3000/spark/auth/callback",
   ].join(","),

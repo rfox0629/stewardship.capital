@@ -13,6 +13,7 @@ import {
   shortGuidePath,
   workspaceRootOf,
 } from "./lib/spark/paths";
+import { cleanPath, isProductHost, isSiteOnlyPath, productPath } from "./lib/spark/hosts";
 import { createProxyClient, hasIdentity } from "./lib/supabase/proxy";
 
 /* The guide's own credential, checked here so no team page renders without
@@ -49,8 +50,55 @@ const startsWithAny = (pathname: string, prefixes: string[]) =>
   );
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const asked = request.nextUrl.pathname;
   const { supabase, box } = createProxyClient(request);
+
+  /* The product has its own domain. On it, the clean addresses are rewritten
+     onto the paths that implement them, and the company's own surfaces are
+     not served at all.
+
+     The rewrite is worked out here but applied at the end, after the guard has
+     decided. A rewrite returned early would end the request without the guard
+     ever running, which would make a change of address into a way around the
+     membership check. Everything below therefore reasons about `pathname`,
+     the path inside the application, and `pass()` is the only way out. */
+  const onProduct = isProductHost(
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
+  );
+
+  if (onProduct && isSiteOnlyPath(asked)) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  /* The product's front door is the root of its own domain. The path that
+     implements it still answers, so nothing breaks, but the address bar ends
+     up on the address people are given. Only the front door is moved this
+     way: deeper paths are left alone, because a redirect in the middle of a
+     navigation is a good way to break one. */
+  if (onProduct && (asked === SPARK_ENTRY || asked === `${SPARK_ENTRY}/`)) {
+    const home = request.nextUrl.clone();
+    home.pathname = "/";
+    return NextResponse.redirect(home);
+  }
+
+  const pathname = (onProduct ? productPath(asked) : null) ?? asked;
+
+  /* Somebody turned away on the product domain is turned away to one of its
+     own addresses, not to the path that implements it. */
+  const exit = (destination: string) =>
+    new URL(onProduct ? cleanPath(destination) : destination, request.url);
+
+  const pass = () => {
+    if (pathname === asked) return box.response;
+    const target = request.nextUrl.clone();
+    target.pathname = pathname;
+    const rewritten = NextResponse.rewrite(target);
+    /* A refreshed session has to survive the change of address. */
+    box.response.cookies.getAll().forEach((cookie) => {
+      rewritten.cookies.set(cookie);
+    });
+    return rewritten;
+  };
 
   /* The guide has a short address now, and the workspace path it replaced is
      retired. Anyone arriving on the old one, from a bookmark or an older
@@ -80,7 +128,7 @@ export async function proxy(request: NextRequest) {
         p_series: root.eventSlug,
         p_edition: root.editionSlug,
       });
-      if (data === true) return box.response;
+      if (data === true) return pass();
     }
   }
 
@@ -91,7 +139,7 @@ export async function proxy(request: NextRequest) {
        person is already signed in. */
     if (isOpenSparkPath(canonical)) {
       if (supabase) await hasIdentity(supabase);
-      return box.response;
+      return pass();
     }
 
     /* One round trip that both proves the identity and reads what it may
@@ -132,9 +180,7 @@ export async function proxy(request: NextRequest) {
         return preview;
       }
 
-      const refusal = NextResponse.redirect(
-        new URL(preferShortPath(decision.redirectTo), request.url),
-      );
+      const refusal = NextResponse.redirect(exit(preferShortPath(decision.redirectTo)));
       /* Carry any refreshed session cookies onto the redirect, so a refusal
          does not quietly sign someone out of the workspace they do belong to. */
       box.response.cookies.getAll().forEach((cookie) => {
@@ -143,7 +189,7 @@ export async function proxy(request: NextRequest) {
       return refusal;
     }
 
-    return box.response;
+    return pass();
   }
 
   /* Stewardship.Capital's own home. Signed out, the page shows the same
@@ -154,13 +200,13 @@ export async function proxy(request: NextRequest) {
   if (startsWithAny(pathname, [PLATFORM_HOME])) {
     const access = supabase ? await resolveAccess(supabase) : null;
     if (access && !access.staff) {
-      const refusal = NextResponse.redirect(new URL(SPARK_ENTRY, request.url));
+      const refusal = NextResponse.redirect(exit(SPARK_ENTRY));
       box.response.cookies.getAll().forEach((cookie) => {
         refusal.cookies.set(cookie);
       });
       return refusal;
     }
-    return box.response;
+    return pass();
   }
 
   /* The preserved financial platform is parked behind the explicit staff
@@ -176,9 +222,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(login);
     }
     if (!access.staff) {
-      return NextResponse.redirect(new URL("/spark", request.url));
+      return NextResponse.redirect(exit(SPARK_ENTRY));
     }
-    return box.response;
+    return pass();
   }
 
   if (startsWithAny(pathname, legacyAuthPages)) {
@@ -190,7 +236,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return box.response;
+  return pass();
 }
 
 export const config = {
