@@ -4,7 +4,7 @@ import { getImageProps } from "next/image";
 import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 
 const NAME = "Tent MAiKER";
-const LINE = "Making tents together. Funding the mission.";
+const LINE = "Making Tents. Funding Mission.";
 const ALT =
   "An old canvas tent at night, its entrance flaps tied open to the front poles and its guy ropes staked to the ground. Inside, a person sits on a stool at a low table, typing on a laptop whose light falls on them and on the canvas.";
 
@@ -57,7 +57,7 @@ function Tent() {
 }
 
 /**
- * One screen: the name, the tent, the two sentences, and where the idea comes
+ * One screen: the name, the tent, the two lines, and where the idea comes
  * from. Paul worked with Aquila and Priscilla because they shared a trade
  * (Acts 18:2-3); the picture says the rest.
  */
@@ -74,12 +74,7 @@ export default function TentMaikerPage() {
       <div className="tm-hero">
         <div className="tm-words">
           <h1 className="tm-line">
-            <span className="tm-sentence-1">
-              <span>Making tents</span> <span>together.</span>
-            </span>{" "}
-            <span className="tm-sentence-2">
-              <span>Funding the</span> <span>mission.</span>
-            </span>
+            <span>Making Tents.</span> <span>Funding Mission.</span>
           </h1>
           <p className="tm-ref">Acts 18:2&ndash;3</p>
         </div>

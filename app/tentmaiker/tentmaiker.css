@@ -72,7 +72,7 @@ html:has(.tm) body {
 
 .tm-hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.5fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
   align-items: center;
   gap: clamp(8px, 2vw, 32px);
 }
@@ -82,21 +82,17 @@ html:has(.tm) body {
   z-index: 1;
 }
 
-/* Two sentences, each set on two lines: the work, then what it is for. */
+/* Two lines: the work, then what it is for. */
 .tm-line {
-  font-size: clamp(2.75rem, 4.9vw, 5.25rem);
+  font-size: clamp(2.5rem, 4.7vw, 5.4rem);
   font-weight: 700;
   line-height: 0.98;
   letter-spacing: -0.045em;
 }
 
-.tm-line > span,
-.tm-line > span > span {
+.tm-line > span {
   display: block;
-}
-
-.tm-sentence-2 {
-  margin-top: 0.22em;
+  white-space: nowrap;
 }
 
 .tm-ref {
@@ -112,8 +108,9 @@ html:has(.tm) body {
    other three sides, so there is no frame and no seam. */
 .tm-art {
   justify-self: end;
-  width: calc(100% + var(--tm-pad-x));
+  width: calc(100% + var(--tm-pad-x) + 5vw);
   max-width: calc((100svh - 110px) * 2260 / 1470);
+  margin-left: -5vw;
   margin-right: calc(-1 * var(--tm-pad-x));
   -webkit-mask-image:
     linear-gradient(to right, transparent, #000 16%, #000 90%, transparent),
@@ -160,7 +157,7 @@ html:has(.tm) body {
   }
 
   .tm-line {
-    font-size: clamp(2.5rem, 11.6vw, 3.4rem);
+    font-size: clamp(1.9rem, 10.5vw, 3.6rem);
   }
 
   .tm-ref {

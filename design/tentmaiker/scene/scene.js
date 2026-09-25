@@ -290,10 +290,11 @@ box(0.06, 0.08, 0.06, new THREE.MeshStandardMaterial({ color: 0x3d3833, roughnes
 // laptop
 const alu = new THREE.MeshStandardMaterial({ color: 0x3a3e44, metalness: 0.6, roughness: 0.35 });
 box(0.21, 0.014, 0.31, alu, local(0.70, TABLE_Y + 0.007), yaw);
-const lidAngle = THREE.MathUtils.degToRad(+(P.get("lid") || 108));
+const lidAngle = THREE.MathUtils.degToRad(+(P.get("lid") || 121));
 const hinge = local(0.805, TABLE_Y + 0.014);
 const lid = new THREE.Group(); lid.position.copy(hinge); lid.rotation.y = yaw; scene.add(lid);
-const lidInner = new THREE.Group(); lidInner.rotation.z = lidAngle - Math.PI / 2; lid.add(lidInner);
+// the lid leans back, away from the person, so the screen looks up at their face
+const lidInner = new THREE.Group(); lidInner.rotation.z = -(lidAngle - Math.PI / 2); lid.add(lidInner);
 const lidBody = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.21, 0.31), alu);
 lidBody.position.set(0.004, 0.105, 0); lidBody.castShadow = true; lidInner.add(lidBody);
 // the screen: soft, not blown out
@@ -311,7 +312,7 @@ screen.position.set(-0.0005, 0.105, 0); screen.rotation.y = -Math.PI / 2; lidInn
 // the screen's light: an area light for the soft wash, a point light for shadows
 const screenWorld = new THREE.Vector3(); screen.getWorldPosition(screenWorld);
 const area = new THREE.RectAreaLight(0xbcd6f5, +(P.get("area") || 14), 0.29, 0.19);
-area.position.copy(screenWorld); area.lookAt(local(0.1, 1.05)); scene.add(area);
+area.position.copy(screenWorld); area.lookAt(local(0.24, 1.22)); scene.add(area);
 const pl = new THREE.PointLight(0xbcd6f5, +(P.get("pl") || 1.6), 6, 1.6);
 pl.position.copy(screenWorld).addScaledVector(FACE, -0.06); pl.castShadow = true;
 pl.shadow.mapSize.set(2048, 2048); pl.shadow.bias = -0.002; pl.shadow.radius = 6; scene.add(pl);
