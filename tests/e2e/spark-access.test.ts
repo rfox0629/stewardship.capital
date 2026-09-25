@@ -677,6 +677,14 @@ test("Spark access model, end to end against production schema", async (t) => {
         assert.equal(hit.location, "/", path);
       }
 
+      /* Arriving through the emailed link lands on the product's own
+         address, not on the path that implements it. */
+      const arriving = newJar();
+      const landed = await signIn(arriving, w.client.email, {
+        headers: { "x-forwarded-host": "tentmaiker.com" },
+      });
+      assert.equal(landed.location, `/c/${A_SLUG}/e/check/2026/team`);
+
       /* Signed in on the product's domain, the page draws its own addresses.
          The routes underneath are unchanged, so /spark keeps working, but
          nothing a person clicks hands them the implementation path. */

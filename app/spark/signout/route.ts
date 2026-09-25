@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cleanPath, isProductHost } from "../../../lib/spark/hosts";
 import { cookies } from "next/headers";
 
 import { INVITE_COOKIE, OTP_EMAIL_COOKIE } from "../../../lib/spark/cookies";
@@ -40,5 +41,13 @@ export async function POST(request: NextRequest) {
   store.delete(OTP_EMAIL_COOKIE);
   store.delete(INVITE_COOKIE);
 
-  return NextResponse.redirect(new URL(door, request.url), { status: 303 });
+  return NextResponse.redirect(
+    new URL(
+      isProductHost(request.headers.get("x-forwarded-host") ?? request.headers.get("host"))
+        ? cleanPath(door)
+        : door,
+      request.url,
+    ),
+    { status: 303 },
+  );
 }
