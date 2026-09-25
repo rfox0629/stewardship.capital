@@ -93,6 +93,15 @@ export default async function GuideLayout({ children, params }: LayoutProps) {
             {dates ? <span>{dates}</span> : null}
             {guide.venue ? <span>{guide.venue}</span> : null}
           </p>
+          {/* The weekend's own Scripture, where the theme has one. It is the
+              reason for the tent, so it reads under the name rather than
+              somewhere further down the page. */}
+          {theme.copy.verse ? (
+            <blockquote className="gd-verse">
+              <p>{theme.copy.verse}</p>
+              {theme.copy.verseRef ? <cite>{theme.copy.verseRef}</cite> : null}
+            </blockquote>
+          ) : null}
         </div>
       </header>
 
