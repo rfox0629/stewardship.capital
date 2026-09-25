@@ -173,9 +173,14 @@ export const linkFor = async (email: string) => {
 };
 
 /** Signs a jar in the way the emailed link does, through the real route. */
-export const signIn = async (jar: Jar, email: string): Promise<Hit> => {
+export const signIn = async (
+  jar: Jar,
+  email: string,
+  /* Headers for the arrival itself, so a test can come in as one domain. */
+  init: RequestInit = {},
+): Promise<Hit> => {
   const { tokenHash } = await linkFor(email);
-  const hit = await visit(jar, `/spark/auth/callback?token_hash=${tokenHash}&type=magiclink`);
+  const hit = await visit(jar, `/spark/auth/callback?token_hash=${tokenHash}&type=magiclink`, init);
 
   const signedIn = Array.from(jar.keys()).some((name) => name.startsWith("sb-"));
   if (!signedIn) {
