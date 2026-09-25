@@ -78,7 +78,12 @@ export default function TentMaikerPage() {
       <div className="tm-hero">
         <div className="tm-words">
           <h1 className="tm-line">
-            <span>Making Tents.</span> <span>Funding Mission.</span>
+            <span>
+              Making Tents<span className="tm-dot">.</span>
+            </span>{" "}
+            <span>
+              Funding Mission<span className="tm-dot">.</span>
+            </span>
           </h1>
           <p className="tm-ref">Acts 18:2&ndash;3</p>
         </div>
