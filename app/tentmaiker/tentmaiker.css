@@ -9,7 +9,6 @@
 .tm {
   --tm-black: #040506;
   --tm-white: #ffffff;
-  --tm-silver: #8b95a1;
   --tm-light: #9ccaff;
   --tm-font: var(--font-tm), "Helvetica Neue", Arial, sans-serif;
   --tm-pad-x: clamp(22px, 4vw, 56px);
@@ -136,9 +135,14 @@ html:has(.tm) body {
   white-space: nowrap;
 }
 
+/* The periods and the verse take the AI's blue: the same light throughout. */
+.tm-dot {
+  color: var(--tm-light);
+}
+
 .tm-ref {
   margin-top: clamp(26px, 3.2vw, 44px);
-  color: var(--tm-silver);
+  color: var(--tm-light);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.28em;
