@@ -743,9 +743,15 @@ test("Spark access model, end to end against production schema", async (t) => {
         const entry = await visit(jar, ENTRY);
         assert.doesNotMatch(entry.body, /Run of show/);
       } finally {
-        await admin.from("event_sessions").delete().eq("engagement_id",
-          (await admin.from("engagements").select("id").eq("series_slug", "founders-weekend")
-            .eq("edition_label", "2026").single()).data!.id);
+        /* By the client that owns it. A copy of SHINE made for a check
+           elsewhere shares its series and edition, so those two do not
+           identify the engagement on their own. */
+        const { data: owner } = await admin.from("organizations")
+          .select("id").eq("slug", "shine").single();
+        const { data: real } = await admin.from("engagements")
+          .select("id").eq("organization_id", owner!.id)
+          .eq("series_slug", "founders-weekend").eq("edition_label", "2026").single();
+        await admin.from("event_sessions").delete().eq("engagement_id", real!.id);
         await admin.from("event_code_attempts").delete().like("client_hash", `${RUN}%`);
       }
     });
