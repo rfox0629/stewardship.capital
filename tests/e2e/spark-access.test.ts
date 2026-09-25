@@ -668,6 +668,38 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.doesNotMatch(asClient.body, /ev-bank-ideas/, "and only a planner is offered it");
     });
 
+    /* ------------------------------------------------------ the guest card */
+
+    await t.test("the guest guide is the printed card, and the meals still open", async () => {
+      /* A guest is handed a card with three days on it. The guide says the
+         same thing: the same lines, the same windows, the same words. What it
+         must not do is show them how the weekend is run. */
+      const guest = await visit(newJar(), "/shine/2026");
+      assert.equal(guest.status, 200);
+
+      for (const line of ["Arrival", "Appetizers and Fellowship", "Worship and Vision",
+                          "Breakfast and Coffee", "Time with Shine", "Free Time and Activities",
+                          "Worship and Stories from the Field", "Celebration and Fun"]) {
+        assert.match(guest.body, new RegExp(line), `the card says ${line}`);
+      }
+
+      /* The working calendar's own rows, which a guest was never handed. */
+      for (const row of ["Devotional", "Gusii Land recap", "Coffee break and rope prep",
+                         "favorite-things bingo", "Prayer walk", "Cornhole tournament",
+                         "Partner invitation", "Get ready for worship", "Sector Sweep",
+                         "Morning readiness", "bathroom"]) {
+        assert.doesNotMatch(guest.body, new RegExp(row), `not on the card: ${row}`);
+      }
+
+      /* A meal still opens its menu, which is the one thing a guest taps. */
+      assert.match(guest.body, /Egg and sausage bake/, "the Friday breakfast menu travels with it");
+      assert.match(guest.body, /Menu/, "and the row says so");
+
+      /* The verse the weekend is named for. */
+      assert.match(guest.body, /Enlarge the place of your tent/);
+      assert.match(guest.body, /Isaiah 54:2/);
+    });
+
     /* ------------------------------------------------ three surfaces, apart */
 
     await t.test("the three SHINE surfaces stay what they are", async () => {

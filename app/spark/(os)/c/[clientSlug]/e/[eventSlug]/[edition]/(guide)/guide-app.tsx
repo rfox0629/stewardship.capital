@@ -95,13 +95,19 @@ export function GuideApp({
     const stored = readStored(`${storeKey}:day`);
     return stored && (GUEST_DAYS as readonly string[]).includes(stored) ? stored : "thu";
   });
+  /* Only the days the guide actually has. A weekend that ends on Saturday
+     night should not offer a Sunday with nothing on it. */
+  const days = GUEST_DAYS.filter((key) => moments.some((moment) => moment.day === key));
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const trigger = useRef<HTMLElement | null>(null);
   const top = useRef<HTMLDivElement>(null);
 
   /* Until hydration, render exactly what the server did. */
   const shownTab: Tab = hydrated ? tab : "schedule";
-  const shownDay = hydrated ? day : "thu";
+  /* A day remembered from a previous visit may no longer be in the guide. */
+  const shownDay = hydrated && days.includes(day as (typeof days)[number])
+    ? day
+    : days[0] ?? "thu";
 
   const setTab = (next: Tab) => {
     setTabState(next);
@@ -150,7 +156,7 @@ export function GuideApp({
           <section aria-label="Schedule">
             <div className="gd-days" role="tablist" aria-label="Day">
               <div className="gd-shell gd-days-inner">
-                {GUEST_DAYS.map((key) => {
+                {days.map((key) => {
                   const date = dayDate(startsOn, key);
                   return (
                     <button

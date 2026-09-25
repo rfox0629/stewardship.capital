@@ -64,6 +64,9 @@ export type EngagementTheme = {
   copy: {
     welcome?: string;
     tagline?: string;
+    /** The weekend's own Scripture, and where it is from. */
+    verse?: string;
+    verseRef?: string;
   };
   /** Whether the quiet Powered by Spark line renders in the footer. */
   poweredBySpark: boolean;
@@ -153,6 +156,8 @@ export const parseEngagementTheme = (raw: unknown): EngagementTheme => {
     copy: {
       welcome: readCopy(copy.welcome),
       tagline: readCopy(copy.tagline),
+      verse: readCopy(copy.verse),
+      verseRef: readCopy(copy.verseRef),
     },
     poweredBySpark: source.poweredBySpark !== false,
   };
