@@ -642,6 +642,32 @@ test("Spark access model, end to end against production schema", async (t) => {
       }
     });
 
+    /* --------------------------------------------------- ideas and the grid */
+
+    await t.test("the calendar offers its ideas, and they can be carried onto an hour", async () => {
+      /* The one way an idea becomes a moment is a chip in this strip. It went
+         missing once when the screen was rebuilt, which left the drop handler
+         on the grid with nothing that could ever reach it, so the strip and
+         its drag payload are asserted here rather than assumed. */
+      const jar = await adopt(w.staff.email);
+      const calendar = await visit(jar, `${A_HOME}/schedule`);
+      assert.equal(calendar.status, 200);
+
+      assert.match(calendar.body, /class="ev-bank ev-bank-ideas/, "the ideas strip is drawn");
+      assert.match(calendar.body, new RegExp(`${CLEAN} alpha`), "and holds this engagement's idea");
+      /* The chip carries its own instructions. It becomes draggable on
+         hydration, so the server's copy says "false" here and the drag
+         itself is exercised in the browser rather than asserted from HTML. */
+      assert.match(calendar.body, /ev-bank-chip ev-bank-idea/, "the chip is drawn");
+      assert.match(calendar.body, /Drag onto an hour, or click to open it/);
+
+      /* A client is not a planner: same screen, no strip to drag from. */
+      const reader = await adopt(w.client.email);
+      const asClient = await visit(reader, `${A_HOME}/schedule`);
+      assert.equal(asClient.status, 200);
+      assert.doesNotMatch(asClient.body, /ev-bank-ideas/, "and only a planner is offered it");
+    });
+
     /* ------------------------------------------------------- the two domains */
 
     await t.test("the product's domain serves the product, and the company's is untouched", async () => {
