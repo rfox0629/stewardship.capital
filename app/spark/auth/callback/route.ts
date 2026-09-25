@@ -5,6 +5,7 @@ import { resolveAccess } from "../../../../lib/spark/access";
 import { landingFor } from "../../../../lib/spark/authorize";
 import { INVITE_COOKIE, OTP_EMAIL_COOKIE } from "../../../../lib/spark/cookies";
 import { acceptInvitation } from "../../../../lib/spark/invitations";
+import { cleanPath, isProductHost } from "../../../../lib/spark/hosts";
 import { SPARK_ENTRY } from "../../../../lib/spark/paths";
 import { createClient } from "../../../../lib/supabase/server";
 
@@ -16,8 +17,19 @@ import { createClient } from "../../../../lib/supabase/server";
  * A link that has already been used, or was tampered with, ends at the front
  * door with no session, which is the same place an unrecognised address ends.
  */
+
+/* The address to send somebody to, in the form the domain they came to
+   publishes. The route underneath is the same either way. */
+const landingUrl = (request: NextRequest, path: string) =>
+  new URL(
+    isProductHost(request.headers.get("x-forwarded-host") ?? request.headers.get("host"))
+      ? cleanPath(path)
+      : path,
+    request.url,
+  );
+
 export async function GET(request: NextRequest) {
-  const frontDoor = new URL(SPARK_ENTRY, request.url);
+  const frontDoor = landingUrl(request, SPARK_ENTRY);
 
   const params = request.nextUrl.searchParams;
   const tokenHash = params.get("token_hash");
@@ -56,7 +68,7 @@ export async function GET(request: NextRequest) {
   /* Choosing between several, and belonging to none, are both decided by the
      front door. It already knows how to render either. */
   if (landing.kind === "platform" || landing.kind === "workspace") {
-    return NextResponse.redirect(new URL(landing.href, request.url));
+    return NextResponse.redirect(landingUrl(request, landing.href));
   }
 
   return NextResponse.redirect(frontDoor);

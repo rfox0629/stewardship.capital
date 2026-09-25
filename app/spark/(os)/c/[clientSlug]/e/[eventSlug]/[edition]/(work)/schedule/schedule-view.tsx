@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
 import { parseTimeLabel } from "@lib/spark/days";
-import { pendingBlocks, timedOn, type Leaving } from "@lib/spark/weekend";
+import { ideasStillOpen, pendingBlocks, timedOn, type Leaving } from "@lib/spark/weekend";
 import { Select } from "@spark/_components/select";
 import { AddIdea } from "../plan/add-idea";
 import { IdeaPanel } from "../plan/idea-panel";
@@ -156,6 +156,7 @@ const DURATIONS = [15, 30, 45, 60, 90, 120];
    idea creates a moment; carrying a moment moves that exact row. They use
    different machinery on purpose, and the one that creates says so in its own
    payload type, so nothing can arrive at the create path by accident. */
+const IDEA_ROWS = 3;
 const IDEA_DRAG = "application/x-spark-idea";
 /* A moment waiting for a time. Dropping it on an hour gives it one; it is
    already real, so nothing is created and nothing is asked. */
@@ -215,6 +216,7 @@ function MomentDrawer({
   related,
   ideas,
   amenities,
+  base,
   onClose,
 }: {
   moment: Moment;
@@ -225,6 +227,8 @@ function MomentDrawer({
   related: RelatedRecord[];
   ideas: TentativeIdea[];
   amenities: Amenity[];
+  /* The public prefix for this workspace's links. */
+  base: string;
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -416,7 +420,7 @@ function MomentDrawer({
             </button>
             {expanded === "activities" ? (
               <ActivityEditor moment={moment} activities={inside} route={route}
-                ideas={ideas} amenities={amenities} />
+                ideas={ideas} amenities={amenities} base={base} />
             ) : null}
 
             <button
@@ -430,7 +434,7 @@ function MomentDrawer({
               <i aria-hidden="true">{expanded === "ros" ? "−" : "+"}</i>
             </button>
             {expanded === "ros" ? (
-              <RosEditor moment={moment} cues={beats} route={route} ideas={ideas} />
+              <RosEditor moment={moment} cues={beats} route={route} ideas={ideas} base={base} />
             ) : null}
 
             <button
@@ -478,11 +482,14 @@ function RosEditor({
   cues,
   route,
   ideas,
+  base,
 }: {
   moment: Moment;
   cues: Cue[];
   route: Route;
   ideas: TentativeIdea[];
+  /* The public prefix for this workspace, worked out per request. */
+  base: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<string | null>(null);
@@ -499,8 +506,6 @@ function RosEditor({
     start !== null && moment.endMinutes !== null ? moment.endMinutes - start : null;
   /* The drawer hands over only the timed ones. */
   const beats = [...cues].sort((a, b) => (a.offset as number) - (b.offset as number));
-  const base = `/spark/c/${route.clientSlug}/e/${route.eventSlug}/${route.edition}`;
-
   /* Pointing at an idea rather than writing a beat. The cue carries the
      idea's id, so the idea keeps everything hanging off it and gains a place
      in the weekend without a calendar block of its own. */
@@ -685,12 +690,14 @@ function ActivityEditor({
   route,
   ideas,
   amenities,
+  base,
 }: {
   moment: Moment;
   activities: Cue[];
   route: Route;
   ideas: TentativeIdea[];
   amenities: Amenity[];
+  base: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -704,8 +711,6 @@ function ActivityEditor({
   const offered = category
     ? amenities.filter((a) => (a.category ?? "Other") === category)
     : amenities;
-  const base = `/spark/c/${route.clientSlug}/e/${route.eventSlug}/${route.edition}`;
-
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
       const outcome = await fn();
@@ -1041,8 +1046,10 @@ export function ScheduleView({
   /* The bank of what is still only being considered, and the idea opened out
      of it. Both live here so a planning meeting never leaves this screen. */
   const [openIdea, setOpenIdea] = useState<string | null>(null);
+  /* Three rows of the bank, and the rest on request. */
+  const [allIdeas, setAllIdeas] = useState(false);
   const [addingIdea, setAddingIdea] = useState(false);
-  const [, setCaptured] = useState<string[]>([]);
+  const [captured, setCaptured] = useState<string[]>([]);
   const [placed, setPlaced] = useState<
     Array<{
       key: string; ideaId: string; title: string; day: string; minutes: number; length: number;
@@ -1055,7 +1062,7 @@ export function ScheduleView({
   >([]);
   /* Ideas taken out of the bank the instant they were dropped, held out only
      until the server answers. */
-  const [, setLeaving] = useState<Leaving[]>([]);
+  const [leaving, setLeaving] = useState<Leaving[]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
   const router = useRouter();
@@ -1360,6 +1367,10 @@ export function ScheduleView({
      idea itself, one click away. */
   /* A captured idea is drawn the instant it is typed and stops being drawn
      the instant the real one arrives under the same name. */
+  const landedTitles = new Set(ideas.map((idea) => idea.title));
+  const capturing = captured.filter((title) => !landedTitles.has(title));
+  const unplacedIdeas = ideasStillOpen(ideas, leaving);
+  const bankIsLong = unplacedIdeas.length > IDEA_ROWS;
   const openedIdea = hydrated ? ideas.find((idea) => idea.id === openIdea) ?? null : null;
 
   /* ------------------------------------------- an idea dropped onto an hour */
@@ -1521,14 +1532,22 @@ export function ScheduleView({
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
           {/* Capture is the dominant action, so it says what it captures. A
               moment is still one item down, in the planner's own words. */}
-          {/* One way to add to the calendar: a moment. Ideas and the planning
-              resources have left this screen; the weekend is built here from
-              what is actually happening. */}
+          {/* Two things a planner adds here, and they are not the same act.
+              An idea is something we are considering, and goes to the bank
+              unplaced. A moment is something happening, and goes on the
+              clock. Capture leads, because in a planning meeting the thought
+              arrives long before the hour does. */}
           {planner ? (
-            <button type="button" className="ev-bar-add"
-              onClick={() => setAddDay(activeDay?.key ?? "thu")}>
-              <span aria-hidden="true">+</span> Moment
-            </button>
+            <>
+              <button type="button" className="ev-bar-add"
+                onClick={() => setAddingIdea(true)}>
+                <span aria-hidden="true">+</span> Idea
+              </button>
+              <button type="button" className="ev-bar-quiet ev-bar-add-moment"
+                onClick={() => setAddDay(activeDay?.key ?? "thu")}>
+                <span aria-hidden="true">+</span> Moment
+              </button>
+            </>
           ) : null}
           <button type="button" className="ev-bar-quiet"
             onClick={() => setView(shownView === "weekend" ? "day" : "weekend")}>
@@ -1542,6 +1561,61 @@ export function ScheduleView({
         </div>
       </div>
 
+
+      {/* What is still only being considered, above what is decided but
+          untimed, above the clock. One flow, top to bottom, and none of it a
+          separate screen.
+
+          This strip is the only way an idea reaches the calendar: dragging a
+          chip onto an hour creates the moment, and clicking one opens the
+          idea itself. It went missing when this screen was rebuilt around the
+          guide, which left the drop handler below with nothing to catch. */}
+      {planner && (unplacedIdeas.length > 0 || capturing.length > 0) ? (
+        <div className={`ev-bank ev-bank-ideas ${allIdeas ? "ev-bank-open" : ""}`}>
+          <p className="ev-bank-label">
+            Ideas <span>{unplacedIdeas.length + capturing.length}</span>
+          </p>
+          <div className="ev-bank-cards" style={{ "--ev-bank-rows": IDEA_ROWS } as React.CSSProperties}>
+            {capturing.map((title) => (
+              <span key={title} className="ev-bank-chip ev-bank-idea ev-bank-pending">
+                <span>{title}</span>
+              </span>
+            ))}
+            {unplacedIdeas.map((idea) => (
+              <button
+                key={idea.id}
+                type="button"
+                className={`ev-bank-chip ev-bank-idea ${
+                  carrying?.id === idea.id ? "ev-bank-carried" : ""}`}
+                draggable={hydrated}
+                title="Drag onto an hour, or click to open it"
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(IDEA_DRAG, idea.id);
+                  event.dataTransfer.setData("text/plain", idea.title);
+                  event.dataTransfer.effectAllowed = "copy";
+                  setCarrying({
+                    id: idea.id, title: idea.title, status: "captured",
+                    day: idea.day ?? "", daypart: idea.daypart ?? "anytime", scheduled: 0,
+                  });
+                }}
+                onDragEnd={() => { setCarrying(null); setLanding(null); }}
+                onClick={() => setOpenIdea(idea.id)}
+              >
+                <span>{idea.title}</span>
+                {idea.question ? <i title="Needs an answer">?</i> : null}
+                {idea.day && idea.day !== "all" ? <i>{idea.day}</i> : null}
+              </button>
+            ))}
+          </div>
+          {/* Three rows, and the rest by name when there are more. */}
+          {bankIsLong ? (
+            <button type="button" className="ev-bank-more" aria-expanded={allIdeas}
+              onClick={() => setAllIdeas((open) => !open)}>
+              {allIdeas ? "Show fewer" : `Show all ${unplacedIdeas.length} ideas`}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {shownView === "weekend" ? (
         <div className="ev-grid-wrap">
           <div className="ev-grid-head" style={{ marginLeft: 52 }}>
@@ -1738,6 +1812,7 @@ export function ScheduleView({
           moment={openMoment}
           role={role}
           route={route}
+          base={base}
           days={laneDays}
           cues={cues.filter((cue) => cue.momentId === openMoment.id)}
           related={related.filter((row) => row.momentId === openMoment.id)}

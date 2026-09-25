@@ -14,8 +14,10 @@ import {
   workspaceRootOf,
 } from "./lib/spark/paths";
 import {
+  COMPANY_ORIGIN,
   cleanPath,
   isCompanyHost,
+  isCompanyOwnedPath,
   isLandingPath,
   isProductHost,
   isSiteOnlyPath,
@@ -76,6 +78,14 @@ export async function proxy(request: NextRequest) {
      product's front door, /spark. The root is Tent MAiKER's own page. */
   if (onProduct && isSiteOnlyPath(asked)) {
     return NextResponse.redirect(new URL(SPARK_ENTRY, request.url));
+  }
+
+  /* The platform console stayed with the company, so asking the product for
+     it hands the whole address over rather than half serving it here. */
+  if (onProduct && isCompanyOwnedPath(asked)) {
+    return NextResponse.redirect(
+      new URL(`${asked}${request.nextUrl.search}`, COMPANY_ORIGIN),
+    );
   }
 
   /* The landing page has one public address, tentmaiker.com/. Its internal

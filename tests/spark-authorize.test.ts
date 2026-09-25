@@ -6,6 +6,7 @@ import {
   LANDING_PATH,
   cleanPath,
   isCompanyHost,
+  isCompanyOwnedPath,
   isLandingPath,
   isProductHost,
   isSiteOnlyPath,
@@ -617,5 +618,14 @@ test("the landing page's internal path is recognised, and the company's host is 
   }
   for (const host of ["tentmaiker.com", "localhost:3000", "x.vercel.app", null, ""]) {
     assert.equal(isCompanyHost(host), false, String(host));
+  }
+});
+
+test("the platform console stays the company's", () => {
+  for (const path of ["/platform", "/platform/clients/shine/founders-weekend-2026"]) {
+    assert.equal(isCompanyOwnedPath(path), true, path);
+  }
+  for (const path of ["/", "/spark", "/c/shine", "/shine/2026", "/platformer"]) {
+    assert.equal(isCompanyOwnedPath(path), false, path);
   }
 });

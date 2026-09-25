@@ -52,7 +52,7 @@ export function SparkEntry({
     return (
       <>
         <p className="entry-refused" role="status">
-          Spark is invitation only. Ask your Stewardship.Capital contact for
+          Tentmaiker is invitation only. Ask your Stewardship.Capital contact for
           access.
         </p>
         <p className="entry-note">
@@ -188,7 +188,7 @@ export function SparkEntry({
       </div>
       {stage.unavailable ? (
         <p className="entry-hint" role="status">
-          Spark could not send a code just now. Try again in a few minutes.
+          Tentmaiker could not send a code just now. Try again in a few minutes.
         </p>
       ) : null}
     </form>

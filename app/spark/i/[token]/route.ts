@@ -15,6 +15,7 @@ import {
   ensureAccountExists,
   findLiveInvitation,
 } from "../../../../lib/spark/invitations";
+import { cleanPath, isProductHost } from "../../../../lib/spark/hosts";
 import { SPARK_ENTRY } from "../../../../lib/spark/paths";
 import { createClient } from "../../../../lib/supabase/server";
 
@@ -35,7 +36,18 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
-  const frontDoor = NextResponse.redirect(new URL(SPARK_ENTRY, request.url));
+
+/* The address to send somebody to, in the form the domain they came to
+   publishes. The route underneath is the same either way. */
+const landingUrl = (request: NextRequest, path: string) =>
+  new URL(
+    isProductHost(request.headers.get("x-forwarded-host") ?? request.headers.get("host"))
+      ? cleanPath(path)
+      : path,
+    request.url,
+  );
+
+  const frontDoor = NextResponse.redirect(landingUrl(request, SPARK_ENTRY));
 
   const { token } = await params;
   const invitation = await findLiveInvitation(token);
@@ -60,7 +72,7 @@ export async function GET(
       );
       if (!joined) return frontDoor;
 
-      return NextResponse.redirect(new URL(workspaceHome(joined), request.url));
+      return NextResponse.redirect(landingUrl(request, workspaceHome(joined)));
     }
 
     /* Signed in as somebody else. Hold the invitation rather than acting on
@@ -87,5 +99,5 @@ export async function GET(
   store.set(OTP_EMAIL_COOKIE, invitation.email, transientCookie(OTP_MAX_AGE));
   store.set(INVITE_COOKIE, invitation.tokenHash, transientCookie(INVITE_MAX_AGE));
 
-  return NextResponse.redirect(new URL(SPARK_ENTRY, request.url));
+  return NextResponse.redirect(landingUrl(request, SPARK_ENTRY));
 }

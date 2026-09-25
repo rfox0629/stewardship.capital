@@ -17,7 +17,7 @@
  *
  * What it sets, matching docs/spark-access.md:
  *   - public signup off (invitations create accounts deliberately instead)
- *   - Site URL and the redirect allow list for stewardship.capital
+ *   - Site URL and the redirect allow list for tentmaiker.com
  *   - the magic link template, carrying {{ .Token }} and the callback link
  *   - OTP expiry of ten minutes
  *   - verification and OTP request rate limits sized for one venue's wifi
@@ -116,11 +116,13 @@ const SITE_URL = "https://tentmaiker.com";
 const LEGACY_SITE_URL = "https://stewardship.capital";
 
 const MAGIC_LINK_TEMPLATE = [
-  '<h2 style="font-family:sans-serif;font-weight:600">Your Spark code</h2>',
+  '<h2 style="font-family:sans-serif;font-weight:600">Your Tentmaiker code</h2>',
   '<p style="font-family:sans-serif;font-size:15px">Enter this code on the sign in screen:</p>',
   '<p style="font-family:monospace;font-size:28px;letter-spacing:4px;font-weight:700">{{ .Token }}</p>',
-  '<p style="font-family:sans-serif;font-size:14px">Or <a href="{{ .SiteURL }}/spark/auth/callback?token_hash={{ .TokenHash }}&type=magiclink">open Spark directly</a>.</p>',
-  '<p style="font-family:sans-serif;font-size:12px;color:#5c626c">Sent by Spark, the private planning platform of Stewardship.Capital. If you were not expecting this, you can ignore it.</p>',
+  /* The clean address. The path that implements it still answers, but a link
+     somebody is sent should read like the product they were invited to. */
+  '<p style="font-family:sans-serif;font-size:14px">Or <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=magiclink">open Tentmaiker</a>.</p>',
+  '<p style="font-family:sans-serif;font-size:12px;color:#5c626c">If you were not expecting this, you can ignore it.</p>',
 ].join("\n");
 
 const base = {
@@ -137,7 +139,7 @@ const base = {
     "https://*-ryan-foxs-projects-9a51a4d5.vercel.app/spark/auth/callback",
     "http://localhost:3000/spark/auth/callback",
   ].join(","),
-  mailer_subjects_magic_link: "Your Spark code",
+  mailer_subjects_magic_link: "Your Tentmaiker code",
   mailer_templates_magic_link_content: MAGIC_LINK_TEMPLATE,
   mailer_otp_exp: 600,
   rate_limit_verify: 150,
@@ -150,7 +152,7 @@ const smtp = {
   user: process.env.SPARK_SMTP_USER?.trim(),
   pass: process.env.SPARK_SMTP_PASS?.trim(),
   sender: process.env.SPARK_SMTP_SENDER?.trim(),
-  senderName: process.env.SPARK_SMTP_SENDER_NAME?.trim() || "Spark",
+  senderName: process.env.SPARK_SMTP_SENDER_NAME?.trim() || "Tentmaiker",
 };
 const smtpReady = Boolean(smtp.host && smtp.port && smtp.user && smtp.pass && smtp.sender);
 
