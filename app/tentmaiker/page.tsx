@@ -4,62 +4,62 @@ import { getImageProps } from "next/image";
 import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 
 const NAME = "Tent MAiKER";
-const SENTENCE =
-  "We build useful technology together, and the work helps provide for ministry.";
+const LINE = "Making tents together. Funding the mission.";
 const ALT =
-  "Inside an old canvas tent at night, its entrance curtains tied back, a person sits on a wooden stool at a low table, typing on a laptop. The screen is the only light in the tent.";
+  "An old canvas tent at night, its entrance flaps tied open to the front poles and its guy ropes staked to the ground. Inside, a person sits on a stool at a low table, typing on a laptop whose light falls on them and on the canvas.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(PRODUCT_ORIGIN),
   title: { absolute: NAME },
-  description: `Still making tents. ${SENTENCE}`,
+  description: `${LINE} Tent MAiKER brings people together to build useful technology, and the work helps provide for ministry.`,
   alternates: { canonical: "/" },
   icons: { icon: "/tentmaiker/icon.svg" },
   openGraph: {
     type: "website",
     url: "/",
     siteName: NAME,
-    title: `${NAME}. Still making tents.`,
-    description: SENTENCE,
+    title: `${NAME}. ${LINE}`,
+    description: LINE,
     images: [{ url: "/tentmaiker/og.png", width: 1200, height: 630, alt: ALT }],
   },
   twitter: { card: "summary_large_image" },
 };
 
 /**
- * The tent is art directed: a near-square frame beside the words on a wide
- * screen, and a taller crop on a phone, where the picture leads.
+ * The tent is art directed: the whole tent, wide, beside the words on a
+ * large screen; a slightly closer frame on a phone, where the picture leads.
  */
 function Tent() {
-  const common = { alt: ALT, unoptimized: true, priority: true };
-  const { props: wide } = getImageProps({
-    ...common,
-    src: "/tentmaiker/tent-1640.webp",
-    width: 1640,
-    height: 1600,
+  const { props } = getImageProps({
+    alt: ALT,
+    src: "/tentmaiker/tent-wide-2260.webp",
+    width: 2260,
+    height: 1470,
+    unoptimized: true,
+    priority: true,
   });
   return (
     <picture>
       <source
         media="(max-width: 760px)"
-        srcSet={`/tentmaiker/tent-portrait-640.webp 640w, /tentmaiker/tent-portrait-1280.webp 1280w`}
+        srcSet="/tentmaiker/tent-narrow-910.webp 910w, /tentmaiker/tent-narrow-1820.webp 1820w"
         sizes="100vw"
-        width={1280}
-        height={1600}
+        width={1820}
+        height={1350}
       />
       <source
-        srcSet="/tentmaiker/tent-820.webp 820w, /tentmaiker/tent-1640.webp 1640w"
-        sizes="(max-width: 760px) 100vw, 56vw"
+        srcSet="/tentmaiker/tent-wide-1130.webp 1130w, /tentmaiker/tent-wide-2260.webp 2260w"
+        sizes="64vw"
       />
-      <img {...wide} alt={ALT} />
+      <img {...props} alt={ALT} />
     </picture>
   );
 }
 
 /**
- * One screen: the name, the tent, a few words, one sentence, and where the
- * idea comes from. Paul worked with Aquila and Priscilla because they shared
- * a trade (Acts 18:2-3); the picture says the rest.
+ * One screen: the name, the tent, the two sentences, and where the idea comes
+ * from. Paul worked with Aquila and Priscilla because they shared a trade
+ * (Acts 18:2-3); the picture says the rest.
  */
 export default function TentMaikerPage() {
   return (
@@ -74,9 +74,13 @@ export default function TentMaikerPage() {
       <div className="tm-hero">
         <div className="tm-words">
           <h1 className="tm-line">
-            <span className="tm-nowrap">Still making</span> <span>tents.</span>
+            <span className="tm-sentence-1">
+              <span>Making tents</span> <span>together.</span>
+            </span>{" "}
+            <span className="tm-sentence-2">
+              <span>Funding the</span> <span>mission.</span>
+            </span>
           </h1>
-          <p className="tm-sentence">{SENTENCE}</p>
           <p className="tm-ref">Acts 18:2&ndash;3</p>
         </div>
 
