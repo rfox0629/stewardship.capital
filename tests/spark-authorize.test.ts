@@ -566,7 +566,7 @@ test("the product's domain is recognised, and nothing else is", () => {
 });
 
 test("clean addresses on the product domain name the paths that serve them", () => {
-  /* The root is Tent MAiKER's own page; the product's door is /spark. */
+  /* The root is TentMAiKER's own page; the product's door is /spark. */
   assert.equal(productPath("/"), LANDING_PATH);
   assert.equal(productPath("/c/shine"), `${SPARK_BASE}/c/shine`);
   assert.equal(productPath("/c/shine/e/founders-weekend/2026/schedule"),

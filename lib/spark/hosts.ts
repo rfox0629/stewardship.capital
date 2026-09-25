@@ -50,7 +50,7 @@ export const isProductHost = (host: string | null | undefined): boolean => {
 /**
  * The company's public page, at the root of the product's domain.
  *
- * tentmaiker.com/ is Tent MAiKER's own front page, not the product's. The
+ * tentmaiker.com/ is TentMAiKER's own front page, not the product's. The
  * product's front door is /spark, its original address, which answers on this
  * domain as it does everywhere. The page lives at an internal path so that no
  * shared route has to know which domain it is on; nobody links to the path.
