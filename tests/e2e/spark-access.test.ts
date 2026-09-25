@@ -709,6 +709,50 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.match(guest.body, /Isaiah 54:2/);
     });
 
+    /* ---------------------------------------------------- the coffee bar */
+
+    await t.test("the coffee bar names three hot lattes, on both public surfaces", async () => {
+      /* One menu, read by a guest with no account and by the team behind the
+         weekend's code. Both get the same three drinks, the same lines and
+         the same builds. */
+      const card = [
+        ["The Shine", "The most popular.", "Vanilla latte · Vanilla cold foam · Gold dust"],
+        ["Honeycomb", "Rich but approachable.", "Honey brown sugar latte · Salted honey cold foam"],
+        ["Northwoods", "Perfect for the cabin.", "Caramel latte · Whipped cream · Caramel drizzle"],
+      ];
+
+      /* The page carries the menu as data and draws it when the tab is
+         opened, so this asserts what is served. The words around it, the
+         introduction and the heading over the build, are literals in the
+         component and are checked in the browser. */
+      const guest = await visit(newJar(), "/shine/2026");
+      assert.equal(guest.status, 200, "a guest needs no account for the menu");
+      for (const [name, feel, line] of card) {
+        assert.match(guest.body, new RegExp(name), name);
+        assert.match(guest.body, new RegExp(feel), feel);
+        assert.match(guest.body, new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), line);
+      }
+      /* The cold foams keep their name on a hot drink, deliberately. */
+      assert.match(guest.body, /Vanilla cold foam/);
+      assert.match(guest.body, /Salted honey cold foam/);
+      /* Nothing iced, no sizes, no prices, no fourth drink. */
+      /* What the menu must not say, asked of the menu itself rather than of
+         the whole document: a page carries its framework's own markers, and
+         the Friday lunch has sliced tomatoes in it. */
+      const { data: engagement } = await admin
+        .from("engagements").select("reference")
+        .eq("organization_id", (await admin.from("organizations").select("id")
+          .eq("slug", "shine").single()).data!.id)
+        .eq("series_slug", "founders-weekend").eq("edition_label", "2026").single();
+      const menu = JSON.stringify((engagement!.reference as Record<string, any>).guide.coffee);
+
+      assert.equal(JSON.parse(menu).length, 3, "three drinks, no more");
+      for (const absent of [/\biced\b/i, /available cold/i, /\$[0-9]/,
+                            /\bsmall\b/i, /\bmedium\b/i, /\blarge\b/i, /\bsize\b/i]) {
+        assert.doesNotMatch(menu, absent, String(absent));
+      }
+    });
+
     /* ------------------------------------------------ three surfaces, apart */
 
     await t.test("the three SHINE surfaces stay what they are", async () => {
