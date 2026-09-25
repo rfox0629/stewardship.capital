@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="110 60 980 790" role="img" aria-labelledby="t d">
+  <title id="t">A tentmaker at work</title>
+  <desc id="d">An old canvas tent drawn in fine lines, its front flaps tied open. Inside, lit by the screen, a robed and bearded figure sits on a wooden bench working at a laptop. Behind the tent, a ring is traced with the lines of a circuit.</desc>
+  <defs>
+    <radialGradient id="lampA" cx="600" cy="470" r="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e9ddc6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#e9ddc6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="screenA" cx="640" cy="560" r="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#bfe3ff" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#7fb8e6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#7fb8e6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="panelA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#15181d"/>
+      <stop offset="1" stop-color="#0f1115"/>
+    </linearGradient>
+    <clipPath id="doorA">
+      <path d="M600 170 C 560 330 470 560 400 720 L 800 720 C 730 560 640 330 600 170 Z"/>
+    </clipPath>
+    <clipPath id="ringRight">
+      <rect x="600" y="0" width="600" height="900"/>
+    </clipPath>
+  </defs>
+
+  <!-- The ring: old on the left, circuitry on the right -->
+  <circle cx="600" cy="450" r="380" fill="none" stroke="#e9ddc6" stroke-opacity="0.22" stroke-width="1.25"/>
+  <g clip-path="url(#ringRight)">
+    <g fill="none" stroke="#b8925a" stroke-width="1.25" stroke-opacity="0.75" stroke-linecap="round">
+      <path d="M600 175 H 700 l 30 30 H 850"/>
+      <path d="M600 240 H 790 l 28 -28 H 868"/>
+      <path d="M600 300 H 740 l 26 26 H 928"/>
+      <path d="M600 370 H 860 l 22 -22 H 944"/>
+      <path d="M600 440 H 810 l 30 30 H 952"/>
+    </g>
+    <g fill="#0b0d10" stroke="#b8925a" stroke-width="1.25" stroke-opacity="0.9">
+      <circle cx="850" cy="205" r="4.5"/><circle cx="868" cy="212" r="4.5"/><circle cx="928" cy="326" r="4.5"/>
+      <circle cx="944" cy="348" r="4.5"/><circle cx="952" cy="470" r="4.5"/>
+    </g>
+  </g>
+
+  <!-- The old sky on the left half, facing the circuitry on the right -->
+  <g fill="#e9ddc6">
+    <circle cx="420" cy="170" r="1.6" opacity="0.7"/><circle cx="340" cy="260" r="1.2" opacity="0.5"/>
+    <circle cx="470" cy="250" r="1" opacity="0.5"/><circle cx="290" cy="380" r="1.4" opacity="0.6"/>
+    <circle cx="380" cy="330" r="1" opacity="0.4"/><circle cx="520" cy="120" r="1.2" opacity="0.5"/>
+    <circle cx="300" cy="500" r="1" opacity="0.4"/>
+  </g>
+  <ellipse cx="620" cy="722" rx="200" ry="14" fill="#bfe3ff" opacity="0.05"/>
+  <!-- Ground -->
+  <path d="M120 720 H 1080" stroke="#e9ddc6" stroke-opacity="0.35" stroke-width="1"/>
+
+  <!-- Guy lines to anchored stakes -->
+  <g stroke="#e9ddc6" stroke-opacity="0.55" stroke-width="1" fill="none">
+    <path d="M466 417 L 150 720"/>
+    <path d="M734 417 L 1050 720"/>
+    <path d="M600 158 L 250 720" stroke-opacity="0.25"/>
+    <path d="M600 158 L 950 720" stroke-opacity="0.25"/>
+  </g>
+  <g fill="#0b0d10" stroke="#e9ddc6" stroke-width="1.25">
+    <circle cx="150" cy="720" r="4"/><circle cx="1050" cy="720" r="4"/>
+    <circle cx="250" cy="720" r="3"/><circle cx="950" cy="720" r="3"/>
+  </g>
+
+  <!-- Interior, seen through the open door -->
+  <g clip-path="url(#doorA)">
+    <rect x="380" y="160" width="440" height="560" fill="#101318"/>
+    <rect x="380" y="160" width="440" height="560" fill="url(#lampA)"/>
+    <!-- back wall seams, converging on the peak for depth -->
+    <g stroke="#e9ddc6" stroke-opacity="0.13" stroke-width="1">
+      <path d="M600 170 L 470 720"/><path d="M600 170 L 535 720"/>
+      <path d="M600 170 L 665 720"/><path d="M600 170 L 730 720"/>
+    </g>
+    <path d="M430 650 H 770" stroke="#e9ddc6" stroke-opacity="0.18"/>
+    <!-- centre pole -->
+    <path d="M600 170 V 720" stroke="#e9ddc6" stroke-opacity="0.35" stroke-width="1.5"/>
+    <!-- screen light -->
+    <rect x="380" y="160" width="440" height="560" fill="url(#screenA)"/>
+  </g>
+
+  <!-- Bench and table, old joinery in line -->
+  <g stroke="#e9ddc6" stroke-width="1.5" fill="#0b0d10" stroke-linejoin="round">
+    <path d="M452 646 H 548 V 654 H 452 Z"/>
+    <path d="M460 654 V 720 M540 654 V 720"/>
+    <path d="M592 604 H 724 V 612 H 592 Z"/>
+    <path d="M602 612 V 720 M714 612 V 720 M602 668 H 714" fill="none"/>
+  </g>
+
+  <!-- Laptop: the one bright thing in the tent -->
+  <path d="M600 602 L 700 598 L 708 604 L 618 608 Z" fill="#0b0d10" stroke="#cfe8ff" stroke-width="1.25"/>
+  <path d="M624 600 L 692 597 L 700 530 L 634 532 Z" fill="#dff0ff"/>
+  <g stroke="#6aa6d8" stroke-width="2" stroke-linecap="round" opacity="0.8">
+    <path d="M642 546 L 670 545"/><path d="M640 558 L 684 557"/><path d="M639 570 L 674 569"/><path d="M637 582 L 660 581"/>
+  </g>
+
+  <!-- The maker: robed, bearded, bent to the work, rim lit by the screen -->
+  <g fill="#07080a">
+    <path d="M472 646 C 468 606 474 562 490 532 C 498 518 510 512 524 512 C 538 514 546 528 546 548 C 546 578 542 610 538 638 L 566 644 C 578 648 582 660 580 672 L 578 714 L 590 720 L 474 720 C 470 700 470 670 472 646 Z"/>
+    <path d="M514 486 C 512 466 526 458 540 460 C 550 462 554 470 553 478 L 557 488 L 552 490 C 552 500 548 508 540 512 C 552 516 550 530 538 534 C 530 532 524 526 522 518 L 520 522 C 516 514 514 500 514 486 Z"/>
+    <path d="M506 492 C 504 470 516 454 536 456 C 526 462 520 472 520 486 L 516 520 L 504 524 Z"/>
+  </g>
+  <path d="M528 530 C 536 562 548 582 564 590 L 610 600" fill="none" stroke="#07080a" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="none" stroke="#cfe8ff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M540 460 C 550 462 554 470 553 478 L 557 488 L 552 490 C 552 500 548 508 540 512 C 552 516 550 530 538 534" stroke-width="1.5" stroke-opacity="0.9"/>
+    <path d="M543 547 C 550 568 560 580 572 584 L 612 593" stroke-width="1.5" stroke-opacity="0.8"/>
+    <path d="M566 644 C 578 648 582 660 580 672 L 578 714" stroke-width="1.25" stroke-opacity="0.45"/>
+  </g>
+
+  <!-- The canvas: two tied-back flaps and the outer panels, in fine line -->
+  <path d="M600 158 C 540 300 420 520 250 720 L 400 720 C 470 560 560 330 600 170 Z" fill="url(#panelA)"/>
+  <path d="M600 158 C 660 300 780 520 950 720 L 800 720 C 730 560 640 330 600 170 Z" fill="url(#panelA)"/>
+  <g fill="none" stroke="#e9ddc6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M600 158 C 540 300 420 520 250 720" stroke-width="1.75"/>
+    <path d="M600 158 C 660 300 780 520 950 720" stroke-width="1.75"/>
+    <path d="M600 170 C 560 330 470 560 400 720" stroke-width="1.5"/>
+    <path d="M600 170 C 640 330 730 560 800 720" stroke-width="1.5"/>
+    <!-- folds -->
+    <path d="M598 180 C 550 320 460 520 330 720" stroke-opacity="0.35"/>
+    <path d="M599 176 C 560 330 480 540 370 720" stroke-opacity="0.22"/>
+    <path d="M602 180 C 650 320 740 520 870 720" stroke-opacity="0.35"/>
+    <path d="M601 176 C 640 330 720 540 830 720" stroke-opacity="0.22"/>
+    <!-- tie-backs -->
+    <path d="M440 600 q -18 10 -34 2" stroke-width="1.5"/>
+    <path d="M760 600 q 18 10 34 2" stroke-width="1.5"/>
+    <!-- hem -->
+    <path d="M250 720 q 25 -8 50 0 q 25 -8 50 0 q 25 -8 50 0" stroke-opacity="0.6"/>
+    <path d="M800 720 q 25 -8 50 0 q 25 -8 50 0 q 25 -8 50 0" stroke-opacity="0.6"/>
+  </g>
+  <!-- finial -->
+  <path d="M600 128 V 158" stroke="#e9ddc6" stroke-width="1.5"/>
+  <circle cx="600" cy="124" r="4.5" fill="#b8925a"/>
+</svg>

@@ -649,20 +649,23 @@ test("Spark access model, end to end against production schema", async (t) => {
       const product = onHost("tentmaiker.com");
       const company = onHost("stewardship.capital");
 
-      /* The product's own domain: its front door is the root, and the
-         company's homepage is nowhere on it. */
-      const front = await product("/");
-      assert.equal(front.status, 200);
-      assert.match(front.body, /Spark/, "the product's entry");
-      assert.doesNotMatch(front.body, /Steward what you|Time\. Talent\. Treasure/,
+      /* The product's own domain: its root is Tent MAiKER's page, its front
+         door is /spark, and the company's homepage is nowhere on it. */
+      const landing = await product("/");
+      assert.equal(landing.status, 200);
+      assert.match(landing.body, /<title>Tent MAiKER<\/title>/, "the company's landing page");
+      assert.doesNotMatch(landing.body, /Steward what you|Time\. Talent\. Treasure/,
         "the company's homepage is not served here");
+      const front = await product("/spark");
+      assert.equal(front.status, 200);
+      assert.match(front.body, /Capture freely/, "the product's entry");
 
       /* Clean addresses reach the workspaces, and are still guarded: an
          anonymous visitor is turned away to the product's own front door,
          never to a path with /spark in it. */
       const workspace = await product("/c/shine/e/founders-weekend/2026/schedule");
       assert.equal(workspace.status, 307);
-      assert.equal(workspace.location, "/", "refused to the product's root");
+      assert.equal(workspace.location, "/spark", "refused to the product's front door");
       assert.doesNotMatch(workspace.body, /Morning readiness/);
 
       /* The guide keeps the address that is already printed on things. */
@@ -672,7 +675,7 @@ test("Spark access model, end to end against production schema", async (t) => {
       for (const path of ["/dashboard", "/login", "/signup", "/assessment", "/internal/operating-system"]) {
         const hit = await product(path);
         assert.equal(hit.status, 307, path);
-        assert.equal(hit.location, "/", path);
+        assert.equal(hit.location, "/spark", path);
       }
 
       /* And the company's domain behaves exactly as it did: its homepage is
@@ -684,6 +687,7 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.equal((await company("/spark")).status, 200);
       assert.equal((await company("/shine/2026")).status, 200);
       assert.equal((await company("/c/shine")).status, 404, "clean addresses belong to the product");
+      assert.equal((await company("/tentmaiker")).status, 404, "the landing page has one address");
     });
 
     /* -------------------------------------------------- the weekend's code */

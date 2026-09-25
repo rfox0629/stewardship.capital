@@ -1,0 +1,156 @@
+/*
+ * Tent MAiKER
+ *
+ * One screen. Ink, parchment, one bronze accent for the AI in the name, and
+ * the screen's light, which appears in the picture and nowhere else. Scoped
+ * under .tm so nothing here can reach Stewardship.Capital or Spark.
+ */
+
+.tm {
+  --tm-ink: #0b0d10;
+  --tm-parchment: #ece3d2;
+  --tm-dim: #9d978c;
+  --tm-bronze: #c9a266;
+  --tm-font: var(--font-tm), "Helvetica Neue", Arial, sans-serif;
+
+  background: var(--tm-ink);
+  color: var(--tm-parchment);
+  font-family: var(--tm-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html:has(.tm),
+html:has(.tm) body {
+  background: #0b0d10;
+}
+
+.tm :where(h1, p, figure) {
+  margin: 0;
+}
+
+.tm ::selection {
+  background: var(--tm-bronze);
+  color: var(--tm-ink);
+}
+
+.tm-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tm-page {
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: clamp(22px, 3.2vw, 40px) clamp(22px, 4vw, 56px);
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------- the name */
+
+.tm-mark {
+  font-size: clamp(1rem, 1.1vw, 1.125rem);
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  line-height: 1;
+}
+
+.tm-ai {
+  color: var(--tm-bronze);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------- the hero */
+
+.tm-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: clamp(16px, 3vw, 48px);
+}
+
+.tm-line {
+  font-size: clamp(3rem, 6.1vw, 6.5rem);
+  font-weight: 600;
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+
+.tm-line span {
+  display: block;
+}
+
+.tm-line .tm-nowrap {
+  display: inline;
+  white-space: nowrap;
+}
+
+.tm-sentence {
+  max-width: 25rem;
+  margin-top: clamp(20px, 2.4vw, 32px);
+  color: var(--tm-dim);
+  font-size: clamp(1rem, 1.25vw, 1.125rem);
+  font-weight: 300;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.tm-ref {
+  margin-top: clamp(24px, 3vw, 40px);
+  color: var(--tm-bronze);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.tm-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100svh - 120px);
+  object-fit: contain;
+}
+
+/* ------------------------------------------------------------- the phone */
+
+/* The picture leads, as large as the width allows, with the ropes running
+   off the edges; the words follow underneath. */
+@media (max-width: 760px) {
+  .tm-hero {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 0;
+  }
+
+  .tm-art {
+    order: -1;
+    margin: 12px calc(-1 * clamp(22px, 4vw, 56px)) 0;
+    overflow: hidden;
+  }
+
+  .tm-art img {
+    width: 140%;
+    max-width: none;
+    max-height: none;
+    margin-left: -20%;
+  }
+
+  .tm-words {
+    margin-top: -4px;
+    padding-bottom: 12px;
+  }
+
+  .tm-line {
+    font-size: clamp(2.6rem, 12.5vw, 3.6rem);
+  }
+
+  .tm-line span:not(.tm-nowrap) {
+    display: inline;
+  }
+}
