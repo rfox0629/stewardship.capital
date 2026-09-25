@@ -7,6 +7,6 @@ import { Sora } from "next/font/google";
 export const sora = Sora({
   subsets: ["latin"],
   display: "swap",
-  weight: ["300", "500", "600"],
+  weight: ["400", "600", "700"],
   variable: "--font-tm",
 });
