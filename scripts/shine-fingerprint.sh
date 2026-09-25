@@ -23,7 +23,13 @@ select md5(string_agg(part, '|' order by part)) || ':' || count(*) from (
     from public.sparks where engagement_id in (select id from eng)
   union all
   select 'sched:' || title || ':' || status || ':' || day_key || ':' || coalesce(starts_label, '~' || coalesce(daypart,''))
+         || ':' || coalesce(ends_label,'') || ':' || audience || ':' || display_mode
     from public.schedule_items where engagement_id in (select id from eng)
+  union all
+  /* The operational detail too: a lead, a team, a note or a setup list is
+     exactly the kind of thing a stray write would change quietly. */
+  select 'ops:' || md5(o.detail::text) from public.schedule_item_ops o
+   where o.engagement_id in (select id from eng)
   union all
   select 'budget:' || label || ':' || planned_cents || ':' || committed_cents || ':' || actual_cents || ':' || coalesce(status,'')
     from public.budget_lines where engagement_id in (select id from eng)
