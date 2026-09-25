@@ -1904,38 +1904,34 @@ button.gd-row-hit:active {
 
 .gd-verse {
   max-width: 34rem;
-  margin: 14px 0 0;
-  padding: 0;
-  border-left: 2px solid rgba(255, 253, 249, 0.45);
-  padding-left: 12px;
+  margin: 0 auto 18px;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--gd-forest);
+  text-align: left;
 }
 
 .gd .gd-verse p {
   font-family: var(--ev-body), system-ui, sans-serif;
   font-size: 0.95rem;
   font-style: italic;
-  line-height: 1.5;
-  color: rgba(255, 253, 249, 0.92);
+  line-height: 1.55;
+  color: var(--gd-ink);
 }
 
 .gd .gd-verse cite {
   display: block;
-  margin-top: 4px;
+  margin-top: 6px;
   font-family: var(--ev-sub), system-ui, sans-serif;
   font-size: 0.72rem;
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 253, 249, 0.75);
+  color: var(--gd-forest);
 }
 
 @media (max-width: 520px) {
-  .gd-verse {
-    margin-top: 10px;
-  }
-
   .gd .gd-verse p {
-    font-size: 0.88rem;
+    font-size: 0.9rem;
   }
 }

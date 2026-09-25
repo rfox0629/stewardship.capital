@@ -192,7 +192,19 @@ export function GuideApp({
                   <AgendaRow
                     key={moment.id}
                     moment={moment}
-                    onOpen={(from) => open({ kind: "moment", id: moment.id }, from)}
+                    onOpen={(from) => {
+                      /* A row that offers nothing but another tab takes you
+                         to it. A sheet whose only content is one link is a
+                         step, not an answer. */
+                      const opens = moment.guide?.opens ?? [];
+                      const nothingElse =
+                        !moment.guide?.menu?.length && !moment.guide?.summary && !moment.guide?.tbc;
+                      if (nothingElse && opens.length === 1 && (opens[0] === "activities" || opens[0] === "coffee")) {
+                        setTab(opens[0] as Tab);
+                        return;
+                      }
+                      open({ kind: "moment", id: moment.id }, from);
+                    }}
                   />
                 ))}
               </ol>
