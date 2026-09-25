@@ -744,7 +744,8 @@ test("Spark access model, end to end against production schema", async (t) => {
         .eq("organization_id", (await admin.from("organizations").select("id")
           .eq("slug", "shine").single()).data!.id)
         .eq("series_slug", "founders-weekend").eq("edition_label", "2026").single();
-      const menu = JSON.stringify((engagement!.reference as Record<string, any>).guide.coffee);
+      const reference = engagement!.reference as { guide?: { coffee?: unknown } };
+      const menu = JSON.stringify(reference.guide?.coffee ?? []);
 
       assert.equal(JSON.parse(menu).length, 3, "three drinks, no more");
       for (const absent of [/\biced\b/i, /available cold/i, /\$[0-9]/,
