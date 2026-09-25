@@ -16,7 +16,8 @@
     "test:rls:prod": "./scripts/verify-rls-production.sh",
     "test:auth": "./scripts/verify-auth-production.sh",
     "audit:auth": "node --env-file-if-exists=.env.local scripts/audit-auth-config.ts",
-    "auth:configure": "node --env-file-if-exists=.env.local scripts/configure-auth.mjs"
+    "auth:configure": "node --env-file-if-exists=.env.local scripts/configure-auth.mjs",
+    "test:throttle": "./scripts/verify-throttle.sh"
   },
   "dependencies": {
     "@fontsource/aileron": "^5.3.0",

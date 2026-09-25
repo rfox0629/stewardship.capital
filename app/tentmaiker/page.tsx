@@ -3,6 +3,7 @@ import { getImageProps } from "next/image";
 
 import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 
+import { StartConversation } from "./inquiry";
 import { StarField } from "./star-field";
 
 const NAME = "TentMAiKER";
@@ -97,6 +98,10 @@ export default function TentMaikerPage() {
           <Tent />
         </figure>
       </div>
+
+      <footer className="tm-foot">
+        <StartConversation />
+      </footer>
     </main>
   );
 }
