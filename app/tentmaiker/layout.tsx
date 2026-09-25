@@ -2,7 +2,7 @@ import { sora } from "./fonts";
 import "./tentmaiker.css";
 
 /**
- * Tent MAiKER's own page, served at tentmaiker.com/.
+ * TentMAiKER's own page, served at tentmaiker.com/.
  *
  * Nobody links to this path. The proxy rewrites the product domain's root
  * here by host (lib/spark/hosts.ts), so Stewardship.Capital's `/` never has

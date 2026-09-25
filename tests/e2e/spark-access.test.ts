@@ -749,11 +749,11 @@ test("Spark access model, end to end against production schema", async (t) => {
       const product = onHost("tentmaiker.com");
       const company = onHost("stewardship.capital");
 
-      /* The product's own domain: its root is Tent MAiKER's page, its front
+      /* The product's own domain: its root is TentMAiKER's page, its front
          door is /spark, and the company's homepage is nowhere on it. */
       const landing = await product("/");
       assert.equal(landing.status, 200);
-      assert.match(landing.body, /<title>Tent MAiKER<\/title>/, "the company's landing page");
+      assert.match(landing.body, /<title>TENTMAiKER \| In the trade/, "the company's landing page");
       assert.doesNotMatch(landing.body, /Steward what you|Time\. Talent\. Treasure/,
         "the company's homepage is not served here");
       const front = await product("/spark");

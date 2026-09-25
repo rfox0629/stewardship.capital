@@ -75,7 +75,7 @@ export async function proxy(request: NextRequest) {
   const onProduct = isProductHost(host);
 
   /* On the product's domain the company's surfaces send people to the
-     product's front door, /spark. The root is Tent MAiKER's own page. */
+     product's front door, /spark. The root is TentMAiKER's own page. */
   if (onProduct && isSiteOnlyPath(asked)) {
     return NextResponse.redirect(new URL(SPARK_ENTRY, request.url));
   }

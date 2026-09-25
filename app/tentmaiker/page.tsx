@@ -5,22 +5,27 @@ import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 
 import { StarField } from "./star-field";
 
-const NAME = "Tent MAiKER";
+const NAME = "TentMAiKER";
+/* The name as the wordmark sets it, for places that show it as text. */
+const MARK = "TENTMAiKER";
+/* What a shared link and the browser tab say: the name, then the trade Paul
+   shared with Aquila and Priscilla, and where it is written. */
+const TITLE = `${MARK} | In the trade, working together. Acts 18:3`;
 const LINE = "Making Tents. Funding Mission.";
 const ALT =
   "An old canvas tent at night, its entrance flaps tied open to the front poles and its guy ropes staked to the ground. Inside, a person sits on a stool at a low table, typing on a laptop whose light falls on them and on the canvas.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(PRODUCT_ORIGIN),
-  title: { absolute: NAME },
-  description: `${LINE} Tent MAiKER brings people together to build useful technology, and the work helps provide for ministry.`,
+  title: { absolute: TITLE },
+  description: `${LINE} TentMAiKER brings people together to build useful technology, and the work helps provide for ministry.`,
   alternates: { canonical: "/" },
   icons: { icon: "/tentmaiker/icon.svg" },
   openGraph: {
     type: "website",
     url: "/",
-    siteName: NAME,
-    title: `${NAME}. ${LINE}`,
+    siteName: MARK,
+    title: TITLE,
     description: LINE,
     images: [{ url: "/tentmaiker/og.png", width: 1200, height: 630, alt: ALT }],
   },
