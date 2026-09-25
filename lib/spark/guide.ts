@@ -78,6 +78,8 @@ export type Drink = {
   art: "shine" | "honeycomb" | "northwoods" | string;
   ingredients: string[];
   feel: string;
+  /** The one line on the card. The full build is the ingredients. */
+  short?: string;
 };
 
 export type Guide = {
@@ -363,7 +365,13 @@ export const readDrinks = (raw: unknown): Drink[] =>
     const source = item as Record<string, unknown>;
     const name = text(source.name);
     if (!name) return [];
-    return [{ name, art: text(source.art) ?? "", ingredients: list(source.ingredients), feel: text(source.feel) ?? "" }];
+    return [{
+      name,
+      art: text(source.art) ?? "",
+      ingredients: list(source.ingredients),
+      feel: text(source.feel) ?? "",
+      short: text(source.short),
+    }];
   });
 
 /* ------------------------------------------------- one person's weekend */

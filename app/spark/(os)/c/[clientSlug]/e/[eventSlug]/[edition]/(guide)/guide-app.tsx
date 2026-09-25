@@ -226,7 +226,9 @@ export function GuideApp({
         {shownTab === "coffee" ? (
           <section className="gd-shell gd-page" aria-label="Coffee">
             <h2 className="gd-pagehead">The coffee bar</h2>
-            <p className="gd-lede">Three drinks made for this weekend. Tap one for a closer look.</p>
+            <p className="gd-lede">
+              Three signature hot lattes made for this weekend. Tap one for a closer look.
+            </p>
             <div className="gd-drinks">
               {coffee.map((drink) => (
                 <button
@@ -238,7 +240,10 @@ export function GuideApp({
                   <CoffeeArt art={drink.art} label={drink.name} />
                   <span className="gd-drink-name">{drink.name}</span>
                   <span className="gd-drink-feel">{drink.feel}</span>
-                  <span className="gd-drink-with">{drink.ingredients.join(" · ")}</span>
+                  {/* What it is, in a line. The full build is in the sheet. */}
+                  <span className="gd-drink-with">
+                    {drink.short ?? drink.ingredients.join(" · ")}
+                  </span>
                 </button>
               ))}
             </div>
@@ -466,7 +471,7 @@ function DrinkDetail({ drink }: { drink: Drink | null }) {
       <h2 className="gd-detail-title">{drink.name}</h2>
       <p className="gd-detail-summary">{drink.feel}</p>
       <div className="gd-menu">
-        <h3>What&rsquo;s in it</h3>
+        <h3>The build</h3>
         <ul>
           {drink.ingredients.map((item) => <li key={item}>{item}</li>)}
         </ul>
