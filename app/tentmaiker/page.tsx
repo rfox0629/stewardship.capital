@@ -3,6 +3,8 @@ import { getImageProps } from "next/image";
 
 import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 
+import { StarField } from "./star-field";
+
 const NAME = "Tent MAiKER";
 const LINE = "Making Tents. Funding Mission.";
 const ALT =
@@ -64,6 +66,8 @@ function Tent() {
 export default function TentMaikerPage() {
   return (
     <main className="tm-page">
+      <StarField />
+
       <p className="tm-mark">
         <span className="tm-sr">{NAME}</span>
         <span aria-hidden="true">
