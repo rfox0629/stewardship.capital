@@ -16,7 +16,9 @@ import {
 import {
   COMPANY_ORIGIN,
   cleanPath,
+  isCompanyHost,
   isCompanyOwnedPath,
+  isLandingPath,
   isProductHost,
   isSiteOnlyPath,
   productPath,
@@ -69,12 +71,13 @@ export async function proxy(request: NextRequest) {
      ever running, which would make a change of address into a way around the
      membership check. Everything below therefore reasons about `pathname`,
      the path inside the application, and `pass()` is the only way out. */
-  const onProduct = isProductHost(
-    request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
-  );
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const onProduct = isProductHost(host);
 
+  /* On the product's domain the company's surfaces send people to the
+     product's front door, /spark. The root is Tent MAiKER's own page. */
   if (onProduct && isSiteOnlyPath(asked)) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL(SPARK_ENTRY, request.url));
   }
 
   /* The platform console stayed with the company, so asking the product for
@@ -85,15 +88,16 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  /* The product's front door is the root of its own domain. The path that
-     implements it still answers, so nothing breaks, but the address bar ends
-     up on the address people are given. Only the front door is moved this
-     way: deeper paths are left alone, because a redirect in the middle of a
-     navigation is a good way to break one. */
-  if (onProduct && (asked === SPARK_ENTRY || asked === `${SPARK_ENTRY}/`)) {
-    const home = request.nextUrl.clone();
-    home.pathname = "/";
-    return NextResponse.redirect(home);
+  /* The landing page has one public address, tentmaiker.com/. Its internal
+     path is sent there on the product's domain and is not served on the
+     company's; previews and localhost open it directly, for review. */
+  if (isLandingPath(asked)) {
+    if (onProduct) return NextResponse.redirect(new URL("/", request.url));
+    if (isCompanyHost(host)) {
+      const missing = request.nextUrl.clone();
+      missing.pathname = "/_not-found-on-this-host";
+      return NextResponse.rewrite(missing);
+    }
   }
 
   const pathname = (onProduct ? productPath(asked) : null) ?? asked;

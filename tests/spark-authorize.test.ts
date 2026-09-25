@@ -3,8 +3,11 @@ import test from "node:test";
 
 import { authorizeSparkPath, landingFor } from "../lib/spark/authorize.ts";
 import {
+  LANDING_PATH,
   cleanPath,
+  isCompanyHost,
   isCompanyOwnedPath,
+  isLandingPath,
   isProductHost,
   isSiteOnlyPath,
   productPath,
@@ -563,7 +566,8 @@ test("the product's domain is recognised, and nothing else is", () => {
 });
 
 test("clean addresses on the product domain name the paths that serve them", () => {
-  assert.equal(productPath("/"), SPARK_BASE);
+  /* The root is Tent MAiKER's own page; the product's door is /spark. */
+  assert.equal(productPath("/"), LANDING_PATH);
   assert.equal(productPath("/c/shine"), `${SPARK_BASE}/c/shine`);
   assert.equal(productPath("/c/shine/e/founders-weekend/2026/schedule"),
     `${SPARK_BASE}/c/shine/e/founders-weekend/2026/schedule`);
@@ -593,7 +597,7 @@ test("the company's own surfaces are not served on the product domain", () => {
 });
 
 test("a clean address and its application path convert both ways", () => {
-  for (const clean of ["/", "/c/shine/e/founders-weekend/2026", "/i/abc", "/auth/callback", "/signout"]) {
+  for (const clean of ["/c/shine/e/founders-weekend/2026", "/i/abc", "/auth/callback", "/signout"]) {
     const internal = productPath(clean);
     assert.ok(internal, clean);
     assert.equal(cleanPath(internal!), clean);
@@ -601,6 +605,20 @@ test("a clean address and its application path convert both ways", () => {
   /* Paths with no clean form are returned as they are. */
   assert.equal(cleanPath("/shine/2026"), "/shine/2026");
   assert.equal(cleanPath("/platform"), "/platform");
+  /* The front door keeps its own address, so a refusal lands on sign in,
+     never on the landing page. */
+  assert.equal(cleanPath(SPARK_BASE), SPARK_BASE);
+});
+
+test("the landing page's internal path is recognised, and the company's host is known", () => {
+  for (const path of [LANDING_PATH, `${LANDING_PATH}/x`]) assert.equal(isLandingPath(path), true, path);
+  for (const path of ["/", "/tentmakers", "/spark", "/c/tentmaiker"]) assert.equal(isLandingPath(path), false, path);
+  for (const host of ["stewardship.capital", "www.stewardship.capital", "Stewardship.Capital:443"]) {
+    assert.equal(isCompanyHost(host), true, host);
+  }
+  for (const host of ["tentmaiker.com", "localhost:3000", "x.vercel.app", null, ""]) {
+    assert.equal(isCompanyHost(host), false, String(host));
+  }
 });
 
 test("the platform console stays the company's", () => {

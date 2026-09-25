@@ -57,7 +57,7 @@ const nextConfig = {
          Not listed, deliberately: /spark/signout, which has to clear the
          session on the domain it was made on, and /platform, which is the
          company's own console rather than a public product address. */
-      { source: "/spark", destination: "https://tentmaiker.com/", permanent: false },
+      { source: "/spark", destination: "https://tentmaiker.com/spark", permanent: false },
       { source: "/spark/c/:path*", destination: "https://tentmaiker.com/c/:path*", permanent: false },
       { source: "/spark/i/:token", destination: "https://tentmaiker.com/i/:token", permanent: false },
       { source: "/spark/auth/:path*", destination: "https://tentmaiker.com/auth/:path*", permanent: false },
