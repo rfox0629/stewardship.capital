@@ -14,7 +14,7 @@ type Star = {
   near: number[];
 };
 
-const RADIUS = 240;
+const RADIUS = 270;
 const IDLE_MS = 2000;
 /* Cool light, the same as the laptop's and the AI in the name. */
 const LIGHT = "156, 202, 255";
@@ -86,8 +86,8 @@ export function StarField() {
           });
         }
       }
-      /* Each star knows its three nearest neighbours within reach. */
-      const reach = cell * 2.1;
+      /* Each star knows its four nearest neighbours within reach. */
+      const reach = cell * 2.3;
       for (let i = 0; i < stars.length; i += 1) {
         const s = stars[i];
         const found: Array<[number, number]> = [];
@@ -99,7 +99,7 @@ export function StarField() {
           if (d < reach * reach) found.push([d, j]);
         }
         found.sort((p, q) => p[0] - q[0]);
-        s.near = found.slice(0, 3).map(([, j]) => j).filter((j) => j > i);
+        s.near = found.slice(0, 4).map(([, j]) => j).filter((j) => j > i);
       }
 
       if (!seeded) {
@@ -130,8 +130,8 @@ export function StarField() {
         for (const j of s.near) {
           const t = stars[j];
           const e = Math.min(s.a, t.a);
-          if (e < 0.12) continue;
-          ctx.strokeStyle = `rgba(${LIGHT}, ${((e - 0.12) * 0.75).toFixed(3)})`;
+          if (e < 0.08) continue;
+          ctx.strokeStyle = `rgba(${LIGHT}, ${((e - 0.08) * 0.8).toFixed(3)})`;
           ctx.beginPath();
           ctx.moveTo(s.x, s.y);
           ctx.lineTo(t.x, t.y);
