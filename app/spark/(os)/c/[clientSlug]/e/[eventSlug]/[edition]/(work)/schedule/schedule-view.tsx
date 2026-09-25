@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
 import { parseTimeLabel } from "@lib/spark/days";
-import { pendingBlocks, timedOn, type Leaving } from "@lib/spark/weekend";
+import { ideasStillOpen, pendingBlocks, timedOn, type Leaving } from "@lib/spark/weekend";
 import { Select } from "@spark/_components/select";
 import { AddIdea } from "../plan/add-idea";
 import { IdeaPanel } from "../plan/idea-panel";
@@ -156,6 +156,7 @@ const DURATIONS = [15, 30, 45, 60, 90, 120];
    idea creates a moment; carrying a moment moves that exact row. They use
    different machinery on purpose, and the one that creates says so in its own
    payload type, so nothing can arrive at the create path by accident. */
+const IDEA_ROWS = 3;
 const IDEA_DRAG = "application/x-spark-idea";
 /* A moment waiting for a time. Dropping it on an hour gives it one; it is
    already real, so nothing is created and nothing is asked. */
@@ -1045,6 +1046,8 @@ export function ScheduleView({
   /* The bank of what is still only being considered, and the idea opened out
      of it. Both live here so a planning meeting never leaves this screen. */
   const [openIdea, setOpenIdea] = useState<string | null>(null);
+  /* Three rows of the bank, and the rest on request. */
+  const [allIdeas, setAllIdeas] = useState(false);
   const [addingIdea, setAddingIdea] = useState(false);
   const [, setCaptured] = useState<string[]>([]);
   const [placed, setPlaced] = useState<
@@ -1059,7 +1062,7 @@ export function ScheduleView({
   >([]);
   /* Ideas taken out of the bank the instant they were dropped, held out only
      until the server answers. */
-  const [, setLeaving] = useState<Leaving[]>([]);
+  const [leaving, setLeaving] = useState<Leaving[]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
   const router = useRouter();
@@ -1364,6 +1367,8 @@ export function ScheduleView({
      idea itself, one click away. */
   /* A captured idea is drawn the instant it is typed and stops being drawn
      the instant the real one arrives under the same name. */
+  const unplacedIdeas = ideasStillOpen(ideas, leaving);
+  const bankIsLong = unplacedIdeas.length > IDEA_ROWS;
   const openedIdea = hydrated ? ideas.find((idea) => idea.id === openIdea) ?? null : null;
 
   /* ------------------------------------------- an idea dropped onto an hour */
@@ -1546,6 +1551,56 @@ export function ScheduleView({
         </div>
       </div>
 
+
+      {/* What is still only being considered, above what is decided but
+          untimed, above the clock. One flow, top to bottom, and none of it a
+          separate screen.
+
+          This strip is the only way an idea reaches the calendar: dragging a
+          chip onto an hour creates the moment, and clicking one opens the
+          idea itself. It went missing when this screen was rebuilt around the
+          guide, which left the drop handler below with nothing to catch. */}
+      {planner && unplacedIdeas.length > 0 ? (
+        <div className={`ev-bank ev-bank-ideas ${allIdeas ? "ev-bank-open" : ""}`}>
+          <p className="ev-bank-label">
+            Ideas <span>{unplacedIdeas.length}</span>
+          </p>
+          <div className="ev-bank-cards" style={{ "--ev-bank-rows": IDEA_ROWS } as React.CSSProperties}>
+            {unplacedIdeas.map((idea) => (
+              <button
+                key={idea.id}
+                type="button"
+                className={`ev-bank-chip ev-bank-idea ${
+                  carrying?.id === idea.id ? "ev-bank-carried" : ""}`}
+                draggable={hydrated}
+                title="Drag onto an hour, or click to open it"
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(IDEA_DRAG, idea.id);
+                  event.dataTransfer.setData("text/plain", idea.title);
+                  event.dataTransfer.effectAllowed = "copy";
+                  setCarrying({
+                    id: idea.id, title: idea.title, status: "captured",
+                    day: idea.day ?? "", daypart: idea.daypart ?? "anytime", scheduled: 0,
+                  });
+                }}
+                onDragEnd={() => { setCarrying(null); setLanding(null); }}
+                onClick={() => setOpenIdea(idea.id)}
+              >
+                <span>{idea.title}</span>
+                {idea.question ? <i title="Needs an answer">?</i> : null}
+                {idea.day && idea.day !== "all" ? <i>{idea.day}</i> : null}
+              </button>
+            ))}
+          </div>
+          {/* Three rows, and the rest by name when there are more. */}
+          {bankIsLong ? (
+            <button type="button" className="ev-bank-more" aria-expanded={allIdeas}
+              onClick={() => setAllIdeas((open) => !open)}>
+              {allIdeas ? "Show fewer" : `Show all ${unplacedIdeas.length} ideas`}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {shownView === "weekend" ? (
         <div className="ev-grid-wrap">
           <div className="ev-grid-head" style={{ marginLeft: 52 }}>
