@@ -640,6 +640,52 @@ test("Spark access model, end to end against production schema", async (t) => {
       }
     });
 
+    /* ------------------------------------------------------- the two domains */
+
+    await t.test("the product's domain serves the product, and the company's is untouched", async () => {
+      /* The header a proxy sets with the address somebody actually typed. */
+      const onHost = (host: string) => (path: string) =>
+        visit(newJar(), path, { headers: { "x-forwarded-host": host } });
+      const product = onHost("tentmaiker.com");
+      const company = onHost("stewardship.capital");
+
+      /* The product's own domain: its front door is the root, and the
+         company's homepage is nowhere on it. */
+      const front = await product("/");
+      assert.equal(front.status, 200);
+      assert.match(front.body, /Spark/, "the product's entry");
+      assert.doesNotMatch(front.body, /Steward what you|Time\. Talent\. Treasure/,
+        "the company's homepage is not served here");
+
+      /* Clean addresses reach the workspaces, and are still guarded: an
+         anonymous visitor is turned away to the product's own front door,
+         never to a path with /spark in it. */
+      const workspace = await product("/c/shine/e/founders-weekend/2026/schedule");
+      assert.equal(workspace.status, 307);
+      assert.equal(workspace.location, "/", "refused to the product's root");
+      assert.doesNotMatch(workspace.body, /Morning readiness/);
+
+      /* The guide keeps the address that is already printed on things. */
+      assert.equal((await product("/shine/2026")).status, 200);
+
+      /* The company's own surfaces are not served on the product's domain. */
+      for (const path of ["/dashboard", "/login", "/signup", "/assessment", "/internal/operating-system"]) {
+        const hit = await product(path);
+        assert.equal(hit.status, 307, path);
+        assert.equal(hit.location, "/", path);
+      }
+
+      /* And the company's domain behaves exactly as it did: its homepage is
+         its own, /spark still answers, and the clean addresses are not
+         published there. */
+      const home = await company("/");
+      assert.equal(home.status, 200);
+      assert.doesNotMatch(home.body, /Capture freely/, "the company homepage, not the product");
+      assert.equal((await company("/spark")).status, 200);
+      assert.equal((await company("/shine/2026")).status, 200);
+      assert.equal((await company("/c/shine")).status, 404, "clean addresses belong to the product");
+    });
+
     /* -------------------------------------------------- the weekend's code */
 
     await t.test("the weekend's code opens the team guide, and only that", async () => {

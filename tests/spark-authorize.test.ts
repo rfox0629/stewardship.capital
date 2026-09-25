@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { authorizeSparkPath, landingFor } from "../lib/spark/authorize.ts";
+import { cleanPath, isProductHost, isSiteOnlyPath, productPath } from "../lib/spark/hosts.ts";
 import {
   canonicalGuidePath,
   lockedPreviewPath,
@@ -540,4 +541,58 @@ test("arrivals land on the printed address, never on the old one", () => {
   /* A refusal inside the workspace is sent to the short address too. */
   const refused = authorizeSparkPath(`${SHINE}/budget`, shineGuest);
   assert.deepEqual(refused, { allow: false, redirectTo: "/shine/2026" });
+});
+
+/* ------------------------------------------------------- the two domains */
+
+test("the product's domain is recognised, and nothing else is", () => {
+  for (const host of ["tentmaiker.com", "www.tentmaiker.com", "TentMaiker.com", "tentmaiker.com:443",
+                      "stewardship-capital-git-x.tentmaiker.com"]) {
+    assert.equal(isProductHost(host), true, host);
+  }
+  for (const host of ["stewardship.capital", "www.stewardship.capital", "localhost:3000",
+                      "tentmaiker.com.example.net", "nottentmaiker.com", null, ""]) {
+    assert.equal(isProductHost(host), false, String(host));
+  }
+});
+
+test("clean addresses on the product domain name the paths that serve them", () => {
+  assert.equal(productPath("/"), SPARK_BASE);
+  assert.equal(productPath("/c/shine"), `${SPARK_BASE}/c/shine`);
+  assert.equal(productPath("/c/shine/e/founders-weekend/2026/schedule"),
+    `${SPARK_BASE}/c/shine/e/founders-weekend/2026/schedule`);
+  assert.equal(productPath("/i/token123"), `${SPARK_BASE}/i/token123`);
+  assert.equal(productPath("/auth/callback"), `${SPARK_BASE}/auth/callback`);
+  assert.equal(productPath("/signout"), `${SPARK_BASE}/signout`);
+
+  /* Addresses that are already application paths are left exactly alone, so
+     the guide, the platform and /spark itself keep working unchanged. */
+  for (const path of ["/shine/2026", "/shine/2026/team", "/platform", SPARK_BASE,
+                      `${SPARK_BASE}/c/shine`, "/clients/shine/logo.png"]) {
+    assert.equal(productPath(path), null, path);
+  }
+
+  /* A near miss is not a match: /clients is not /c. */
+  assert.equal(productPath("/clients"), null);
+  assert.equal(productPath("/index"), null);
+});
+
+test("the company's own surfaces are not served on the product domain", () => {
+  for (const path of ["/dashboard", "/dashboard/grow", "/login", "/signup", "/assessment", "/internal/operating-system"]) {
+    assert.equal(isSiteOnlyPath(path), true, path);
+  }
+  for (const path of ["/", "/spark", "/shine/2026", "/platform", "/c/shine"]) {
+    assert.equal(isSiteOnlyPath(path), false, path);
+  }
+});
+
+test("a clean address and its application path convert both ways", () => {
+  for (const clean of ["/", "/c/shine/e/founders-weekend/2026", "/i/abc", "/auth/callback", "/signout"]) {
+    const internal = productPath(clean);
+    assert.ok(internal, clean);
+    assert.equal(cleanPath(internal!), clean);
+  }
+  /* Paths with no clean form are returned as they are. */
+  assert.equal(cleanPath("/shine/2026"), "/shine/2026");
+  assert.equal(cleanPath("/platform"), "/platform");
 });

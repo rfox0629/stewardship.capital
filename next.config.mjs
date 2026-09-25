@@ -9,7 +9,13 @@ const nextConfig = {
     root: projectRoot,
   },
   async redirects() {
-    return [
+    /* These are Stewardship.Capital's own retired addresses. On the product's
+       own domain the same paths mean something else, or nothing at all, so
+       every rule below is skipped there and applies everywhere else, which
+       includes localhost and the preview deployments. */
+    const notTheProduct = [{ type: "host", value: "(www\\.)?tentmaiker\\.com" }];
+    const onCompany = (rules) => rules.map((rule) => ({ ...rule, missing: notTheProduct }));
+    return onCompany([
       // Spark has a permanent home. Everything that used to address it points
       // there, so links already in inboxes keep working.
       { source: "/events-os", destination: "/spark", permanent: false },
@@ -33,7 +39,7 @@ const nextConfig = {
       { source: "/work/:slug", destination: "/spark", permanent: false },
       { source: "/about", destination: "/", permanent: false },
       { source: "/connect", destination: "/spark", permanent: false },
-    ];
+    ]);
   },
 };
 

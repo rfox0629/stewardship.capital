@@ -2,6 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 
+import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
+
 import {
   createEngagement,
   createInvitation,
@@ -297,7 +299,7 @@ export function InvitationForm({ engagementId }: { engagementId: string }) {
             The invitation for {issued.email}, valid until {issued.expires}. This
             link is shown once and only its hash is stored: copy it now.
           </span>
-          <code>{`https://stewardship.capital${issued.link}`}</code>
+          <code>{`${PRODUCT_ORIGIN}${issued.link}`}</code>
           <button
             type="button"
             className="pf-text-action"

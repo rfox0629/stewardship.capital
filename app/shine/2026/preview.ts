@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
+
 /**
  * What a shared link says about this weekend.
  *
@@ -15,10 +17,14 @@ import type { Metadata } from "next";
  * about who is running what.
  */
 
-/** Link previews need whole URLs; a path means nothing inside a text message. */
-export const SITE_ORIGIN = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://stewardship.capital"
-).replace(/\/$/, "");
+/**
+ * Link previews need whole URLs; a path means nothing inside a text message.
+ *
+ * The product's own domain, because that is where the guide lives now. The
+ * company's domain still serves it, and will keep doing so until the links
+ * already in people's messages have been given time to move.
+ */
+export const SITE_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL ?? PRODUCT_ORIGIN).replace(/\/$/, "");
 
 /**
  * The card a shared link shows: the property at dusk with the SHINE mark
