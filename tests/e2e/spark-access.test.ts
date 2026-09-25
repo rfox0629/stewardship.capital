@@ -668,6 +668,78 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.doesNotMatch(asClient.body, /ev-bank-ideas/, "and only a planner is offered it");
     });
 
+    /* ------------------------------------------------ three surfaces, apart */
+
+    await t.test("the three SHINE surfaces stay what they are", async () => {
+      /* One weekend, three audiences, and the difference between them is the
+         whole point: guests get a guide with no login, the team gets an
+         operational reading behind the weekend's code, and the planner gets
+         the working calendar behind an account. A control that belongs to one
+         of them must not appear on another, so each is asked directly. */
+      const PLANNER_ONLY = [/\+<\/span> Idea/, /ev-bank-ideas/, /ev-bank-chip/, /ev-bar-add/];
+
+      /* 1 and 2. The guest guide: public, and nothing of the planning in it. */
+      const guest = await visit(newJar(), "/shine/2026");
+      assert.equal(guest.status, 200, "a guest needs no account and no code");
+      assert.match(guest.body, /Founders Weekend/);
+      for (const control of PLANNER_ONLY) {
+        assert.doesNotMatch(guest.body, control, `guest guide: ${control}`);
+      }
+      for (const word of ["Budget", "Run of show", "Volunteer duties", "Unschedule"]) {
+        assert.doesNotMatch(guest.body, new RegExp(word), `guest guide: ${word}`);
+      }
+
+      /* 3 and 4. The team guide: the weekend's own door, and nothing of the
+         planner behind it either. The code itself is never written here; the
+         door is asked for and refused, which is what a stranger sees. */
+      const team = await visit(newJar(), "/shine/2026/team");
+      assert.equal(team.status, 200, "the door renders rather than redirecting");
+      assert.match(team.body, /Welcome, SHINE Team/, "and it is the weekend's own door");
+      assert.match(team.body, /Enter the team code/);
+      assert.doesNotMatch(team.body, /Spark/i, "not a product nobody was told about");
+      for (const control of PLANNER_ONLY) {
+        assert.doesNotMatch(team.body, control, `team door: ${control}`);
+      }
+      /* 5. The planner, and only the planner, is offered capture. */
+      const planner = await adopt(w.staff.email);
+      const calendar = await visit(planner, `${A_HOME}/schedule`);
+      assert.equal(calendar.status, 200);
+      assert.match(calendar.body, /\+<\/span> Idea/, "capture leads the toolbar");
+      assert.match(calendar.body, /\+<\/span> Moment/, "and a moment is still one press away");
+      assert.match(calendar.body, /ev-bank-ideas/, "the bank is there to receive it");
+
+      /* A client is in the same workspace and is offered neither. */
+      const client = await adopt(w.client.email);
+      const asClient = await visit(client, `${A_HOME}/schedule`);
+      assert.equal(asClient.status, 200);
+      assert.doesNotMatch(asClient.body, /\+<\/span> Idea/, "a client captures nothing");
+      assert.doesNotMatch(asClient.body, /ev-bank-ideas/);
+    });
+
+    await t.test("an idea captured in the planner lands in the bank, unscheduled", async () => {
+      /* The existing capture, through the existing action: a title, no day,
+         no hour. What it must not do is schedule anything. */
+      const planner = await adopt(w.staff.email);
+      const title = `${CLEAN} captured ${RUN}`;
+      const client = await clientFor(w.staff.email);
+      const { error } = await client.from("sparks").insert({
+        engagement_id: w.alphaId, title, status: "captured",
+      });
+      assert.equal(error, null, "a planner may capture");
+
+      try {
+        const calendar = await visit(planner, `${A_HOME}/schedule`);
+        assert.match(calendar.body, new RegExp(title), "it is in the bank");
+
+        const { count } = await admin
+          .from("schedule_items").select("id", { count: "exact", head: true })
+          .eq("engagement_id", w.alphaId).eq("title", title);
+        assert.equal(count, 0, "and nothing was scheduled by capturing it");
+      } finally {
+        await admin.from("sparks").delete().eq("engagement_id", w.alphaId).eq("title", title);
+      }
+    });
+
     /* ------------------------------------------------------- the two domains */
 
     await t.test("the product's domain serves the product, and the company's is untouched", async () => {
@@ -781,6 +853,13 @@ test("Spark access model, end to end against production schema", async (t) => {
         assert.doesNotMatch(team.body, /Welcome, SHINE Team/, "past the door");
         assert.match(team.body, /Morning bathroom cleaning/, "a team only row");
         assert.match(team.body, /Wipe countertops/, "the operational detail");
+
+        /* And none of the planner's controls: the team executes the weekend,
+           it does not plan it. */
+        for (const control of [/\+<\/span> Idea/, /ev-bank-ideas/, /ev-bank-chip/, /ev-bar-add/,
+                               /Add to weekend/, /Delete idea/, /Set aside/]) {
+          assert.doesNotMatch(team.body, control, `team guide: ${control}`);
+        }
 
         /* Without the cookie, the same address has none of it. */
         const closed = await visit(newJar(), `${SHORT}/team`);

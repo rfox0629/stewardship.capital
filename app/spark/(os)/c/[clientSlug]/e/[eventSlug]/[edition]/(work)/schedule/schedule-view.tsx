@@ -1049,7 +1049,7 @@ export function ScheduleView({
   /* Three rows of the bank, and the rest on request. */
   const [allIdeas, setAllIdeas] = useState(false);
   const [addingIdea, setAddingIdea] = useState(false);
-  const [, setCaptured] = useState<string[]>([]);
+  const [captured, setCaptured] = useState<string[]>([]);
   const [placed, setPlaced] = useState<
     Array<{
       key: string; ideaId: string; title: string; day: string; minutes: number; length: number;
@@ -1367,6 +1367,8 @@ export function ScheduleView({
      idea itself, one click away. */
   /* A captured idea is drawn the instant it is typed and stops being drawn
      the instant the real one arrives under the same name. */
+  const landedTitles = new Set(ideas.map((idea) => idea.title));
+  const capturing = captured.filter((title) => !landedTitles.has(title));
   const unplacedIdeas = ideasStillOpen(ideas, leaving);
   const bankIsLong = unplacedIdeas.length > IDEA_ROWS;
   const openedIdea = hydrated ? ideas.find((idea) => idea.id === openIdea) ?? null : null;
@@ -1530,14 +1532,22 @@ export function ScheduleView({
           {failure ? <span className="ev-bar-failure" role="status">{failure}</span> : null}
           {/* Capture is the dominant action, so it says what it captures. A
               moment is still one item down, in the planner's own words. */}
-          {/* One way to add to the calendar: a moment. Ideas and the planning
-              resources have left this screen; the weekend is built here from
-              what is actually happening. */}
+          {/* Two things a planner adds here, and they are not the same act.
+              An idea is something we are considering, and goes to the bank
+              unplaced. A moment is something happening, and goes on the
+              clock. Capture leads, because in a planning meeting the thought
+              arrives long before the hour does. */}
           {planner ? (
-            <button type="button" className="ev-bar-add"
-              onClick={() => setAddDay(activeDay?.key ?? "thu")}>
-              <span aria-hidden="true">+</span> Moment
-            </button>
+            <>
+              <button type="button" className="ev-bar-add"
+                onClick={() => setAddingIdea(true)}>
+                <span aria-hidden="true">+</span> Idea
+              </button>
+              <button type="button" className="ev-bar-quiet ev-bar-add-moment"
+                onClick={() => setAddDay(activeDay?.key ?? "thu")}>
+                <span aria-hidden="true">+</span> Moment
+              </button>
+            </>
           ) : null}
           <button type="button" className="ev-bar-quiet"
             onClick={() => setView(shownView === "weekend" ? "day" : "weekend")}>
@@ -1560,12 +1570,17 @@ export function ScheduleView({
           chip onto an hour creates the moment, and clicking one opens the
           idea itself. It went missing when this screen was rebuilt around the
           guide, which left the drop handler below with nothing to catch. */}
-      {planner && unplacedIdeas.length > 0 ? (
+      {planner && (unplacedIdeas.length > 0 || capturing.length > 0) ? (
         <div className={`ev-bank ev-bank-ideas ${allIdeas ? "ev-bank-open" : ""}`}>
           <p className="ev-bank-label">
-            Ideas <span>{unplacedIdeas.length}</span>
+            Ideas <span>{unplacedIdeas.length + capturing.length}</span>
           </p>
           <div className="ev-bank-cards" style={{ "--ev-bank-rows": IDEA_ROWS } as React.CSSProperties}>
+            {capturing.map((title) => (
+              <span key={title} className="ev-bank-chip ev-bank-idea ev-bank-pending">
+                <span>{title}</span>
+              </span>
+            ))}
             {unplacedIdeas.map((idea) => (
               <button
                 key={idea.id}

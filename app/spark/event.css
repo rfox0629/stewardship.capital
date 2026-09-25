@@ -3329,3 +3329,9 @@
   .ev-bank-cards { width: 100%; }
   .ev-bank-idea { max-width: 100%; }
 }
+
+/* The second action on the toolbar: quieter than capture, and still plainly
+   a way to add something. */
+.ev-bar-add-moment {
+  font-weight: 700;
+}
