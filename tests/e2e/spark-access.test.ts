@@ -438,8 +438,10 @@ test("Spark access model, end to end against production schema", async (t) => {
       const jar = await adopt(w.staff.email);
       const home = await visit(jar, PLATFORM);
       assert.equal(home.status, 200);
-      /* Spark engagements open Spark, exactly where they always did. */
-      assert.match(home.body, new RegExp(`href="${A_HOME}"`));
+      /* A product engagement opens the product, which lives on its own
+         domain now, so the link is a whole URL. */
+      assert.match(home.body, new RegExp(`href="https://tentmaiker.com/c/${A_SLUG}/e/check/2026"`));
+      assert.doesNotMatch(home.body, new RegExp(`href="${A_HOME}"`), "not the implementation path");
       /* Engagements on no product open the Stewardship.Capital page. */
       assert.match(home.body, new RegExp(`href="${B_PAGE}"`));
       assert.doesNotMatch(home.body, new RegExp(`href="${B_HOME}"`));
@@ -454,10 +456,10 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.match(page.body, /Meetings and notes/);
       assert.match(page.body, /name="title"/);
 
-      /* A Spark engagement has its own home; the page sends it there. */
+      /* A product engagement has its own home, on the product's domain. */
       const sparkOne = await visit(jar, A_PAGE);
       assert.equal(sparkOne.status, 307);
-      assert.equal(sparkOne.location, A_HOME);
+      assert.equal(sparkOne.location, `/c/${A_SLUG}/e/check/2026`);
 
       /* Signed out is the door. A member of the very engagement is refused. */
       assert.equal((await visit(newJar(), B_PAGE)).location, PLATFORM);
@@ -674,6 +676,32 @@ test("Spark access model, end to end against production schema", async (t) => {
         assert.equal(hit.status, 307, path);
         assert.equal(hit.location, "/", path);
       }
+
+      /* Signed in on the product's domain, the page draws its own addresses.
+         The routes underneath are unchanged, so /spark keeps working, but
+         nothing a person clicks hands them the implementation path. */
+      const planner = newJar();
+      await signIn(planner, w.staff.email);
+      const inside = await visit(planner, `${A_HOME}/schedule`, {
+        headers: { "x-forwarded-host": "tentmaiker.com" },
+      });
+      assert.equal(inside.status, 200);
+      assert.match(inside.body, new RegExp(`href="/c/${A_SLUG}/e/check/2026/budget"`),
+        "the navigation is clean");
+      assert.doesNotMatch(inside.body, /href="\/spark\/c\//, "and never says /spark");
+      assert.doesNotMatch(inside.body, /action="\/spark\/signout"/, "including sign out");
+
+      /* The same page on the company's domain is unchanged. */
+      const onCompany = await visit(planner, `${A_HOME}/schedule`, {
+        headers: { "x-forwarded-host": "stewardship.capital" },
+      });
+      assert.equal(onCompany.status, 200);
+      assert.match(onCompany.body, new RegExp(`href="/spark/c/${A_SLUG}/e/check/2026/budget"`));
+
+      /* And the platform console is the company's on either domain. */
+      const console_ = await product("/platform");
+      assert.equal(console_.status, 307);
+      assert.match(console_.location ?? "", /^\/platform$/, "sent to the company's own");
 
       /* And the company's domain behaves exactly as it did: its homepage is
          its own, /spark still answers, and the clean addresses are not

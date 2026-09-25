@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { publicPath } from "@lib/spark/href";
 
 import { resolveEngagement } from "@lib/spark/engagement";
 import { ActionList, type Action, type Need } from "./list";
@@ -20,7 +21,9 @@ export default async function ActionsPage({ params }: PageProps) {
   if (!context) notFound();
 
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
-  if (context.role === "stakeholder") redirect(`${base}/schedule`);
+  /* The route stays as it is; the address people see follows the domain. */
+  const href = await publicPath(base);
+  if (context.role === "stakeholder") redirect(`${href}/schedule`);
 
   const planner = context.role === "planner" || context.staff;
   const engagementId = context.engagement.id;
@@ -44,7 +47,7 @@ export default async function ActionsPage({ params }: PageProps) {
     spark: { title: string } | { title: string }[] | null,
   ) => {
     const title = (Array.isArray(spark) ? spark[0] : spark)?.title;
-    return sparkId && title ? { label: title, href: `${base}/plan?open=${sparkId}` } : null;
+    return sparkId && title ? { label: title, href: `${href}/plan?open=${sparkId}` } : null;
   };
 
   const actions: Action[] = ((actionsQ.data ?? []) as Array<{

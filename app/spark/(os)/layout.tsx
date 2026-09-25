@@ -4,8 +4,8 @@ import "../spark.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Spark",
-    template: "%s | Spark",
+    absolute: "Tentmaiker",
+    template: "%s | Tentmaiker",
   },
   robots: { index: false, follow: false, nocache: true },
 };

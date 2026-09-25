@@ -10,6 +10,7 @@ import "@spark/workspace.css";
 import { SiteNav } from "@app/(www)/_components/site-nav";
 import { eventBody, eventDisplay, eventSub } from "@app/fonts";
 import { dateRangeLabel, resolveEngagement } from "@lib/spark/engagement";
+import { publicPath } from "@lib/spark/href";
 import { preferShortPath } from "@lib/spark/paths";
 import { themeVariables } from "@lib/spark/theme";
 import { EventNav, type EventNavItem } from "./event-nav";
@@ -53,6 +54,14 @@ export default async function EngagementLayout({ children, params }: LayoutProps
 
   const { engagement, theme, role } = context;
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
+  /* What the links say. The routes below are unchanged; only the address a
+     person is handed depends on the domain they came to. */
+  const href = await publicPath(base);
+  const signOut = await publicPath("/spark/signout");
+  /* The guide has a printed address of its own where one exists, and the
+     short form is already public, so it is only cleaned when it is not. */
+  const guideHref = await publicPath(preferShortPath(base));
+  const teamHref = await publicPath(preferShortPath(`${base}/team`));
   const working = role === "planner" || role === "client";
 
   /* The team guide is the weekend as the team reads it: the guest guide plus
@@ -63,11 +72,11 @@ export default async function EngagementLayout({ children, params }: LayoutProps
      A guest has no door here at all: their weekend is the guide. */
   const nav: EventNavItem[] = working
     ? [
-        { href: preferShortPath(`${base}/team`), label: "Team guide" },
-        { href: `${base}/schedule`, label: "Calendar", also: [`${base}/plan`] },
-        { href: `${base}/budget`, label: "Budget" },
+        { href: teamHref, label: "Team guide" },
+        { href: `${href}/schedule`, label: "Calendar", also: [`${href}/plan`] },
+        { href: `${href}/budget`, label: "Budget" },
       ]
-    : [{ href: preferShortPath(base), label: "Weekend guide" }];
+    : [{ href: guideHref, label: "Weekend guide" }];
 
   const dates = dateRangeLabel(engagement.startsOn, engagement.endsOn);
 
@@ -132,7 +141,7 @@ export default async function EngagementLayout({ children, params }: LayoutProps
             {engagement.location ? `, ${engagement.location}` : ""}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 20 }}>
-            <form action="/spark/signout" method="post">
+            <form action={signOut} method="post">
               <button className="ev-signout" type="submit">
                 Sign out
               </button>

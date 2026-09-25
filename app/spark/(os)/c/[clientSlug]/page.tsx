@@ -1,4 +1,7 @@
 import Link from "next/link";
+
+import { onProductDomain } from "@lib/spark/href";
+import { cleanPath } from "@lib/spark/hosts";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 
@@ -28,6 +31,10 @@ export default async function ClientHomePage({ params }: PageProps) {
   if (!client) notFound();
 
   const events = eventsForClient(client.id);
+  /* Asked once, then applied to every link on the page. */
+  const onProduct = await onProductDomain();
+  const link = (path: string) => (onProduct ? cleanPath(path) : path);
+  const home = link("/spark");
 
   return (
     <>
@@ -45,7 +52,7 @@ export default async function ClientHomePage({ params }: PageProps) {
       <div className="eo-shell">
         {/* The front door, not the platform home: only staff can reach
             that, and most people here are not staff. */}
-        <Link className="eo-back" href="/spark">
+        <Link className="eo-back" href={home}>
           Back to planner
         </Link>
 
@@ -70,7 +77,7 @@ export default async function ClientHomePage({ params }: PageProps) {
                     <Link
                       key={edition.id}
                       className="eo-edition-card"
-                      href={editionPath(client.slug, event.slug, edition.slug)}
+                      href={link(editionPath(client.slug, event.slug, edition.slug))}
                     >
                       <div className="eo-edition-card-top">
                         <span className="eo-client-name">{edition.slug}</span>

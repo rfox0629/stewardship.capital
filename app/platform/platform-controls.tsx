@@ -350,7 +350,7 @@ export function StaffForm() {
     >
       <div className="pf-grid pf-grid-2">
         <div className="pf-field">
-          <label htmlFor="staff-email">Email of an existing Spark identity</label>
+          <label htmlFor="staff-email">Email of an existing Tentmaiker identity</label>
           <input
             id="staff-email"
             name="email"

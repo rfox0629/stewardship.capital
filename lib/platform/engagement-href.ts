@@ -5,8 +5,15 @@
  * that does not opens Stewardship.Capital's own engagement page. The
  * decision is one nullable column on the engagement row, read here and
  * nowhere else, so adding a product later is adding a line to this file.
+ *
+ * The platform home is the company's, and the product lives on its own
+ * domain, so a link from one to the other is a whole URL rather than a path.
  */
 
+import { cleanPath, PRODUCT_ORIGIN } from "../spark/hosts.ts";
+
+/* The column's value, unchanged: this is data in the database, not a name on
+   a screen, and renaming it would be a migration rather than a cleanup. */
 export const SPARK_PRODUCT = "spark";
 
 export type EngagementRef = {
@@ -29,9 +36,9 @@ export const sparkWorkspacePath = (ref: EngagementRef) =>
 
 export const engagementHref = (ref: EngagementRef): string =>
   ref.productKey === SPARK_PRODUCT
-    ? sparkWorkspacePath(ref)
+    ? `${PRODUCT_ORIGIN}${cleanPath(sparkWorkspacePath(ref))}`
     : platformEngagementPath(ref.organizationSlug, ref.engagementSlug);
 
 /** What the platform home says next to the name, when the product matters. */
 export const productLabel = (productKey: string | null): string | null =>
-  productKey === SPARK_PRODUCT ? "Spark" : null;
+  productKey === SPARK_PRODUCT ? "Tentmaiker" : null;

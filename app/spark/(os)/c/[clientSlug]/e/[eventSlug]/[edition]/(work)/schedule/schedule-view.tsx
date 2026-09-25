@@ -215,6 +215,7 @@ function MomentDrawer({
   related,
   ideas,
   amenities,
+  base,
   onClose,
 }: {
   moment: Moment;
@@ -225,6 +226,8 @@ function MomentDrawer({
   related: RelatedRecord[];
   ideas: TentativeIdea[];
   amenities: Amenity[];
+  /* The public prefix for this workspace's links. */
+  base: string;
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -416,7 +419,7 @@ function MomentDrawer({
             </button>
             {expanded === "activities" ? (
               <ActivityEditor moment={moment} activities={inside} route={route}
-                ideas={ideas} amenities={amenities} />
+                ideas={ideas} amenities={amenities} base={base} />
             ) : null}
 
             <button
@@ -430,7 +433,7 @@ function MomentDrawer({
               <i aria-hidden="true">{expanded === "ros" ? "−" : "+"}</i>
             </button>
             {expanded === "ros" ? (
-              <RosEditor moment={moment} cues={beats} route={route} ideas={ideas} />
+              <RosEditor moment={moment} cues={beats} route={route} ideas={ideas} base={base} />
             ) : null}
 
             <button
@@ -478,11 +481,14 @@ function RosEditor({
   cues,
   route,
   ideas,
+  base,
 }: {
   moment: Moment;
   cues: Cue[];
   route: Route;
   ideas: TentativeIdea[];
+  /* The public prefix for this workspace, worked out per request. */
+  base: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<string | null>(null);
@@ -499,8 +505,6 @@ function RosEditor({
     start !== null && moment.endMinutes !== null ? moment.endMinutes - start : null;
   /* The drawer hands over only the timed ones. */
   const beats = [...cues].sort((a, b) => (a.offset as number) - (b.offset as number));
-  const base = `/spark/c/${route.clientSlug}/e/${route.eventSlug}/${route.edition}`;
-
   /* Pointing at an idea rather than writing a beat. The cue carries the
      idea's id, so the idea keeps everything hanging off it and gains a place
      in the weekend without a calendar block of its own. */
@@ -685,12 +689,14 @@ function ActivityEditor({
   route,
   ideas,
   amenities,
+  base,
 }: {
   moment: Moment;
   activities: Cue[];
   route: Route;
   ideas: TentativeIdea[];
   amenities: Amenity[];
+  base: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -704,8 +710,6 @@ function ActivityEditor({
   const offered = category
     ? amenities.filter((a) => (a.category ?? "Other") === category)
     : amenities;
-  const base = `/spark/c/${route.clientSlug}/e/${route.eventSlug}/${route.edition}`;
-
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
       const outcome = await fn();
@@ -1738,6 +1742,7 @@ export function ScheduleView({
           moment={openMoment}
           role={role}
           route={route}
+          base={base}
           days={laneDays}
           cues={cues.filter((cue) => cue.momentId === openMoment.id)}
           related={related.filter((row) => row.momentId === openMoment.id)}
