@@ -679,7 +679,10 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       for (const line of ["Arrival", "Appetizers and Fellowship", "Worship and Vision",
                           "Breakfast and Coffee", "Time with Shine", "Free Time and Activities",
-                          "Worship and Stories from the Field", "Celebration and Fun"]) {
+                          "Worship and Stories from the Field", "Celebration and Fun",
+                          /* Sunday, because a guest still has to pack and there
+                             is breakfast to take with them. */
+                          "Breakfast To Go", "Packing and Departures"]) {
         assert.match(guest.body, new RegExp(line), `the card says ${line}`);
       }
 
@@ -695,7 +698,13 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.match(guest.body, /Egg and sausage bake/, "the Friday breakfast menu travels with it");
       assert.match(guest.body, /Menu/, "and the row says so");
 
-      /* The verse the weekend is named for. */
+      /* A menu reads as one voice: no roaster named, and no capital letter
+         arriving in the middle of a dish. */
+      assert.doesNotMatch(guest.body, /Dock Coffee/);
+      assert.match(guest.body, /Fresh english muffin toast/);
+      assert.match(guest.body, /brussels sprouts/);
+
+      /* The verse the weekend is named for, at the foot of the page. */
       assert.match(guest.body, /Enlarge the place of your tent/);
       assert.match(guest.body, /Isaiah 54:2/);
     });
