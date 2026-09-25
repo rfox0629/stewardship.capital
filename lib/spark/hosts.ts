@@ -1,4 +1,4 @@
-import { SPARK_BASE } from "./paths.ts";
+import { PLATFORM_HOME, SPARK_BASE } from "./paths.ts";
 
 /**
  * Two domains, one application.
@@ -19,6 +19,17 @@ const PRODUCT_HOSTS = new Set(["tentmaiker.com", "www.tentmaiker.com"]);
 
 /** The product's own origin, for links that have to be absolute. */
 export const PRODUCT_ORIGIN = "https://tentmaiker.com";
+
+/** The company's, for the surfaces that stayed hers. */
+export const COMPANY_ORIGIN = "https://stewardship.capital";
+
+/**
+ * The platform console is Stewardship.Capital's own, not the product's: it is
+ * where the company administers every engagement, including ones that run on
+ * no product at all. It answers on the company's domain only.
+ */
+export const isCompanyOwnedPath = (pathname: string): boolean =>
+  pathname === PLATFORM_HOME || pathname.startsWith(`${PLATFORM_HOME}/`);
 
 /**
  * Whether this request arrived at the product's domain rather than the

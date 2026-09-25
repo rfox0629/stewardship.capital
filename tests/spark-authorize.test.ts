@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { authorizeSparkPath, landingFor } from "../lib/spark/authorize.ts";
-import { cleanPath, isProductHost, isSiteOnlyPath, productPath } from "../lib/spark/hosts.ts";
+import {
+  cleanPath,
+  isCompanyOwnedPath,
+  isProductHost,
+  isSiteOnlyPath,
+  productPath,
+} from "../lib/spark/hosts.ts";
 import {
   canonicalGuidePath,
   lockedPreviewPath,
@@ -595,4 +601,13 @@ test("a clean address and its application path convert both ways", () => {
   /* Paths with no clean form are returned as they are. */
   assert.equal(cleanPath("/shine/2026"), "/shine/2026");
   assert.equal(cleanPath("/platform"), "/platform");
+});
+
+test("the platform console stays the company's", () => {
+  for (const path of ["/platform", "/platform/clients/shine/founders-weekend-2026"]) {
+    assert.equal(isCompanyOwnedPath(path), true, path);
+  }
+  for (const path of ["/", "/spark", "/c/shine", "/shine/2026", "/platformer"]) {
+    assert.equal(isCompanyOwnedPath(path), false, path);
+  }
 });

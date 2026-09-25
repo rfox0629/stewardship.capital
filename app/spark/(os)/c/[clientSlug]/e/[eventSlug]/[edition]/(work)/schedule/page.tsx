@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { publicPath } from "@lib/spark/href";
 
 import { DAY_NAMES, DAY_ORDER, dayDateLabel, parseTimeLabel, todayKey } from "@lib/spark/days";
 import { resolveEngagement } from "@lib/spark/engagement";
@@ -52,6 +53,8 @@ export default async function SchedulePage({ params }: PageProps) {
   if (!context) notFound();
 
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
+  /* The route stays as it is; the address people see follows the domain. */
+  const href = await publicPath(base);
   const role = context.staff ? "planner" : context.role;
   const planner = role === "planner";
   const engagementId = context.engagement.id;
@@ -198,7 +201,7 @@ export default async function SchedulePage({ params }: PageProps) {
         role={role}
         route={{ clientSlug, eventSlug, edition }}
         today={todayKey(context.engagement.startsOn)}
-        base={base}
+        base={href}
         cues={cues}
         related={related}
         ideas={ideas}

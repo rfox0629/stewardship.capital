@@ -13,7 +13,14 @@ import {
   shortGuidePath,
   workspaceRootOf,
 } from "./lib/spark/paths";
-import { cleanPath, isProductHost, isSiteOnlyPath, productPath } from "./lib/spark/hosts";
+import {
+  COMPANY_ORIGIN,
+  cleanPath,
+  isCompanyOwnedPath,
+  isProductHost,
+  isSiteOnlyPath,
+  productPath,
+} from "./lib/spark/hosts";
 import { createProxyClient, hasIdentity } from "./lib/supabase/proxy";
 
 /* The guide's own credential, checked here so no team page renders without
@@ -68,6 +75,14 @@ export async function proxy(request: NextRequest) {
 
   if (onProduct && isSiteOnlyPath(asked)) {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  /* The platform console stayed with the company, so asking the product for
+     it hands the whole address over rather than half serving it here. */
+  if (onProduct && isCompanyOwnedPath(asked)) {
+    return NextResponse.redirect(
+      new URL(`${asked}${request.nextUrl.search}`, COMPANY_ORIGIN),
+    );
   }
 
   /* The product's front door is the root of its own domain. The path that

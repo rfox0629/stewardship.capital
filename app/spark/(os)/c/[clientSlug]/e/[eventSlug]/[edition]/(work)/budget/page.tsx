@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { publicPath } from "@lib/spark/href";
 
 import type { Line } from "@lib/spark/budget";
 import { resolveEngagement } from "@lib/spark/engagement";
@@ -31,7 +32,9 @@ export default async function BudgetPage({ params }: PageProps) {
   if (!context) notFound();
 
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
-  if (context.role === "stakeholder") redirect(`${base}/schedule`);
+  /* The route stays as it is; the address people see follows the domain. */
+  const href = await publicPath(base);
+  if (context.role === "stakeholder") redirect(`${href}/schedule`);
 
   const engagementId = context.engagement.id;
   const [linesQ, ideasQ] = await Promise.all([

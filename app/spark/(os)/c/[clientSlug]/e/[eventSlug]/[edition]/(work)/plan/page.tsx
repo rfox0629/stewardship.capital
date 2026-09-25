@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { publicPath } from "@lib/spark/href";
 
 import { resolveEngagement } from "@lib/spark/engagement";
 import { gatherIdeas } from "@lib/spark/ideas";
@@ -25,7 +26,9 @@ export default async function PlanPage({ params }: PageProps) {
   if (!context) notFound();
 
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
-  if (context.role === "stakeholder") redirect(`${base}/schedule`);
+  /* The route stays as it is; the address people see follows the domain. */
+  const href = await publicPath(base);
+  if (context.role === "stakeholder") redirect(`${href}/schedule`);
 
   const planner = context.role === "planner" || context.staff;
   const engagementId = context.engagement.id;

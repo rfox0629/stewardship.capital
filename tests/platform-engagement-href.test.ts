@@ -24,9 +24,11 @@ const coop = {
   productKey: null,
 };
 
-test("a Spark engagement opens its Spark workspace, exactly where it always did", () => {
-  assert.equal(engagementHref(shine), "/spark/c/shine/e/founders-weekend/2026");
-  assert.equal(productLabel(shine.productKey), "Spark");
+test("a product engagement opens the product, on the product's own domain", () => {
+  /* The platform home is the company's and the product is not, so the link
+     leaves the site: a whole URL, at the address the product publishes. */
+  assert.equal(engagementHref(shine), "https://tentmaiker.com/c/shine/e/founders-weekend/2026");
+  assert.equal(productLabel(shine.productKey), "Tentmaiker");
 });
 
 test("an engagement on no product opens the Stewardship.Capital engagement page", () => {

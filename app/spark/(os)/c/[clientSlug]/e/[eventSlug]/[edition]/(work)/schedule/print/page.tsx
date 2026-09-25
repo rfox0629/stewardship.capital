@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { publicPath } from "@lib/spark/href";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -39,6 +40,8 @@ export default async function SchedulePrintPage({ params }: PageProps) {
   if (!context) notFound();
 
   const base = `/spark/c/${clientSlug}/e/${eventSlug}/${edition}`;
+  /* The route stays as it is; the address people see follows the domain. */
+  const href = await publicPath(base);
 
   const { data } = await context.supabase
     .from("schedule_items")
@@ -66,7 +69,7 @@ export default async function SchedulePrintPage({ params }: PageProps) {
   return (
     <div className="ev-print-page">
       <div className="ev-print-controls">
-        <Link href={`${base}/schedule`}>Back to the schedule</Link>
+        <Link href={`${href}/schedule`}>Back to the schedule</Link>
         <PrintButton />
       </div>
 
