@@ -24,7 +24,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY
 ```
 
-One more, for tentmaiker.com's "Start a conversation" form, which sends
+One more, for the inquiry form on tentmaiker.com/contact (Work with us), which sends
 through Resend from `inquiries@tentmaiker.com`:
 
 ```

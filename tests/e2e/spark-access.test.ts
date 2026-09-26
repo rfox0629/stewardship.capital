@@ -297,7 +297,7 @@ test("Spark access model, end to end against production schema", async (t) => {
       /* Word of mouth, on purpose. No link to Spark, no form, no login, no
          call to action of any kind. */
       assert.doesNotMatch(hit.body, /href="\/(spark|start|platform|login|signup|more)"/);
-      assert.doesNotMatch(hit.body, /Spark|Romans 14:12|>More<|Start a conversation/);
+      assert.doesNotMatch(hit.body, /Spark|Romans 14:12|>More<|Start a conversation|Work with us/);
       assert.equal((await visit(newJar(), "/start")).status, 404);
     });
 

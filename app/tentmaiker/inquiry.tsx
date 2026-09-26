@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
 import { sendInquiry, type InquiryState } from "./actions";
 
@@ -9,139 +9,122 @@ const MESSAGES: Record<"limited" | "unavailable", string> = {
   unavailable: "Your message couldn't be sent just now. Please try again in a few minutes.",
 };
 
-/**
- * "Start a conversation", tucked into the foot of the page.
- *
- * A native dialog, so focus, Escape and the backdrop behave the way the
- * platform does. The form posts to a server action; the page only says thank
- * you when the server reports that Resend accepted the email.
- */
-export function StartConversation() {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const [state, action, pending] = useActionState<InquiryState, FormData>(sendInquiry, { status: "idle" });
-  const [opened, setOpened] = useState("");
-  const [round, setRound] = useState(0);
+const FIELDS = ["name", "email", "message"] as const;
 
-  const open = () => {
-    setOpened(String(Date.now()));
-    dialog.current?.showModal();
-  };
+/**
+ * The inquiry form, set into the contact page beneath the invitation.
+ *
+ * It posts to a server action, which validates, limits and sends; this page
+ * only says thank you when the server reports that Resend accepted the email.
+ * What was typed is handed back on any refusal, so nothing is ever lost.
+ */
+export function InquiryForm({ home }: { home: string }) {
+  const form = useRef<HTMLFormElement>(null);
+  const thanks = useRef<HTMLHeadingElement>(null);
+  const [state, action, pending] = useActionState<InquiryState, FormData>(sendInquiry, { status: "idle" });
+  /* When the form was first shown. A person takes a few seconds to write; a
+     script posting the instant the page loads is refused on the server. */
+  const opened = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (state.status === "sent") dialog.current?.querySelector<HTMLButtonElement>(".tm-dialog-done")?.focus();
+    /* A hidden input's value is its default, so a form reset keeps it. */
+    if (opened.current) opened.current.value = String(Date.now());
+  }, []);
+
+  /* After an answer, focus goes where the next thing to read is: the thank
+     you, or the first field that needs attention. */
+  useEffect(() => {
+    if (state.status === "sent") thanks.current?.focus();
+    if (state.status === "invalid") {
+      const first = FIELDS.find((field) => state.errors[field]);
+      if (first) form.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
+    }
   }, [state]);
+
+  if (state.status === "sent") {
+    return (
+      <div className="tm-sent" role="status">
+        <h3 ref={thanks} tabIndex={-1}>
+          Thank you<span className="tm-dot">.</span>
+        </h3>
+        <p>Your message is on its way to us. We&rsquo;ll read it closely and reply to the email you gave us.</p>
+        <p className="tm-sent-quiet">We&rsquo;re glad you wrote.</p>
+        <a className="tm-link" href={home}>
+          Back to the front page
+        </a>
+      </div>
+    );
+  }
 
   const errors = state.status === "invalid" ? state.errors : {};
   const draft = "draft" in state ? state.draft : { name: "", email: "", message: "" };
+  const described = (field: (typeof FIELDS)[number]) => (errors[field] ? `tm-error-${field}` : undefined);
 
   return (
-    <>
-      <button type="button" className="tm-link" onClick={open}>
-        Start a conversation
+    <form ref={form} action={action} className="tm-form" noValidate aria-label="Start the conversation">
+      <div className="tm-form-row">
+        <label className="tm-field">
+          <span>Name</span>
+          <input
+            name="name"
+            autoComplete="name"
+            maxLength={100}
+            required
+            defaultValue={draft.name}
+            aria-invalid={!!errors.name}
+            aria-describedby={described("name")}
+          />
+          {errors.name ? <em id="tm-error-name">{errors.name}</em> : null}
+        </label>
+
+        <label className="tm-field">
+          <span>Email</span>
+          <input
+            name="email"
+            type="email"
+            autoComplete="email"
+            maxLength={254}
+            required
+            defaultValue={draft.email}
+            aria-invalid={!!errors.email}
+            aria-describedby={described("email")}
+          />
+          {errors.email ? <em id="tm-error-email">{errors.email}</em> : null}
+        </label>
+      </div>
+
+      <label className="tm-field">
+        <span>Project or assignment</span>
+        <textarea
+          name="message"
+          rows={6}
+          maxLength={2000}
+          required
+          defaultValue={draft.message}
+          aria-invalid={!!errors.message}
+          aria-describedby={described("message")}
+        />
+        {errors.message ? <em id="tm-error-message">{errors.message}</em> : null}
+      </label>
+
+      {/* For scripts only: people never see or fill this. */}
+      <div className="tm-trap" aria-hidden="true">
+        <label>
+          Website
+          <input name="website" tabIndex={-1} autoComplete="off" />
+        </label>
+      </div>
+      <input ref={opened} type="hidden" name="opened" defaultValue="" />
+
+      {state.status === "limited" || state.status === "unavailable" ? (
+        <p className="tm-form-error" role="alert">
+          {MESSAGES[state.status]}
+        </p>
+      ) : null}
+
+      <button type="submit" className="tm-button" disabled={pending}>
+        {pending ? "Sending" : "Start the conversation"}
       </button>
-
-      <dialog
-        ref={dialog}
-        className="tm-dialog"
-        aria-labelledby="tm-dialog-title"
-        onClick={(event) => {
-          if (event.target === dialog.current) dialog.current?.close();
-        }}
-        onClose={() => {
-          if (state.status === "sent") setRound((n) => n + 1);
-        }}
-      >
-        <div className="tm-dialog-inner">
-          <button
-            type="button"
-            className="tm-dialog-close"
-            aria-label="Close"
-            onClick={() => dialog.current?.close()}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
-
-          {state.status === "sent" ? (
-            <div className="tm-dialog-sent" role="status">
-              <h2 id="tm-dialog-title">
-                Thank you<span className="tm-dot">.</span>
-              </h2>
-              <p>Your message is on its way. We&rsquo;ll reply to the email you gave us.</p>
-              <button type="button" className="tm-button tm-dialog-done" onClick={() => dialog.current?.close()}>
-                Close
-              </button>
-            </div>
-          ) : (
-            <form action={action} key={round} noValidate>
-              <h2 id="tm-dialog-title">
-                Start a conversation<span className="tm-dot">.</span>
-              </h2>
-              <p className="tm-dialog-lede">Tell us what you&rsquo;re building, or what&rsquo;s in the way.</p>
-
-              <label className="tm-field">
-                <span>Name</span>
-                <input
-                  name="name"
-                  autoComplete="name"
-                  maxLength={100}
-                  required
-                  defaultValue={draft.name}
-                  aria-invalid={!!errors.name}
-                />
-                {errors.name ? <em>{errors.name}</em> : null}
-              </label>
-
-              <label className="tm-field">
-                <span>Email</span>
-                <input
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  maxLength={254}
-                  required
-                  defaultValue={draft.email}
-                  aria-invalid={!!errors.email}
-                />
-                {errors.email ? <em>{errors.email}</em> : null}
-              </label>
-
-              <label className="tm-field">
-                <span>Project</span>
-                <textarea
-                  name="message"
-                  rows={4}
-                  maxLength={2000}
-                  required
-                  defaultValue={draft.message}
-                  aria-invalid={!!errors.message}
-                />
-                {errors.message ? <em>{errors.message}</em> : null}
-              </label>
-
-              {/* For scripts only: people never see or fill this. */}
-              <div className="tm-trap" aria-hidden="true">
-                <label>
-                  Website
-                  <input name="website" tabIndex={-1} autoComplete="off" />
-                </label>
-              </div>
-              <input type="hidden" name="opened" value={opened} />
-
-              {state.status === "limited" || state.status === "unavailable" ? (
-                <p className="tm-dialog-error" role="alert">
-                  {MESSAGES[state.status]}
-                </p>
-              ) : null}
-
-              <button type="submit" className="tm-button" disabled={pending}>
-                {pending ? "Sending" : "Send"}
-              </button>
-            </form>
-          )}
-        </div>
-      </dialog>
-    </>
+    </form>
   );
 }

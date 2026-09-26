@@ -1,5 +1,5 @@
 /**
- * "Start a conversation": the one form on tentmaiker.com.
+ * The inquiry form on tentmaiker.com/contact, the one form on the site.
  *
  * Everything here is plain functions, so the rules can be tested without a
  * server: what counts as a valid inquiry, what looks like a script rather than
@@ -98,13 +98,13 @@ export const inquiryEmail = (inquiry: Inquiry) => ({
     "",
     inquiry.message,
     "",
-    "Sent from the Start a conversation form on tentmaiker.com. Reply to answer.",
+    "Sent from the Work with us page, tentmaiker.com/contact. Reply to answer.",
   ].join("\n"),
   html: [
     `<p><strong>Name:</strong> ${escapeHtml(inquiry.name)}<br>`,
     `<strong>Email:</strong> ${escapeHtml(inquiry.email)}</p>`,
     `<p style="white-space:pre-wrap">${escapeHtml(inquiry.message)}</p>`,
-    `<p style="color:#666;font-size:12px">Sent from the Start a conversation form on tentmaiker.com. Reply to answer.</p>`,
+    `<p style="color:#666;font-size:12px">Sent from the Work with us page, tentmaiker.com/contact. Reply to answer.</p>`,
   ].join(""),
 });
 
