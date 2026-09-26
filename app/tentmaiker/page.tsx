@@ -3,6 +3,7 @@ import { getImageProps } from "next/image";
 
 import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 
+import { pageHref } from "./addresses";
 import { StarField } from "./star-field";
 
 const NAME = "TentMAiKER";
@@ -68,7 +69,9 @@ function Tent() {
  * from. Paul worked with Aquila and Priscilla because they shared a trade
  * (Acts 18:2-3); the picture says the rest.
  */
-export default function TentMaikerPage() {
+export default async function TentMaikerPage() {
+  const contact = await pageHref("/contact");
+
   return (
     <main className="tm-page">
       <StarField />
@@ -97,6 +100,12 @@ export default function TentMaikerPage() {
           <Tent />
         </figure>
       </div>
+
+      <footer className="tm-foot">
+        <a className="tm-link" href={contact}>
+          Work with us
+        </a>
+      </footer>
     </main>
   );
 }

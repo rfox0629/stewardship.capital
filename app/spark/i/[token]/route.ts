@@ -17,7 +17,9 @@ import {
 } from "../../../../lib/spark/invitations";
 import { cleanPath, isProductHost } from "../../../../lib/spark/hosts";
 import { SPARK_ENTRY } from "../../../../lib/spark/paths";
+import { invitationCodeRules, withinLimits } from "../../../../lib/limits";
 import { createClient } from "../../../../lib/supabase/server";
+import { clientAddress } from "../../../../lib/throttle";
 
 /**
  * An invitation link begins the identity flow. It does not end it.
@@ -85,6 +87,14 @@ const landingUrl = (request: NextRequest, path: string) =>
      account to exist, so it is created here, deliberately, rather than by
      leaving signup open to everyone. */
   if (!(await ensureAccountExists(invitation.email))) return frontDoor;
+
+  /* Following the same link again and again must not become a way to fill the
+     invited person's inbox. Over the limit, no code is sent, but the
+     invitation is held, so signing in from the front door still accepts it. */
+  if (!(await withinLimits(invitationCodeRules(clientAddress(request.headers), invitation.email)))) {
+    store.set(INVITE_COOKIE, invitation.tokenHash, transientCookie(INVITE_MAX_AGE));
+    return frontDoor;
+  }
 
   try {
     const { error } = await supabase.auth.signInWithOtp({

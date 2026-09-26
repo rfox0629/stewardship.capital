@@ -24,6 +24,23 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY
 ```
 
+One more, for the inquiry form on tentmaiker.com/contact (Work with us), which sends
+through Resend from `inquiries@tentmaiker.com`:
+
+```
+RESEND_API_KEY
+```
+
+## Request limits
+
+Every request that makes the app send an email for a stranger (a sign in
+code, an invitation's code, an inquiry) is counted in
+`public.take_request_slot`, which every server instance shares. The limits
+are in `lib/limits.ts`. Until migration `20260926100000_request_throttle.sql`
+is applied, or if the database cannot be reached, each instance counts on its
+own and logs `throttle: shared counter unavailable`: weaker, never nothing.
+`npm run test:throttle` proves the function against a throwaway Postgres.
+
 ## The database
 
 ```

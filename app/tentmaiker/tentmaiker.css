@@ -1,8 +1,9 @@
 /*
  * TentMAiKER
  *
- * One screen. Near black, crisp white type, and the screen's cool light,
- * which marks the AI in the name and nothing else. Scoped under .tm so
+ * Two pages: the front page, and Work with us. Near black, crisp white
+ * type, and the screen's cool light, which marks the AI in the name and
+ * nothing else. Scoped under .tm so
  * nothing here can reach Stewardship.Capital or Spark.
  */
 
@@ -48,8 +49,8 @@ html:has(.tm) body {
   isolation: isolate;
   min-height: 100svh;
   display: grid;
-  grid-template-rows: auto 1fr;
-  padding: clamp(22px, 3.2vw, 40px) var(--tm-pad-x);
+  grid-template-rows: auto 1fr auto;
+  padding: clamp(22px, 3.2vw, 40px) var(--tm-pad-x) clamp(16px, 2.4vw, 28px);
   overflow: hidden;
 }
 
@@ -173,6 +174,345 @@ html:has(.tm) body {
   height: auto;
 }
 
+/* ------------------------------------------------------------ the foot */
+
+/* One quiet line at the foot of the page. The way to write to us, found by
+   those who look for it and never competing with the picture. */
+.tm-foot {
+  position: relative;
+  z-index: 1;
+}
+
+.tm-link {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: #8b95a1;
+  font: 500 0.8125rem/1 var(--tm-font);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(156, 202, 255, 0.35);
+  text-underline-offset: 4px;
+  transition: color 160ms ease, text-decoration-color 160ms ease;
+}
+
+.tm-link:hover,
+.tm-link:focus-visible {
+  color: var(--tm-white);
+  text-decoration-color: var(--tm-light);
+}
+
+.tm :focus-visible {
+  outline: 2px solid var(--tm-light);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------- work with us */
+
+/* The next scene after the front page: closer to the tent, at its open door,
+   with the same sky above and the same cool light. The story first, with
+   room to breathe; then the invitation, and the form beside it. */
+.tm-contact {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  padding: clamp(22px, 3.2vw, 40px) var(--tm-pad-x) clamp(56px, 8vw, 120px);
+  overflow: hidden;
+}
+
+/* The sky covers the first screen only, behind the story. */
+.tm-contact-sky {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 100svh;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.tm-contact-head {
+  position: relative;
+  z-index: 1;
+}
+
+.tm-home {
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tm-story {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 72px);
+  min-height: calc(100svh - clamp(60px, 7vw, 96px));
+  max-width: 1320px;
+  padding-block: clamp(28px, 5vh, 64px);
+}
+
+/* Keeps the words legible wherever a star lights up behind them. */
+.tm-story::before {
+  content: "";
+  position: absolute;
+  inset: 0 -20% 0 calc(-1 * var(--tm-pad-x));
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    70% 70% at 10% 50%,
+    rgba(4, 5, 6, 0.9) 0%,
+    rgba(4, 5, 6, 0.5) 45%,
+    rgba(4, 5, 6, 0) 75%
+  );
+}
+
+.tm-story-words {
+  position: relative;
+  z-index: 1;
+}
+
+.tm-title {
+  font-size: clamp(2.6rem, 5.4vw, 5.8rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.tm-title > span {
+  display: block;
+  white-space: nowrap;
+}
+
+.tm-prose {
+  display: grid;
+  gap: 1.05em;
+  max-width: 31em;
+  margin-top: clamp(28px, 3.6vw, 48px);
+  color: #c3cad3;
+  font-size: clamp(1.05rem, 1.3vw, 1.25rem);
+  line-height: 1.62;
+}
+
+.tm-prose strong {
+  color: var(--tm-white);
+  font-weight: 600;
+}
+
+.tm-story .tm-ref {
+  margin-top: clamp(28px, 3.4vw, 44px);
+}
+
+/* The tent's open door, the light from the front page, seen up close. It
+   fades into the night on every side, so it reads as the same scene rather
+   than a picture placed on the page. */
+.tm-door {
+  justify-self: end;
+  width: min(100%, calc((100svh - 150px) * 900 / 1060));
+  margin-right: calc(-0.5 * var(--tm-pad-x));
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 4%, #000 46%, #000 76%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 70%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 4%, #000 46%, #000 76%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 70%, transparent);
+  mask-composite: intersect;
+}
+
+.tm-door img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ------------------------------------------------------- the invitation */
+
+.tm-invite {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: clamp(32px, 6vw, 112px);
+  max-width: 1320px;
+  margin-top: clamp(24px, 4vw, 56px);
+  padding-top: clamp(56px, 8vw, 112px);
+}
+
+/* A thread of the same light, where the story hands over to the invitation. */
+.tm-invite::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(100%, 720px);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(156, 202, 255, 0.5), rgba(156, 202, 255, 0.08) 70%, transparent);
+}
+
+.tm-invite h2 {
+  margin: 0;
+  font-size: clamp(2.1rem, 3.6vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.042em;
+}
+
+.tm-invite-lede {
+  max-width: 24em;
+  margin: clamp(18px, 2vw, 26px) 0 0;
+  color: #c3cad3;
+  font-size: clamp(1.05rem, 1.3vw, 1.2rem);
+  line-height: 1.62;
+}
+
+/* The form sits in the light, as the person in the tent does: lit softly
+   from above, never boxed in by a heavy frame. */
+.tm-panel {
+  position: relative;
+  padding: clamp(22px, 3vw, 40px);
+  border: 1px solid rgba(156, 202, 255, 0.13);
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(156, 202, 255, 0.09), rgba(156, 202, 255, 0) 70%),
+    #07090c;
+  box-shadow: 0 50px 120px -60px rgba(156, 202, 255, 0.22);
+}
+
+.tm-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+}
+
+.tm-form > .tm-field:first-child,
+.tm-form-row .tm-field {
+  margin-top: 0;
+}
+
+.tm-form > .tm-field {
+  margin-top: 20px;
+}
+
+.tm-field {
+  display: block;
+}
+
+.tm-field > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #b9c0c9;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tm-field input,
+.tm-field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #262c35;
+  border-radius: 10px;
+  background: #040506;
+  color: var(--tm-white);
+  font: 400 1rem/1.5 var(--tm-font);
+  resize: vertical;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.tm-field textarea {
+  min-height: 9.5em;
+}
+
+.tm-field input:focus,
+.tm-field textarea:focus {
+  outline: none;
+  border-color: var(--tm-light);
+  box-shadow: 0 0 0 3px rgba(156, 202, 255, 0.16);
+}
+
+.tm-field [aria-invalid="true"] {
+  border-color: #e0877a;
+}
+
+.tm-field em {
+  display: block;
+  margin-top: 7px;
+  color: #f0a597;
+  font-size: 0.875rem;
+  font-style: normal;
+}
+
+.tm-trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.tm-form-error {
+  margin: 18px 0 0;
+  color: #f0a597;
+  font-size: 0.925rem;
+  line-height: 1.5;
+}
+
+.tm-button {
+  margin-top: 26px;
+  padding: 15px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tm-white);
+  color: #06080a;
+  font: 700 0.975rem/1 var(--tm-font);
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.tm-button:hover {
+  background: var(--tm-light);
+  box-shadow: 0 0 28px rgba(156, 202, 255, 0.35);
+}
+
+.tm-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* The answer takes the form's place, in the same light. */
+.tm-sent h3 {
+  margin: 0;
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.tm-sent h3:focus {
+  outline: none;
+}
+
+.tm-sent p {
+  max-width: 28em;
+  margin: 16px 0 0;
+  color: #c3cad3;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.tm-sent .tm-sent-quiet {
+  margin-top: 10px;
+  color: var(--tm-light);
+}
+
+.tm-sent .tm-link {
+  display: inline-block;
+  margin-top: 26px;
+}
+
 /* ------------------------------------------------------------- the phone */
 
 /* The picture leads, edge to edge; the words follow underneath. */
@@ -213,6 +553,66 @@ html:has(.tm) body {
 
   .tm-ref {
     margin-top: 24px;
+  }
+
+  /* Work with us: the door first, then the story, then the invitation. */
+  .tm-contact-sky {
+    height: 70svh;
+  }
+
+  .tm-story {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    gap: 0;
+    padding-block: 12px 8px;
+  }
+
+  .tm-story::before {
+    inset: 0 calc(-1 * var(--tm-pad-x));
+    background: linear-gradient(rgba(4, 5, 6, 0) 25%, rgba(4, 5, 6, 0.85) 45%);
+  }
+
+  .tm-door {
+    order: -1;
+    justify-self: center;
+    width: min(78%, 340px);
+    margin: 0 0 -10%;
+  }
+
+  .tm-title {
+    font-size: clamp(2.3rem, 11vw, 3.6rem);
+  }
+
+  .tm-prose {
+    margin-top: 24px;
+    font-size: 1.0625rem;
+  }
+
+  .tm-story .tm-ref {
+    margin-top: 26px;
+  }
+
+  .tm-invite {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-top: 44px;
+    padding-top: 48px;
+  }
+
+  .tm-panel {
+    margin-inline: calc(-0.5 * var(--tm-pad-x));
+  }
+
+  .tm-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tm-form-row .tm-field + .tm-field {
+    margin-top: 20px;
+  }
+
+  .tm-button {
+    width: 100%;
   }
 }
 
