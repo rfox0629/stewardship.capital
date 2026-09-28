@@ -8,7 +8,7 @@ import {
   DAY_SHORT,
   TEAM_DAYS,
   UNASSIGNED,
-  clock,
+  clockRange,
   dayAgenda,
   guestTitle,
   personalAgenda,
@@ -183,8 +183,21 @@ function Chevron() {
 const isProgram = (moment: GuideMoment) => moment.ops?.category === "program";
 const isOperations = (moment: GuideMoment) => moment.ops?.category === "operations";
 
-const span = (moment: GuideMoment) =>
-  `${clock(moment.starts)}${moment.ends ? ` to ${clock(moment.ends)}` : ""}`;
+/* The one way this guide writes a window, shared with the guest's. */
+const span = (moment: GuideMoment) => {
+  const window = clockRange(moment.starts, moment.ends);
+  return window.meridiem ? `${window.value} ${window.meridiem}` : window.value;
+};
+
+function Window({ moment }: { moment: GuideMoment }) {
+  const window = clockRange(moment.starts, moment.ends);
+  return (
+    <span className="gd-ros-time">
+      <b>{window.value}</b>
+      {window.meridiem ? <i>{window.meridiem}</i> : null}
+    </span>
+  );
+}
 
 /** Names as words: "Lead: Brooke" says more than a coloured pill. */
 function Roles({ ops }: { ops: OpsDetail | null | undefined }) {
@@ -316,10 +329,7 @@ function TeamSchedule({ moments, day, storeKey }: TeamProps & { day: string; sto
                 aria-expanded={expanded}
                 onClick={() => setOpenId(expanded ? null : moment.id)}
               >
-                <span className="gd-ros-time">
-                  {clock(moment.starts)}
-                  {moment.ends ? <i>{clock(moment.ends)}</i> : null}
-                </span>
+                <Window moment={moment} />
                 <span className="gd-ros-main">
                   <span className="gd-ros-title">{moment.title}</span>
                   {moment.ops?.owner ? (
@@ -376,10 +386,7 @@ function RunOfShow({ moments, day }: TeamProps & { day: string }) {
           return (
             <li key={moment.id} className="gd-ros-item">
               <div className="gd-ros-head gd-ros-static">
-                <span className="gd-ros-time">
-                  {clock(moment.starts)}
-                  {moment.ends ? <i>{clock(moment.ends)}</i> : null}
-                </span>
+                <Window moment={moment} />
                 <span className="gd-ros-main">
                   <span className="gd-ros-title">{moment.title}</span>
                   {ops?.purpose ? <span className="gd-ros-purpose">{ops.purpose}</span> : null}

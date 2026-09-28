@@ -296,16 +296,30 @@ html:has(.gd) body {
 
 .gd-row-hit {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  /* A whole window does not fit beside a title on a phone, so it sits above
+     one. The cue keeps its own column at every width, which is what stops it
+     landing on the words. */
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "time time"
+    "body cue";
   align-items: start;
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: 4px;
   width: 100%;
-  min-height: 64px;
   padding: 14px 14px 14px 12px;
   border: 0;
   background: none;
   text-align: left;
   position: relative;
+}
+
+@media (min-width: 560px) {
+  .gd-row-hit {
+    grid-template-columns: 9.5rem minmax(0, 1fr) auto;
+    grid-template-areas: "time body cue";
+    column-gap: 14px;
+  }
 }
 
 button.gd-row-hit {
@@ -343,16 +357,13 @@ button.gd-row-hit:active {
 .gd-kind-free { --gd-kind: #7b8a5c; }
 
 .gd-row-time {
+  grid-area: time;
+  /* On one line, with the meridiem beside the hour it belongs to. */
   display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-  padding-top: 1px;
-  /* A whole window rather than a single time, so the column is wide enough
-     for "7:30 to 9:00" and lets the longer crossing-noon form wrap under
-     itself rather than squeezing the title. */
-  flex: 0 0 auto;
-  min-width: 5.6rem;
-  max-width: 7.4rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 5px;
+  line-height: 1.2;
 }
 
 .gd-row-time b {
@@ -372,6 +383,7 @@ button.gd-row-hit:active {
 }
 
 .gd-row-body {
+  grid-area: body;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -399,6 +411,7 @@ button.gd-row-hit:active {
 }
 
 .gd-row-cue {
+  grid-area: cue;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1069,11 +1082,14 @@ button.gd-row-hit:active {
 
 .gd-ros-head {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) 16px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 16px;
+  grid-template-areas:
+    "time time"
+    "main chev";
+  column-gap: 10px;
+  row-gap: 4px;
   align-items: start;
   width: 100%;
-  min-height: 56px;
   padding: 12px 14px;
   border: 0;
   background: none;
@@ -1081,9 +1097,19 @@ button.gd-row-hit:active {
   cursor: pointer;
 }
 
+@media (min-width: 560px) {
+  .gd-ros-head {
+    grid-template-columns: 9.5rem minmax(0, 1fr) 16px;
+    grid-template-areas: "time main chev";
+  }
+}
+
 .gd-ros-time {
+  grid-area: time;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 5px;
   font-size: 0.95rem;
   font-weight: 800;
   line-height: 1.25;
@@ -1099,6 +1125,7 @@ button.gd-row-hit:active {
 }
 
 .gd-ros-main {
+  grid-area: main;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1149,6 +1176,7 @@ button.gd-row-hit:active {
 }
 
 .gd-ros-chev {
+  grid-area: chev;
   width: 12px;
   height: 8px;
   margin-top: 6px;
@@ -1521,10 +1549,16 @@ button.gd-row-hit:active {
 }
 
 .gd-duty-row {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
   gap: 12px;
   padding: 12px 14px;
+}
+
+/* The box sits on the first line of the title, whatever the title does. */
+.gd-duty-row .gd-duty-check {
+  margin-top: 1px;
 }
 
 .gd-duty button.gd-duty-body {
