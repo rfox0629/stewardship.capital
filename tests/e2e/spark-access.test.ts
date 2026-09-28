@@ -674,6 +674,12 @@ test("Spark access model, end to end against production schema", async (t) => {
       /* A guest is handed a card with three days on it. The guide says the
          same thing: the same lines, the same windows, the same words. What it
          must not do is show them how the weekend is run. */
+      const { data: owner } = await admin.from("organizations")
+        .select("id").eq("slug", "shine").single();
+      const { data: real } = await admin.from("engagements").select("id")
+        .eq("organization_id", owner!.id).eq("series_slug", "founders-weekend")
+        .eq("edition_label", "2026").single();
+
       const guest = await visit(newJar(), "/shine/2026");
       assert.equal(guest.status, 200);
 
@@ -697,6 +703,35 @@ test("Spark access model, end to end against production schema", async (t) => {
       /* A meal still opens its menu, which is the one thing a guest taps. */
       assert.match(guest.body, /Egg and sausage bake/, "the Friday breakfast menu travels with it");
       assert.match(guest.body, /Menu/, "and the row says so");
+
+      /* A line carries its whole window. The page draws the day it opens on,
+         so Thursday is the one asserted here; how a window is written, and
+         what happens when it crosses noon, is a unit test. */
+      assert.match(guest.body, /4:00.6:00/, "arrival reads as a window");
+      assert.match(guest.body, /6:00.7:00/);
+
+      /* Pudding sits under its own heading rather than among the starters,
+         and the brisket is named rather than described. Asked of the rows
+         themselves: a page serialises its data with its own escaping. */
+      const { data: meals } = await admin
+        .from("schedule_items").select("day_key, title, guest_guide")
+        .eq("engagement_id", real!.id)
+        .in("title", ["Welcome appetizers and dessert", "Dinner"]);
+      const copyFor = (day: string, title: string) =>
+        (meals ?? []).find((row) => row.day_key === day && row.title === title)
+          ?.guest_guide as { menu?: string[]; dessert?: string[] } | undefined;
+
+      const appetizers = copyFor("thu", "Welcome appetizers and dessert");
+      assert.deepEqual(appetizers?.dessert, ["Brownies"], "brownies are the dessert");
+      assert.ok(!appetizers?.menu?.includes("Brownies"), "and are not a starter");
+      assert.ok(appetizers?.menu?.includes("Pork hot link slices"));
+      assert.ok(appetizers?.menu?.includes("Chicken skewers"));
+
+      const dinner = copyFor("fri", "Dinner");
+      assert.ok(dinner?.menu?.includes("Signature Smoked Brisket"));
+      assert.ok(dinner?.menu?.includes("Garlic baby red potatoes"));
+      assert.ok(!dinner?.menu?.some((item) => /carved by our staff|Baked potato/.test(item)),
+        "nothing left of the old wording");
 
       /* A menu reads as one voice: no roaster named, and no capital letter
          arriving in the middle of a dish. */

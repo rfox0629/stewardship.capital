@@ -345,12 +345,18 @@ button.gd-row-hit:active {
 .gd-row-time {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  line-height: 1.15;
   padding-top: 1px;
+  /* A whole window rather than a single time, so the column is wide enough
+     for "7:30 to 9:00" and lets the longer crossing-noon form wrap under
+     itself rather than squeezing the title. */
+  flex: 0 0 auto;
+  min-width: 5.6rem;
+  max-width: 7.4rem;
 }
 
 .gd-row-time b {
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   font-weight: 800;
   color: var(--gd-ink);
   font-variant-numeric: tabular-nums;
