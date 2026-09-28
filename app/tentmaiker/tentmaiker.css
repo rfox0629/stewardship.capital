@@ -189,6 +189,7 @@ html:has(.tm) body {
   color: #aeb7c2;
   font: 500 0.875rem/1 var(--tm-font);
   letter-spacing: 0.02em;
+  text-decoration: none;
   cursor: pointer;
   transition: color 160ms ease;
 }
@@ -215,130 +216,102 @@ html:has(.tm) body {
   outline-offset: 3px;
 }
 
-/* ---------------------------------------------------------- the dialog */
+/* ------------------------------------------------------- the contact page */
 
-.tm-dialog {
-  width: min(540px, calc(100vw - 32px));
-  max-height: calc(100svh - 32px);
-  padding: 0;
-  border: 1px solid rgba(156, 202, 255, 0.18);
-  border-radius: 14px;
-  background: #0b0d10;
-  color: var(--tm-white);
-  font-family: var(--tm-font);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-}
-
-.tm-dialog::backdrop {
-  background: rgba(2, 3, 4, 0.72);
-  backdrop-filter: blur(3px);
-}
-
-.tm-dialog-inner {
+/* Where "Let's build" leads. The front page's night, its type and its light:
+   one question, one line, the verse, and four fields. */
+.tm-contact {
   position: relative;
-  padding: 30px 28px 28px;
+  isolation: isolate;
+  min-height: 100svh;
+  padding: clamp(22px, 3.2vw, 40px) var(--tm-pad-x) clamp(48px, 7vw, 96px);
+  overflow: hidden;
 }
 
-/* The verse the name comes from, at the top of the screen. */
-.tm-verse {
-  margin: 0 40px 24px 0;
-  padding-bottom: 22px;
-  border-bottom: 1px solid rgba(156, 202, 255, 0.14);
+/* The sky stays above the form, never behind the fields. */
+.tm-contact .tm-sky {
+  height: 80svh;
+  -webkit-mask-image: linear-gradient(#000 30%, transparent 85%);
+  mask-image: linear-gradient(#000 30%, transparent 85%);
 }
 
-.tm-verse blockquote {
-  margin: 0;
-  font-size: 1.1875rem;
-  font-weight: 600;
-  line-height: 1.42;
-  letter-spacing: -0.015em;
+.tm-home {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
 }
 
-.tm-verse figcaption {
-  margin-top: 12px;
-  color: var(--tm-light);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-}
-
-/* First and last name side by side, then phone and email. */
-.tm-pair {
+.tm-contact-body {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+  align-items: start;
+  gap: clamp(40px, 7vw, 120px);
+  max-width: 1180px;
+  margin-top: clamp(64px, 14vh, 150px);
 }
 
-.tm-pair + .tm-pair,
-.tm-pair + .tm-field {
-  margin-top: 14px;
+.tm-contact-intro {
+  position: relative;
+  z-index: 1;
 }
 
-.tm-pair .tm-field {
-  margin-top: 0;
-}
-
-.tm-field textarea::placeholder {
-  color: #6f7883;
-}
-
-.tm-dialog h2 {
+.tm-contact-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: clamp(2.4rem, 4.6vw, 4.6rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  line-height: 1;
+  letter-spacing: -0.045em;
 }
 
-.tm-dialog-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 36px;
-  height: 36px;
+.tm-contact-lede {
+  margin: clamp(18px, 2vw, 24px) 0 0;
+  color: #c3cad3;
+  font-size: clamp(1.1rem, 1.4vw, 1.3rem);
+  line-height: 1.5;
+}
+
+.tm-contact-intro .tm-ref {
+  margin-top: clamp(22px, 2.6vw, 32px);
+}
+
+/* No panel: the fields sit straight on the night. */
+.tm-form {
+  position: relative;
+  z-index: 1;
   display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: #8b95a1;
-  cursor: pointer;
-}
-
-.tm-dialog-close:hover {
-  color: var(--tm-white);
-}
-
-.tm-dialog-close svg {
-  width: 20px;
-  height: 20px;
+  gap: 22px;
 }
 
 .tm-field {
   display: block;
-  margin-top: 14px;
 }
 
 .tm-field > span {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: #b9c0c9;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.tm-field small {
+  color: #7d8792;
+  font-size: inherit;
 }
 
 .tm-field input,
 .tm-field textarea {
   width: 100%;
-  padding: 11px 12px;
-  border: 1px solid #262b33;
-  border-radius: 8px;
-  background: #06080a;
+  padding: 12px 14px;
+  border: 1px solid #242a32;
+  border-radius: 10px;
+  background: rgba(10, 13, 17, 0.9);
   color: var(--tm-white);
-  font: 400 1rem/1.45 var(--tm-font);
+  font: 400 1rem/1.5 var(--tm-font);
   resize: vertical;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .tm-field input:focus,
@@ -354,9 +327,9 @@ html:has(.tm) body {
 
 .tm-field em {
   display: block;
-  margin-top: 6px;
+  margin-top: 7px;
   color: #f0a597;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-style: normal;
 }
 
@@ -368,22 +341,22 @@ html:has(.tm) body {
   overflow: hidden;
 }
 
-.tm-dialog-error {
-  margin: 16px 0 0;
+.tm-form-error {
+  margin: 0;
   color: #f0a597;
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: 0.925rem;
+  line-height: 1.5;
 }
 
 .tm-button {
-  margin-top: 20px;
-  width: 100%;
-  padding: 13px 18px;
+  justify-self: start;
+  margin-top: 6px;
+  padding: 15px 26px;
   border: 0;
   border-radius: 999px;
   background: var(--tm-white);
   color: #06080a;
-  font: 700 0.95rem/1 var(--tm-font);
+  font: 700 0.975rem/1 var(--tm-font);
   cursor: pointer;
   transition: background-color 160ms ease;
 }
@@ -397,10 +370,41 @@ html:has(.tm) body {
   cursor: progress;
 }
 
-.tm-dialog-sent p {
-  margin: 10px 0 0;
-  color: #b9c0c9;
-  line-height: 1.5;
+.tm-sent {
+  position: relative;
+  z-index: 1;
+}
+
+.tm-sent h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.tm-sent h2:focus {
+  outline: none;
+}
+
+.tm-sent p {
+  margin: 14px 0 0;
+  color: #c3cad3;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.tm-back {
+  display: inline-block;
+  margin-top: 24px;
+  color: #aeb7c2;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(156, 202, 255, 0.4);
+  text-underline-offset: 4px;
+}
+
+.tm-back:hover {
+  color: var(--tm-white);
 }
 
 /* ------------------------------------------------------------- the phone */
@@ -444,19 +448,19 @@ html:has(.tm) body {
   .tm-ref {
     margin-top: 24px;
   }
-}
 
-@media (max-width: 520px) {
-  .tm-pair {
+  .tm-contact-body {
     grid-template-columns: 1fr;
+    gap: 36px;
+    margin-top: 52px;
   }
 
-  .tm-pair .tm-field + .tm-field {
-    margin-top: 14px;
+  .tm-contact-title {
+    font-size: clamp(2.2rem, 10vw, 3rem);
   }
 
-  .tm-verse blockquote {
-    font-size: 1.0625rem;
+  .tm-button {
+    justify-self: stretch;
   }
 }
 

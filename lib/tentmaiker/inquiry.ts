@@ -1,5 +1,5 @@
 /**
- * The inquiry form: the one form on tentmaiker.com.
+ * The inquiry form on tentmaiker.com/contact, the one form on the site.
  *
  * Everything here is plain functions, so the rules can be tested without a
  * server: what counts as a valid inquiry, what looks like a script rather than
@@ -12,8 +12,7 @@ export const INQUIRY_FROM = "Tent MAiKER <inquiries@tentmaiker.com>";
 export const INQUIRY_TO = "ryan@usamissionaries.org";
 
 export const LIMITS = {
-  firstName: 60,
-  lastName: 60,
+  name: 100,
   phone: 32,
   email: 254,
   messageMin: 10,
@@ -24,16 +23,14 @@ export const LIMITS = {
 } as const;
 
 export type Inquiry = {
-  firstName: string;
-  lastName: string;
-  /** First and last, for the subject line and the greeting. */
   name: string;
+  /** Optional: empty when the visitor would rather be emailed. */
   phone: string;
   email: string;
   message: string;
 };
 
-export type FieldErrors = Partial<Record<Exclude<keyof Inquiry, "name">, string>>;
+export type FieldErrors = Partial<Record<keyof Inquiry, string>>;
 
 export type Parsed =
   | { ok: true; inquiry: Inquiry }
@@ -64,22 +61,18 @@ export const parseInquiry = (
   }
 
   const oneLine = (field: string) => text(form.get(field)).replace(/\s+/g, " ").trim();
-  const firstName = oneLine("firstName");
-  const lastName = oneLine("lastName");
+  const name = oneLine("name");
   const phone = oneLine("phone");
   const email = text(form.get("email")).trim();
   const message = text(form.get("message")).replace(/\r\n?/g, "\n").trim();
 
   const errors: FieldErrors = {};
-  if (!firstName) errors.firstName = "Please add your first name.";
-  else if (firstName.length > LIMITS.firstName || CONTROL.test(firstName)) errors.firstName = "Please shorten your first name.";
+  if (!name) errors.name = "Please tell us your name.";
+  else if (name.length > LIMITS.name || CONTROL.test(name)) errors.name = "Please shorten your name.";
 
-  if (!lastName) errors.lastName = "Please add your last name.";
-  else if (lastName.length > LIMITS.lastName || CONTROL.test(lastName)) errors.lastName = "Please shorten your last name.";
-
+  /* Phone is optional; when given, it has to be a phone number. */
   const digits = phone.replace(/\D/g, "").length;
-  if (!phone) errors.phone = "Please add a phone number.";
-  else if (phone.length > LIMITS.phone || !PHONE.test(phone) || digits < 7 || digits > 20) {
+  if (phone && (phone.length > LIMITS.phone || !PHONE.test(phone) || digits < 7 || digits > 20)) {
     errors.phone = "That phone number doesn't look complete.";
   }
 
@@ -99,7 +92,7 @@ export const parseInquiry = (
 
   return {
     ok: true,
-    inquiry: { firstName, lastName, name: `${firstName} ${lastName}`, phone, email, message },
+    inquiry: { name, phone, email, message },
   };
 };
 
@@ -122,19 +115,19 @@ export const inquiryEmail = (inquiry: Inquiry) => ({
   subject: `Tent MAiKER inquiry from ${inquiry.name}`,
   text: [
     `Name: ${inquiry.name}`,
-    `Phone: ${inquiry.phone}`,
+    `Phone: ${inquiry.phone || "not given"}`,
     `Email: ${inquiry.email}`,
     "",
     inquiry.message,
     "",
-    "Sent from the inquiry form on tentmaiker.com. Reply to answer.",
+    "Sent from tentmaiker.com/contact. Reply to answer.",
   ].join("\n"),
   html: [
     `<p><strong>Name:</strong> ${escapeHtml(inquiry.name)}<br>`,
-    `<strong>Phone:</strong> ${escapeHtml(inquiry.phone)}<br>`,
+    `<strong>Phone:</strong> ${escapeHtml(inquiry.phone || "not given")}<br>`,
     `<strong>Email:</strong> ${escapeHtml(inquiry.email)}</p>`,
     `<p style="white-space:pre-wrap">${escapeHtml(inquiry.message)}</p>`,
-    `<p style="color:#666;font-size:12px">Sent from the inquiry form on tentmaiker.com. Reply to answer.</p>`,
+    `<p style="color:#666;font-size:12px">Sent from tentmaiker.com/contact. Reply to answer.</p>`,
   ].join(""),
 });
 

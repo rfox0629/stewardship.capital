@@ -10,6 +10,7 @@ import {
   isLandingPath,
   isProductHost,
   isSiteOnlyPath,
+  landingAddress,
   productPath,
 } from "../lib/spark/hosts.ts";
 import {
@@ -568,6 +569,7 @@ test("the product's domain is recognised, and nothing else is", () => {
 test("clean addresses on the product domain name the paths that serve them", () => {
   /* The root is TentMAiKER's own page; the product's door is /spark. */
   assert.equal(productPath("/"), LANDING_PATH);
+  assert.equal(productPath("/contact"), `${LANDING_PATH}/contact`);
   assert.equal(productPath("/c/shine"), `${SPARK_BASE}/c/shine`);
   assert.equal(productPath("/c/shine/e/founders-weekend/2026/schedule"),
     `${SPARK_BASE}/c/shine/e/founders-weekend/2026/schedule`);
@@ -585,6 +587,9 @@ test("clean addresses on the product domain name the paths that serve them", () 
   /* A near miss is not a match: /clients is not /c. */
   assert.equal(productPath("/clients"), null);
   assert.equal(productPath("/index"), null);
+  /* TentMAiKER's pages are exact addresses; nothing beneath them is served. */
+  assert.equal(productPath("/contact/x"), null);
+  assert.equal(productPath("/contacts"), null);
 });
 
 test("the company's own surfaces are not served on the product domain", () => {
@@ -619,6 +624,16 @@ test("the landing page's internal path is recognised, and the company's host is 
   for (const host of ["tentmaiker.com", "localhost:3000", "x.vercel.app", null, ""]) {
     assert.equal(isCompanyHost(host), false, String(host));
   }
+});
+
+test("TentMAiKER's internal paths are sent to their public addresses", () => {
+  assert.equal(landingAddress(LANDING_PATH), "/");
+  assert.equal(landingAddress(`${LANDING_PATH}/contact`), "/contact");
+  /* Anything else under the internal path is not a page; the front page is. */
+  assert.equal(landingAddress(`${LANDING_PATH}/og.png`), "/");
+  assert.equal(landingAddress(`${LANDING_PATH}/contact/x`), "/");
+  /* And the way there and back agree. */
+  for (const clean of ["/", "/contact"]) assert.equal(landingAddress(productPath(clean)!), clean);
 });
 
 test("the platform console stays the company's", () => {
