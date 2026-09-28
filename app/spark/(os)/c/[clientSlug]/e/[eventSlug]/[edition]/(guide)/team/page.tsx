@@ -37,6 +37,7 @@ export default async function TeamGuidePage({ params }: PageProps) {
       moments={loaded.guide.moments}
       activities={loaded.guide.activities}
       coffee={loaded.guide.coffee}
+      coffeeHours={loaded.guide.coffeeHours}
       team={{
         route: { clientSlug, eventSlug, edition },
         startsOn: loaded.guide.startsOn,

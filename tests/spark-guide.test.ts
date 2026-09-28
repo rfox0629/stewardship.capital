@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   byPhase,
   clock,
+  coffeeHoursByDay,
   dayAgenda,
   detailCue,
   dutiesFor,
@@ -11,6 +12,7 @@ import {
   guestTitle,
   peopleOf,
   readActivities,
+  readCoffeeHours,
   readDrinks,
   readGuestCopy,
   readOps,
@@ -130,6 +132,32 @@ test("an empty operations record reads as nothing, not as blanks", () => {
 test("activities and drinks without a name are dropped rather than drawn empty", () => {
   assert.equal(readActivities([{ name: "Kayaks", category: "Water" }, { category: "Water" }]).length, 1);
   assert.equal(readDrinks([{ name: "Honeycomb", ingredients: ["Espresso"] }, { feel: "x" }]).length, 1);
+});
+
+test("coffee hours are read as days, in the order the weekend happens", () => {
+  /* Two windows on the Friday, and the days arriving out of order, which is
+     how an aggregate can come back. Each day is one heading. */
+  const hours = readCoffeeHours([
+    { day: "sat", starts: "4:00 pm", ends: "5:00 pm" },
+    { day: "fri", starts: "10:15 am", ends: "10:30 am" },
+    { day: "fri", starts: "4:00 pm", ends: "5:00 pm" },
+  ]);
+  assert.deepEqual(coffeeHoursByDay(hours), [
+    ["fri", [
+      { day: "fri", starts: "10:15 am", ends: "10:30 am" },
+      { day: "fri", starts: "4:00 pm", ends: "5:00 pm" },
+    ]],
+    ["sat", [{ day: "sat", starts: "4:00 pm", ends: "5:00 pm" }]],
+  ]);
+});
+
+test("a coffee window with no closing time is not printed open-ended", () => {
+  /* "Friday, from 4:00" invites somebody to turn up at six. A window the
+     calendar has not finished is left off until it has been. */
+  assert.equal(readCoffeeHours([{ day: "fri", starts: "4:00 pm" }]).length, 0);
+  assert.equal(readCoffeeHours([{ day: "fri", ends: "5:00 pm" }]).length, 0);
+  assert.equal(readCoffeeHours([{ starts: "4:00 pm", ends: "5:00 pm" }]).length, 0);
+  assert.deepEqual(coffeeHoursByDay(readCoffeeHours("not a list")), []);
 });
 
 /* --------------------------------------------------------------- duties */

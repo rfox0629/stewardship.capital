@@ -83,6 +83,9 @@ export type Drink = {
   short?: string;
 };
 
+/** A window when the coffee bar is open, as the calendar has it. */
+export type CoffeeHour = { day: string; starts: string; ends: string | null };
+
 export type Guide = {
   name: string;
   organization: string;
@@ -94,6 +97,7 @@ export type Guide = {
   moments: GuideMoment[];
   activities: Activity[];
   coffee: Drink[];
+  coffeeHours: CoffeeHour[];
 };
 
 export const GUEST_DAYS = ["thu", "fri", "sat", "sun"] as const;
@@ -407,6 +411,35 @@ export const readDrinks = (raw: unknown): Drink[] =>
       short: text(source.short),
     }];
   });
+
+/**
+ * The hours the coffee bar keeps, grouped the way they are read.
+ *
+ * One heading per day, in the order the weekend happens, however many
+ * windows that day has. A window with no end time is dropped rather than
+ * printed open-ended: a guest reading "from 4:00" would plan around a
+ * closing time nobody wrote down.
+ */
+export const readCoffeeHours = (raw: unknown): CoffeeHour[] =>
+  (Array.isArray(raw) ? raw : []).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const source = item as Record<string, unknown>;
+    const day = text(source.day);
+    const starts = text(source.starts);
+    const ends = text(source.ends);
+    if (!day || !starts || !ends) return [];
+    return [{ day, starts, ends }];
+  });
+
+/** The same hours as days: "Friday", then every window on it. */
+export const coffeeHoursByDay = (hours: CoffeeHour[]): Array<[string, CoffeeHour[]]> => {
+  const days = new Map<string, CoffeeHour[]>();
+  for (const day of GUEST_DAYS) {
+    const onDay = hours.filter((hour) => hour.day === day);
+    if (onDay.length > 0) days.set(day, onDay);
+  }
+  return [...days];
+};
 
 /* ------------------------------------------------- one person's weekend */
 

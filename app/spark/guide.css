@@ -787,38 +787,64 @@ button.gd-row-hit:active {
   font-weight: 600;
 }
 
-.gd-coffee-times {
-  margin-top: 24px;
+/* The hours, above the menu: what a guest checks before what they order.
+   Day on the left, every window on that day stacked on the right, so a
+   second window on the same day widens nothing and a narrow phone still
+   reads one line per window. */
+
+.gd-hours {
+  margin-bottom: 22px;
   padding: 16px 18px;
   border-radius: 16px;
   background: var(--gd-raised);
 }
 
-.gd .gd-coffee-times h3 {
+.gd .gd-hours h3 {
   font-size: 1rem;
   font-weight: 800;
   margin-bottom: 8px;
 }
 
-.gd-coffee-times ul {
+.gd-hours ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
-.gd-coffee-times li {
+.gd-hours li {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  align-items: baseline;
+  gap: 14px;
   font-size: 0.95rem;
 }
 
-.gd-coffee-times li span {
+.gd-hours-when {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+}
+
+.gd-hours-when > span {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0 5px;
   font-weight: 700;
   color: var(--gd-forest);
   font-variant-numeric: tabular-nums;
+}
+
+.gd-hours-when i {
+  font-style: normal;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gd-ink-2);
 }
 
 /* --------------------------------------------------------------- sheets */
