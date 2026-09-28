@@ -84,11 +84,30 @@ const CLEAN_PREFIXES: Array<[string, string]> = [
 ];
 
 /**
+ * TentMAiKER's own pages on its own domain: the front page, and the page for
+ * writing to us. Exact addresses rather than prefixes, so nothing beneath them
+ * is served by accident and no product address can be shadowed.
+ */
+const LANDING_PAGES: Array<[string, string]> = [
+  ["/", LANDING_PATH],
+  ["/contact", `${LANDING_PATH}/contact`],
+];
+
+/**
+ * The public address of a landing page's internal path, for sending somebody
+ * who typed the internal one on the product's domain to the real one. Anything
+ * under the internal path that is not a page goes to the front page.
+ */
+export const landingAddress = (pathname: string): string =>
+  LANDING_PAGES.find(([, internal]) => internal === pathname)?.[0] ?? "/";
+
+/**
  * The path inside the application that serves this clean address, or null when
  * the address is already an application path and needs no translation.
  */
 export const productPath = (pathname: string): string | null => {
-  if (pathname === "/" || pathname === "") return LANDING_PATH;
+  if (pathname === "") return LANDING_PATH;
+  for (const [clean, internal] of LANDING_PAGES) if (pathname === clean) return internal;
   for (const [clean, internal] of CLEAN_PREFIXES) {
     if (pathname === clean) return internal;
     if (pathname.startsWith(`${clean}/`)) return `${internal}${pathname.slice(clean.length)}`;

@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { landingFor, workspaceHome } from "../../lib/spark/authorize";
@@ -14,7 +14,9 @@ import {
 import { acceptInvitation } from "../../lib/spark/invitations";
 import { maskEmail } from "../../lib/spark/mask";
 import { SPARK_ENTRY } from "../../lib/spark/paths";
+import { codeRequestRules, withinLimits } from "../../lib/limits";
 import { createClient } from "../../lib/supabase/server";
+import { clientAddress } from "../../lib/throttle";
 import type { Choice } from "../../lib/spark/access";
 
 /**
@@ -63,12 +65,23 @@ const pause = (ms: number) =>
 
 export async function requestAccess(email: string): Promise<RequestOutcome> {
   const address = email.trim().toLowerCase();
-  if (!EMAIL.test(address)) return { status: "invalid" };
+  if (address.length > 254 || !EMAIL.test(address)) return { status: "invalid" };
 
   const started = Date.now();
   let outcome: RequestOutcome = { status: "sent", hint: maskEmail(address) };
 
   try {
+    /* Counted per visitor and per address, across every server instance,
+       before anything reaches Supabase. Unknown addresses are counted exactly
+       like known ones, and a refusal reads like any other failure to send, so
+       the limit cannot be used to learn who has an account. */
+    const ip = clientAddress(await headers());
+    if (!(await withinLimits(codeRequestRules(ip, address)))) {
+      outcome = { status: "unavailable" };
+      await pause(RESPONSE_FLOOR_MS - (Date.now() - started));
+      return outcome;
+    }
+
     const supabase = await createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email: address,

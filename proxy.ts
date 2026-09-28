@@ -21,6 +21,7 @@ import {
   isLandingPath,
   isProductHost,
   isSiteOnlyPath,
+  landingAddress,
   productPath,
 } from "./lib/spark/hosts";
 import { createProxyClient, hasIdentity } from "./lib/supabase/proxy";
@@ -88,11 +89,12 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  /* The landing page has one public address, tentmaiker.com/. Its internal
-     path is sent there on the product's domain and is not served on the
-     company's; previews and localhost open it directly, for review. */
+  /* TentMAiKER's pages have one public address each, tentmaiker.com/ and
+     tentmaiker.com/contact. Their internal paths are sent there on the
+     product's domain and are not served on the company's; previews and
+     localhost open them directly, for review. */
   if (isLandingPath(asked)) {
-    if (onProduct) return NextResponse.redirect(new URL("/", request.url));
+    if (onProduct) return NextResponse.redirect(new URL(landingAddress(asked), request.url));
     if (isCompanyHost(host)) {
       const missing = request.nextUrl.clone();
       missing.pathname = "/_not-found-on-this-host";
