@@ -55,7 +55,6 @@ export type OpsDetail = {
   /** How the master calendar classifies the row. */
   category?: "program" | "operations";
   /** Where the source contradicts itself and a person has to decide. */
-  confirm?: "time" | "assignment";
 };
 
 export type GuideMoment = {
@@ -381,7 +380,6 @@ export const readOps = (raw: unknown): OpsDetail | null => {
     notes: text(source.notes),
     status: text(source.status),
     category: text(source.category) === "program" ? "program" : text(source.category) === "operations" ? "operations" : undefined,
-    confirm: text(source.confirm) === "time" ? "time" : text(source.confirm) === "assignment" ? "assignment" : undefined,
   };
   return Object.values(detail).some(Boolean) ? detail : null;
 };
