@@ -197,8 +197,14 @@ html:has(.gd) body {
   stroke-width: 2.1;
 }
 
+/* The tab bar is cleared by the footer underneath, which carries the whole
+   bar plus the safe area in its own bottom padding. Clearing it here too
+   put a second bar's worth of nothing between the last card and the verse
+   on every screen, which read as the page having ended early. This is a gap
+   between two blocks, and nothing more; the footer's own 28px sits under
+   it. */
 .gd-main {
-  padding-bottom: calc(var(--gd-tabbar) + 36px + env(safe-area-inset-bottom));
+  padding-bottom: 8px;
 }
 
 /* --------------------------------------------------------- day selector */
@@ -1585,7 +1591,7 @@ button.gd-row-hit:active {
   }
 
   .gd-main {
-    padding-bottom: 48px;
+    padding-bottom: 8px;
   }
 
   .gd-footer {
