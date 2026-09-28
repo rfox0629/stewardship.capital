@@ -10,11 +10,13 @@ import {
   activityGroups,
   clock,
   clockRange,
+  coffeeHoursByDay,
   dayAgenda,
   detailCue,
   guestTitle,
   hasDetail,
   type Activity,
+  type CoffeeHour,
   type Drink,
   type GuideMoment,
 } from "@lib/spark/guide";
@@ -65,6 +67,7 @@ export function GuideApp({
   moments,
   activities,
   coffee,
+  coffeeHours,
   team,
 }: {
   /** Namespaces what this browser remembers, per engagement and per view. */
@@ -73,6 +76,7 @@ export function GuideApp({
   moments: GuideMoment[];
   activities: Activity[];
   coffee: Drink[];
+  coffeeHours: CoffeeHour[];
   team?: TeamProps | null;
 }) {
   const hydrated = useHydrated();
@@ -131,7 +135,7 @@ export function GuideApp({
   };
 
   const agenda = dayAgenda(moments, shownDay);
-  const coffeeTimes = moments.filter((moment) => moment.guide?.opens?.includes("coffee"));
+  const coffeeDays = coffeeHoursByDay(coffeeHours);
 
   return (
     <div className="gd-app" ref={top}>
@@ -230,6 +234,31 @@ export function GuideApp({
             <p className="gd-lede">
               Three signature hot lattes made for this weekend. Tap one for a closer look.
             </p>
+
+            {coffeeDays.length > 0 ? (
+              <div className="gd-hours">
+                <h3>Coffee bar hours</h3>
+                <ul>
+                  {coffeeDays.map(([day, windows]) => (
+                    <li key={day}>
+                      <b>{DAY_LONG[day]}</b>
+                      <span className="gd-hours-when">
+                        {windows.map((window) => {
+                          const span = clockRange(window.starts, window.ends);
+                          return (
+                            <span key={`${window.starts}-${window.ends}`}>
+                              {span.value}
+                              {span.meridiem ? <i>{span.meridiem}</i> : null}
+                            </span>
+                          );
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             <div className="gd-drinks">
               {coffee.map((drink) => (
                 <button
@@ -248,23 +277,6 @@ export function GuideApp({
                 </button>
               ))}
             </div>
-
-            {coffeeTimes.length > 0 ? (
-              <div className="gd-coffee-times">
-                <h3>When the coffee bar is open</h3>
-                <ul>
-                  {coffeeTimes.map((moment) => (
-                    <li key={moment.id}>
-                      <b>{DAY_LONG[moment.day]}</b>
-                      <span>
-                        {clock(moment.starts)}
-                        {moment.ends ? ` to ${clock(moment.ends)}` : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </section>
         ) : null}
 

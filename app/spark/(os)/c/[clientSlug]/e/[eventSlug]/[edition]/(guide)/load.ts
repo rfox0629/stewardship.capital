@@ -5,6 +5,7 @@ import { resolveEngagement } from "@lib/spark/engagement";
 import { EVENT_COOKIE, sha256 } from "@lib/spark/event-code";
 import {
   readActivities,
+  readCoffeeHours,
   readDrinks,
   readGuestCopy,
   readOps,
@@ -77,6 +78,7 @@ export const loadGuide = cache(
         moments,
         activities: readActivities(raw.activities),
         coffee: readDrinks(raw.coffee),
+        coffeeHours: readCoffeeHours(raw.coffeeHours),
       },
     };
   },

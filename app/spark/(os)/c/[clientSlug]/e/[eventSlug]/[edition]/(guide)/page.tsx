@@ -31,6 +31,7 @@ export default async function GuestGuidePage({ params }: PageProps) {
       moments={guide.moments}
       activities={guide.activities}
       coffee={guide.coffee}
+      coffeeHours={guide.coffeeHours}
     />
   );
 }
