@@ -93,20 +93,22 @@ export default async function TentMaikerPage() {
               Funding Mission<span className="tm-dot">.</span>
             </span>
           </h1>
-          <p className="tm-ref">Acts 18:2&ndash;3</p>
-          <a className="tm-cta" href={contact}>
-            <svg className="tm-arrow" viewBox="0 0 20 20" aria-hidden="true">
-              <path
-                d="M4 10h11M11 5.5 15.5 10 11 14.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Let&rsquo;s build
-          </a>
+          <div className="tm-ref-row">
+            <p className="tm-ref">Acts 18:2&ndash;3</p>
+            <a className="tm-cta" href={contact}>
+              <svg className="tm-arrow" viewBox="0 0 20 20" aria-hidden="true">
+                <path
+                  d="M4 10h11M11 5.5 15.5 10 11 14.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Let&rsquo;s build
+            </a>
+          </div>
         </div>
 
         <figure className="tm-art">
