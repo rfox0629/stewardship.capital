@@ -13,7 +13,7 @@ import {
 } from "@lib/tentmaiker/inquiry";
 
 /** What was typed, handed back so a refusal never erases it. */
-export type Draft = { name: string; email: string; message: string };
+export type Draft = { firstName: string; lastName: string; phone: string; email: string; message: string };
 
 export type InquiryState =
   | { status: "idle" }
@@ -29,7 +29,13 @@ const draftOf = (form: FormData): Draft => {
     const value = form.get(name);
     return typeof value === "string" ? value.slice(0, 2000) : "";
   };
-  return { name: field("name"), email: field("email"), message: field("message") };
+  return {
+    firstName: field("firstName"),
+    lastName: field("lastName"),
+    phone: field("phone"),
+    email: field("email"),
+    message: field("message"),
+  };
 };
 
 /**

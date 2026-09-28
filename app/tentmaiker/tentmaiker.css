@@ -48,7 +48,7 @@ html:has(.tm) body {
   isolation: isolate;
   min-height: 100svh;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   padding: clamp(22px, 3.2vw, 40px) var(--tm-pad-x) clamp(16px, 2.4vw, 28px);
   overflow: hidden;
 }
@@ -173,33 +173,46 @@ html:has(.tm) body {
   height: auto;
 }
 
-/* ------------------------------------------------------------ the foot */
+/* --------------------------------------------------------- the button */
 
-/* One quiet line at the foot of the page. The way to write to us, found by
-   those who look for it and never competing with the picture. */
-.tm-foot {
-  position: relative;
-  z-index: 1;
-}
-
-.tm-link {
-  padding: 6px 0;
-  border: 0;
-  background: none;
-  color: #8b95a1;
-  font: 500 0.8125rem/1 var(--tm-font);
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: rgba(156, 202, 255, 0.35);
-  text-underline-offset: 4px;
-  transition: color 160ms ease, text-decoration-color 160ms ease;
-}
-
-.tm-link:hover,
-.tm-link:focus-visible {
+/* The way in, directly under the verse: the one thing on the page to press.
+   Outlined in the screen's light, filling white when it is chosen. */
+.tm-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: clamp(24px, 2.6vw, 34px);
+  padding: 15px 22px 15px 26px;
+  border: 1px solid rgba(156, 202, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(4, 5, 6, 0.4);
   color: var(--tm-white);
-  text-decoration-color: var(--tm-light);
+  font: 600 0.975rem/1 var(--tm-font);
+  letter-spacing: 0.005em;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(156, 202, 255, 0.12);
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.tm-arrow {
+  width: 20px;
+  height: 20px;
+  color: var(--tm-light);
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.tm-cta:hover,
+.tm-cta:focus-visible {
+  border-color: var(--tm-white);
+  background: var(--tm-white);
+  color: var(--tm-black);
+  box-shadow: 0 0 32px rgba(156, 202, 255, 0.35);
+}
+
+.tm-cta:hover .tm-arrow,
+.tm-cta:focus-visible .tm-arrow {
+  color: var(--tm-black);
+  transform: translateX(3px);
 }
 
 .tm :focus-visible {
@@ -210,7 +223,7 @@ html:has(.tm) body {
 /* ---------------------------------------------------------- the dialog */
 
 .tm-dialog {
-  width: min(460px, calc(100vw - 32px));
+  width: min(540px, calc(100vw - 32px));
   max-height: calc(100svh - 32px);
   padding: 0;
   border: 1px solid rgba(156, 202, 255, 0.18);
@@ -228,7 +241,51 @@ html:has(.tm) body {
 
 .tm-dialog-inner {
   position: relative;
-  padding: 28px 26px 26px;
+  padding: 30px 28px 28px;
+}
+
+/* The verse the name comes from, at the top of the screen. */
+.tm-verse {
+  margin: 0 40px 24px 0;
+  padding-bottom: 22px;
+  border-bottom: 1px solid rgba(156, 202, 255, 0.14);
+}
+
+.tm-verse blockquote {
+  margin: 0;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.42;
+  letter-spacing: -0.015em;
+}
+
+.tm-verse figcaption {
+  margin-top: 12px;
+  color: var(--tm-light);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+/* First and last name side by side, then phone and email. */
+.tm-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 14px;
+}
+
+.tm-pair + .tm-pair,
+.tm-pair + .tm-field {
+  margin-top: 14px;
+}
+
+.tm-pair .tm-field {
+  margin-top: 0;
+}
+
+.tm-field textarea::placeholder {
+  color: #6f7883;
 }
 
 .tm-dialog h2 {
@@ -236,13 +293,6 @@ html:has(.tm) body {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.03em;
-}
-
-.tm-dialog-lede {
-  margin: 8px 0 20px;
-  color: #b9c0c9;
-  font-size: 0.95rem;
-  line-height: 1.5;
 }
 
 .tm-dialog-close {
@@ -398,6 +448,20 @@ html:has(.tm) body {
 
   .tm-ref {
     margin-top: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .tm-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .tm-pair .tm-field + .tm-field {
+    margin-top: 14px;
+  }
+
+  .tm-verse blockquote {
+    font-size: 1.0625rem;
   }
 }
 

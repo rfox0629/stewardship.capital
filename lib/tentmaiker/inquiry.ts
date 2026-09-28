@@ -1,5 +1,5 @@
 /**
- * "Start a conversation": the one form on tentmaiker.com.
+ * "Let's Make It Happen": the one form on tentmaiker.com.
  *
  * Everything here is plain functions, so the rules can be tested without a
  * server: what counts as a valid inquiry, what looks like a script rather than
@@ -12,7 +12,9 @@ export const INQUIRY_FROM = "Tent MAiKER <inquiries@tentmaiker.com>";
 export const INQUIRY_TO = "ryan@usamissionaries.org";
 
 export const LIMITS = {
-  name: 100,
+  firstName: 60,
+  lastName: 60,
+  phone: 32,
   email: 254,
   messageMin: 10,
   message: 2000,
@@ -21,9 +23,17 @@ export const LIMITS = {
   minimumFillMs: 3000,
 } as const;
 
-export type Inquiry = { name: string; email: string; message: string };
+export type Inquiry = {
+  firstName: string;
+  lastName: string;
+  /** First and last, for the subject line and the greeting. */
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+};
 
-export type FieldErrors = Partial<Record<keyof Inquiry, string>>;
+export type FieldErrors = Partial<Record<Exclude<keyof Inquiry, "name">, string>>;
 
 export type Parsed =
   | { ok: true; inquiry: Inquiry }
@@ -32,6 +42,9 @@ export type Parsed =
   | { ok: false; spam: true };
 
 const EMAIL = /^[^\s@<>"',;:()[\]\\]+@[^\s@<>"',;:()[\]\\]+\.[^\s@<>"',;:()[\]\\]{2,}$/;
+/* Digits and the punctuation people write phone numbers with, and an optional
+   extension. Anything else in the field is not a phone number. */
+const PHONE = /^\+?[\d\s().-]+(\s*(x|ext\.?)\s*\d{1,6})?$/i;
 /* Control characters other than the line breaks a message may contain. */
 const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 
@@ -50,20 +63,32 @@ export const parseInquiry = (
     return { ok: false, spam: true };
   }
 
-  const name = text(form.get("name")).replace(/\s+/g, " ").trim();
+  const oneLine = (field: string) => text(form.get(field)).replace(/\s+/g, " ").trim();
+  const firstName = oneLine("firstName");
+  const lastName = oneLine("lastName");
+  const phone = oneLine("phone");
   const email = text(form.get("email")).trim();
   const message = text(form.get("message")).replace(/\r\n?/g, "\n").trim();
 
   const errors: FieldErrors = {};
-  if (!name) errors.name = "Please tell us your name.";
-  else if (name.length > LIMITS.name || CONTROL.test(name)) errors.name = "Please shorten your name.";
+  if (!firstName) errors.firstName = "Please add your first name.";
+  else if (firstName.length > LIMITS.firstName || CONTROL.test(firstName)) errors.firstName = "Please shorten your first name.";
+
+  if (!lastName) errors.lastName = "Please add your last name.";
+  else if (lastName.length > LIMITS.lastName || CONTROL.test(lastName)) errors.lastName = "Please shorten your last name.";
+
+  const digits = phone.replace(/\D/g, "").length;
+  if (!phone) errors.phone = "Please add a phone number.";
+  else if (phone.length > LIMITS.phone || !PHONE.test(phone) || digits < 7 || digits > 20) {
+    errors.phone = "That phone number doesn't look complete.";
+  }
 
   if (!email) errors.email = "Please add an email we can reply to.";
   else if (email.length > LIMITS.email || !EMAIL.test(email) || CONTROL.test(email)) {
     errors.email = "That email doesn't look complete.";
   }
 
-  if (message.length < LIMITS.messageMin) errors.message = "Tell us a little more about the project.";
+  if (message.length < LIMITS.messageMin) errors.message = "Tell us a little more about what you need.";
   else if (message.length > LIMITS.message) errors.message = `Please keep it under ${LIMITS.message} characters.`;
   else if (CONTROL.test(message)) errors.message = "The message contains characters we can't send.";
 
@@ -72,11 +97,14 @@ export const parseInquiry = (
   /* A handful of links is a person sharing context; a page of them is not. */
   if ((message.match(/https?:\/\//gi) ?? []).length > LIMITS.links) return { ok: false, spam: true };
 
-  return { ok: true, inquiry: { name, email, message } };
+  return {
+    ok: true,
+    inquiry: { firstName, lastName, name: `${firstName} ${lastName}`, phone, email, message },
+  };
 };
 
 /** The same person sending the same words twice counts once. */
-export const fingerprint = (inquiry: Inquiry) =>
+export const fingerprint = (inquiry: Pick<Inquiry, "email" | "message">) =>
   `${inquiry.email.toLowerCase()}\u0000${inquiry.message.replace(/\s+/g, " ").toLowerCase()}`;
 
 const escapeHtml = (value: string) =>
@@ -94,17 +122,19 @@ export const inquiryEmail = (inquiry: Inquiry) => ({
   subject: `Tent MAiKER inquiry from ${inquiry.name}`,
   text: [
     `Name: ${inquiry.name}`,
+    `Phone: ${inquiry.phone}`,
     `Email: ${inquiry.email}`,
     "",
     inquiry.message,
     "",
-    "Sent from the Start a conversation form on tentmaiker.com. Reply to answer.",
+    "Sent from the Let's Make It Happen form on tentmaiker.com. Reply to answer.",
   ].join("\n"),
   html: [
     `<p><strong>Name:</strong> ${escapeHtml(inquiry.name)}<br>`,
+    `<strong>Phone:</strong> ${escapeHtml(inquiry.phone)}<br>`,
     `<strong>Email:</strong> ${escapeHtml(inquiry.email)}</p>`,
     `<p style="white-space:pre-wrap">${escapeHtml(inquiry.message)}</p>`,
-    `<p style="color:#666;font-size:12px">Sent from the Start a conversation form on tentmaiker.com. Reply to answer.</p>`,
+    `<p style="color:#666;font-size:12px">Sent from the Let's Make It Happen form on tentmaiker.com. Reply to answer.</p>`,
   ].join(""),
 });
 

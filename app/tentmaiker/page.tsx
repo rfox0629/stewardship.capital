@@ -92,16 +92,13 @@ export default function TentMaikerPage() {
             </span>
           </h1>
           <p className="tm-ref">Acts 18:2&ndash;3</p>
+          <StartConversation />
         </div>
 
         <figure className="tm-art">
           <Tent />
         </figure>
       </div>
-
-      <footer className="tm-foot">
-        <StartConversation />
-      </footer>
     </main>
   );
 }

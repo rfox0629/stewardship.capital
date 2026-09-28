@@ -15,7 +15,9 @@ const NOW = 1_800_000_000_000;
 const form = (fields: Record<string, string>) => {
   const data = new FormData();
   const filled = {
-    name: "Priscilla",
+    firstName: "Priscilla",
+    lastName: "Tentmaker",
+    phone: "(555) 010-0199",
     email: "priscilla@example.org",
     message: "We run a small ministry and need a volunteer schedule that works.",
     website: "",
@@ -33,11 +35,14 @@ test("a complete inquiry from a person is accepted", () => {
 });
 
 test("missing and malformed fields are named, one message each", () => {
-  const parsed = parseInquiry(form({ name: " ", email: "not-an-email", message: "hi" }), NOW);
+  const parsed = parseInquiry(
+    form({ firstName: " ", lastName: "", phone: "call me", email: "not-an-email", message: "hi" }),
+    NOW,
+  );
   assert.equal(parsed.ok, false);
   assert.ok(!parsed.ok && "errors" in parsed);
   if (!parsed.ok && "errors" in parsed) {
-    assert.deepEqual(Object.keys(parsed.errors).sort(), ["email", "message", "name"]);
+    assert.deepEqual(Object.keys(parsed.errors).sort(), ["email", "firstName", "lastName", "message", "phone"]);
   }
 });
 
@@ -58,7 +63,7 @@ test("a header cannot be smuggled in through the name or the address", () => {
     assert.equal(parsed.ok, false, JSON.stringify(fields));
   }
   /* Line breaks in a name are folded to spaces, never carried into a subject. */
-  const parsed = parseInquiry(form({ name: "Aquila\r\nBcc: victim@example.org" }), NOW);
+  const parsed = parseInquiry(form({ firstName: "Aquila\r\nBcc: victim@example.org" }), NOW);
   assert.ok(parsed.ok);
   if (parsed.ok) assert.doesNotMatch(inquiryEmail(parsed.inquiry).subject, /[\r\n]/);
 });
@@ -80,11 +85,13 @@ test("a message that is mostly links is refused", () => {
 
 test("lengths are bounded", () => {
   assert.equal(parseInquiry(form({ message: "x".repeat(2001) }), NOW).ok, false);
-  assert.equal(parseInquiry(form({ name: "x".repeat(101) }), NOW).ok, false);
+  assert.equal(parseInquiry(form({ firstName: "x".repeat(61) }), NOW).ok, false);
+  assert.equal(parseInquiry(form({ lastName: "x".repeat(61) }), NOW).ok, false);
+  assert.equal(parseInquiry(form({ phone: "1".repeat(33) }), NOW).ok, false);
 });
 
 test("the email goes from Tent MAiKER to Ryan, and a reply goes to the visitor", () => {
-  const parsed = parseInquiry(form({ name: "<b>Aquila</b>", message: "<script>alert(1)</script> need help" }), NOW);
+  const parsed = parseInquiry(form({ firstName: "<b>Aquila</b>", message: "<script>alert(1)</script> need help" }), NOW);
   assert.ok(parsed.ok);
   if (!parsed.ok) return;
   const email = inquiryEmail(parsed.inquiry);
@@ -93,13 +100,24 @@ test("the email goes from Tent MAiKER to Ryan, and a reply goes to the visitor",
   assert.deepEqual(email.to, ["ryan@usamissionaries.org"]);
   assert.equal(INQUIRY_TO, "ryan@usamissionaries.org");
   assert.equal(email.reply_to, "priscilla@example.org");
+  assert.match(email.text, /Phone: \(555\) 010-0199/, "the phone number is in the email");
+  assert.match(email.subject, /from <b>Aquila<\/b> Tentmaker$/, "the subject carries first and last name");
   assert.doesNotMatch(email.html, /<script>|<b>Aquila/, "visitor text is escaped in the HTML");
   assert.match(email.text, /<script>alert\(1\)<\/script> need help/, "and kept verbatim in the text part");
 });
 
+test("phone numbers are read the way people write them", () => {
+  for (const phone of ["(555) 010-0199", "+44 20 7946 0958", "555.010.0199", "5550100199 ext. 12", "+1 555-010-0199 x7"]) {
+    assert.equal(parseInquiry(form({ phone }), NOW).ok, true, phone);
+  }
+  for (const phone of ["12345", "call me", "555-CALL-NOW", "+1 (555) 010-0199; drop table"]) {
+    assert.equal(parseInquiry(form({ phone }), NOW).ok, false, phone);
+  }
+});
+
 test("the same words from the same person share a fingerprint", () => {
-  const a = fingerprint({ name: "A", email: "P@example.org", message: "Hello  there,\nfriend" });
-  const b = fingerprint({ name: "B", email: "p@example.org", message: "hello there, friend" });
+  const a = fingerprint({ email: "P@example.org", message: "Hello  there,\nfriend" });
+  const b = fingerprint({ email: "p@example.org", message: "hello there, friend" });
   assert.equal(a, b);
 });
 
@@ -108,7 +126,14 @@ test("the same words from the same person share a fingerprint", () => {
 const reply = (status: number, body: unknown) =>
   (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
 
-const payload = inquiryEmail({ name: "P", email: "p@example.org", message: "A long enough message." });
+const payload = inquiryEmail({
+  firstName: "P",
+  lastName: "Q",
+  name: "P Q",
+  phone: "555 0100 199",
+  email: "p@example.org",
+  message: "A long enough message.",
+});
 
 test("sent means Resend accepted it and returned an id", async () => {
   let seen: RequestInit | undefined;
