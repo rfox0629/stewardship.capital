@@ -25,7 +25,7 @@ function Arrow() {
 }
 
 /**
- * "Let's Make It Happen", beneath the verse on the front page.
+ * "Click here", beneath the verse on the front page.
  *
  * A native dialog, so focus, Escape and the backdrop behave the way the
  * platform does. It opens on the verse the name comes from, then asks who you
@@ -73,9 +73,9 @@ export function StartConversation() {
 
   return (
     <>
-      <button type="button" className="tm-cta" onClick={open}>
-        Let&rsquo;s Make It Happen
+      <button type="button" className="tm-cta" aria-haspopup="dialog" onClick={open}>
         <Arrow />
+        Click here
       </button>
 
       <dialog
@@ -122,7 +122,7 @@ export function StartConversation() {
               </button>
             </div>
           ) : (
-            <form ref={form} action={action} key={round} noValidate aria-label="Let's Make It Happen">
+            <form ref={form} action={action} key={round} noValidate aria-label="Tell us what you need">
               <div className="tm-pair">
                 {input("firstName", "First name", { autoComplete: "given-name", maxLength: 60 })}
                 {input("lastName", "Last name", { autoComplete: "family-name", maxLength: 60 })}

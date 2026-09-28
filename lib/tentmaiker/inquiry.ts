@@ -1,5 +1,5 @@
 /**
- * "Let's Make It Happen": the one form on tentmaiker.com.
+ * The inquiry form: the one form on tentmaiker.com.
  *
  * Everything here is plain functions, so the rules can be tested without a
  * server: what counts as a valid inquiry, what looks like a script rather than
@@ -127,14 +127,14 @@ export const inquiryEmail = (inquiry: Inquiry) => ({
     "",
     inquiry.message,
     "",
-    "Sent from the Let's Make It Happen form on tentmaiker.com. Reply to answer.",
+    "Sent from the inquiry form on tentmaiker.com. Reply to answer.",
   ].join("\n"),
   html: [
     `<p><strong>Name:</strong> ${escapeHtml(inquiry.name)}<br>`,
     `<strong>Phone:</strong> ${escapeHtml(inquiry.phone)}<br>`,
     `<strong>Email:</strong> ${escapeHtml(inquiry.email)}</p>`,
     `<p style="white-space:pre-wrap">${escapeHtml(inquiry.message)}</p>`,
-    `<p style="color:#666;font-size:12px">Sent from the Let's Make It Happen form on tentmaiker.com. Reply to answer.</p>`,
+    `<p style="color:#666;font-size:12px">Sent from the inquiry form on tentmaiker.com. Reply to answer.</p>`,
   ].join(""),
 });
 
