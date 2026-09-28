@@ -15,6 +15,7 @@ import {
   readGuestCopy,
   readOps,
   categoryOf,
+  clockRange,
   leadsOf,
   personalAgenda,
   personalOverlaps,
@@ -392,4 +393,16 @@ test("two candidates for one job are both offered the row, as written", () => {
     assert.equal(mine[0].involvement, "leading");
   }
   assert.equal(personalAgenda([sector], "Keta").length, 0, "nobody else is assigned it");
+});
+
+test("a window reads as one line, and says the meridiem once where it can", () => {
+  assert.deepEqual(clockRange("7:30 am", "9:00 am"), { value: "7:30–9:00", meridiem: "AM" });
+  assert.deepEqual(clockRange("12:00 pm", "1:00 pm"), { value: "12:00–1:00", meridiem: "PM" });
+  assert.deepEqual(clockRange("11:30 am", "12:00 pm"),
+    { value: "11:30 AM–12:00 PM", meridiem: null });
+
+  /* No end is no end. Nothing is borrowed from whatever comes next. */
+  assert.deepEqual(clockRange("4:00 pm", null), { value: "4:00", meridiem: "PM" });
+  assert.deepEqual(clockRange("6:00 pm", ""), { value: "6:00", meridiem: "PM" });
+  assert.deepEqual(clockRange(null, "9:00 am"), { value: "", meridiem: null });
 });

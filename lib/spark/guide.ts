@@ -33,6 +33,8 @@ export type GuestCopy = {
   title?: string;
   summary?: string;
   menu?: string[];
+  /** Pudding, listed under its own heading rather than inside the meal. */
+  dessert?: string[];
   opens?: Opens[];
   optional?: boolean;
   /** Something still undecided, said plainly rather than hidden. */
@@ -122,6 +124,38 @@ export const clock = (label: string | null | undefined): string => {
   const m = minutes % 60;
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   return `${h12}:${String(m).padStart(2, "0")} ${h24 >= 12 ? "PM" : "AM"}`;
+};
+
+/**
+ * A window, written the way a card writes it.
+ *
+ * "7:30 to 9:00 AM" when both ends are in the same half of the day, and
+ * "11:30 AM to 12:00 PM" when they are not, because the meridiem only needs
+ * saying once where it does not change. A moment with no end is just its
+ * start: a guide never invents a finish by borrowing the next row's start.
+ */
+export const clockRange = (
+  starts: string | null,
+  ends: string | null,
+): { value: string; meridiem: string | null } => {
+  const from = splitClock(starts);
+  if (!from) return { value: "", meridiem: null };
+  const to = splitClock(ends);
+  if (!to) return { value: `${from.time}`, meridiem: from.period };
+  if (from.period === to.period) {
+    return { value: `${from.time}\u2013${to.time}`, meridiem: from.period };
+  }
+  return { value: `${from.time} ${from.period}\u2013${to.time} ${to.period}`, meridiem: null };
+};
+
+/** The clock face of a label, and which half of the day it is in. */
+const splitClock = (label: string | null): { time: string; period: string } | null => {
+  const match = (label ?? "").trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i);
+  if (!match) return null;
+  return {
+    time: match[2] ? `${match[1]}:${match[2]}` : match[1],
+    period: match[3].toUpperCase(),
+  };
 };
 
 /** The name a guest sees, which is not always the one the team works to. */
@@ -320,11 +354,13 @@ export const readGuestCopy = (raw: unknown): GuestCopy | null => {
   const source = raw as Record<string, unknown>;
   const opens = list(source.opens).filter((item): item is Opens => item === "activities" || item === "coffee");
   const menu = list(source.menu);
+  const dessert = list(source.dessert);
   return {
     kind: text(source.kind) as GuideKind | undefined,
     title: text(source.title),
     summary: text(source.summary),
     menu: menu.length > 0 ? menu : undefined,
+    dessert: dessert.length > 0 ? dessert : undefined,
     opens: opens.length > 0 ? opens : undefined,
     optional: source.optional === true,
     tbc: text(source.tbc),

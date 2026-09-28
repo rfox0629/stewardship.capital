@@ -9,6 +9,7 @@ import {
   GUEST_DAYS,
   activityGroups,
   clock,
+  clockRange,
   dayAgenda,
   detailCue,
   guestTitle,
@@ -302,13 +303,13 @@ function AgendaRow({
   const kind = moment.guide?.kind ?? "program";
   const cue = detailCue(moment);
   const sub = moment.guide?.summary ?? moment.location ?? null;
-  const [h, m, period] = splitClock(moment.starts);
+  const window = clockRange(moment.starts, moment.ends);
 
   const body = (
     <>
       <span className="gd-row-time">
-        <b>{h}{m ? <>:{m}</> : null}</b>
-        <i>{period}</i>
+        <b>{window.value}</b>
+        {window.meridiem ? <i>{window.meridiem}</i> : null}
       </span>
       <span className="gd-row-body">
         <span className="gd-row-title">
@@ -344,13 +345,6 @@ function AgendaRow({
     </li>
   );
 }
-
-const splitClock = (label: string | null): [string, string, string] => {
-  const text = clock(label);
-  const match = text.match(/^(\d+):(\d+) (AM|PM)$/);
-  if (!match) return ["", "", ""];
-  return [match[1], match[2], match[3]];
-};
 
 /* -------------------------------------------------------------- sheets */
 
@@ -428,6 +422,15 @@ function MomentDetail({
           <h3>On the menu</h3>
           <ul>
             {copy.menu.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </div>
+      ) : null}
+
+      {copy?.dessert && copy.dessert.length > 0 ? (
+        <div className="gd-menu">
+          <h3>Dessert</h3>
+          <ul>
+            {copy.dessert.map((item) => <li key={item}>{item}</li>)}
           </ul>
         </div>
       ) : null}
