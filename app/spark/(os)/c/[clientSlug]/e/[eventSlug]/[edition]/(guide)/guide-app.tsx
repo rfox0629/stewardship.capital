@@ -105,7 +105,6 @@ export function GuideApp({
   const days = GUEST_DAYS.filter((key) => moments.some((moment) => moment.day === key));
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const trigger = useRef<HTMLElement | null>(null);
-  const top = useRef<HTMLDivElement>(null);
 
   /* Until hydration, render exactly what the server did. */
   const shownTab: Tab = hydrated ? tab : "schedule";
@@ -117,7 +116,10 @@ export function GuideApp({
   const setTab = (next: Tab) => {
     setTabState(next);
     writeStored(`${storeKey}:tab`, next);
-    top.current?.scrollIntoView({ block: "start" });
+    /* The top of the page, not the top of the list. Scrolling the app into
+       view left the weekend's own header above the fold, so a tab opened
+       looking like somewhere you had already scrolled to. */
+    window.scrollTo({ top: 0 });
   };
   const setDay = (next: string) => {
     setDayState(next);
@@ -138,7 +140,7 @@ export function GuideApp({
   const coffeeDays = coffeeHoursByDay(coffeeHours);
 
   return (
-    <div className="gd-app" ref={top}>
+    <div className="gd-app">
       <nav className="gd-tabs" aria-label="Guide">
         <div className="gd-shell gd-tabs-inner">
           {tabs.map((item) => (
