@@ -1809,6 +1809,33 @@ button.gd-row-hit:active {
   margin-top: 8px;
 }
 
+/* The roster, once it has been answered: one name and the way back to the
+   others, on the line the fifteen buttons used to fill. */
+.gd-me {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin: 4px 0 14px;
+}
+
+.gd .gd-me p {
+  font-size: 0.95rem;
+  color: var(--gd-ink-2);
+}
+
+.gd-me b {
+  font-weight: 800;
+  color: var(--gd-ink);
+}
+
+.gd .gd-me .gd-link {
+  min-height: 0;
+  margin-top: 0;
+  font-size: 0.9rem;
+}
+
 .gd-duty-done .gd-duty-title {
   text-decoration: line-through;
   text-decoration-color: #b9ad97;

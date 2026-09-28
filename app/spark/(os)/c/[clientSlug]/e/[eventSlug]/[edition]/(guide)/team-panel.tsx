@@ -93,6 +93,13 @@ export function TeamPanel(props: TeamProps) {
     const stored = recall(`${key}:teamday`);
     return stored && (TEAM_DAYS as readonly string[]).includes(stored) ? stored : "thu";
   });
+  /* Who is reading. Held here rather than in each tab so choosing a name on
+     the schedule is the same choice the duties tab already knows about, and
+     remembered so it survives the phone locking and the guide reopening. */
+  const [me, setMe] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return recall(`${key}:me`);
+  });
 
   const shownTab = hydrated ? tab : "schedule";
   /* One day for all three tabs, so switching tab keeps the day you were on. */
@@ -105,6 +112,10 @@ export function TeamPanel(props: TeamProps) {
   const chooseDay = (next: string) => {
     setDay(next);
     remember(`${key}:teamday`, next);
+  };
+  const chooseMe = (name: string) => {
+    setMe(name);
+    remember(`${key}:me`, name);
   };
 
   return (
@@ -127,9 +138,13 @@ export function TeamPanel(props: TeamProps) {
 
       <DaySelector startsOn={props.startsOn} day={shownDay} onDay={chooseDay} />
 
-      {shownTab === "schedule" ? <TeamSchedule {...props} day={shownDay} storeKey={key} /> : null}
+      {shownTab === "schedule" ? (
+        <TeamSchedule {...props} day={shownDay} storeKey={key} me={me} onMe={chooseMe} />
+      ) : null}
       {shownTab === "ros" ? <RunOfShow {...props} day={shownDay} /> : null}
-      {shownTab === "duties" ? <Duties {...props} day={shownDay} storeKey={key} /> : null}
+      {shownTab === "duties" ? (
+        <Duties {...props} day={shownDay} storeKey={key} me={me} onMe={chooseMe} />
+      ) : null}
     </section>
   );
 }
@@ -236,6 +251,62 @@ function Details({ ops, skip = [] }: { ops: OpsDetail | null; skip?: Array<keyof
   );
 }
 
+/**
+ * Whose list this is.
+ *
+ * Fifteen names is a wall to read past every time somebody opens the guide,
+ * and only one of them is ever theirs. So the roster shows until a name is
+ * picked and then folds away to that name, with a way back for the phone
+ * that gets handed to somebody else.
+ */
+function WhoAmI({
+  people,
+  chosen,
+  hint,
+  onChoose,
+}: {
+  people: string[];
+  chosen: string | null;
+  hint: string;
+  onChoose: (name: string) => void;
+}) {
+  const [picking, setPicking] = useState(false);
+
+  if (chosen && !picking) {
+    return (
+      <div className="gd-me">
+        <p>
+          Showing <b>{chosen}</b>
+        </p>
+        <button type="button" className="gd-link" onClick={() => setPicking(true)}>
+          Not you?
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="gd-people-pick">
+      <p className="gd-hint">{hint}</p>
+      <div className="gd-people">
+        {people.map((name) => (
+          <button
+            key={name}
+            type="button"
+            aria-pressed={chosen === name}
+            onClick={() => {
+              onChoose(name);
+              setPicking(false);
+            }}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------- schedule */
 
 /**
@@ -246,17 +317,28 @@ function Details({ ops, skip = [] }: { ops: OpsDetail | null; skip?: Array<keyof
  * one person's own thread through the same rows, which is the only way to see
  * a speaking slot and a cleanup in one list.
  */
-function TeamSchedule({ moments, day, storeKey }: TeamProps & { day: string; storeKey: string }) {
+function TeamSchedule({
+  moments,
+  day,
+  storeKey,
+  me,
+  onMe,
+}: TeamProps & { day: string; storeKey: string; me: string | null; onMe: (name: string) => void }) {
   const hydrated = useHydrated();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [mine, setMine] = useState(false);
-  const [person, setPerson] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return recall(`${storeKey}:me`);
+  /* Which list somebody was last reading is remembered too: a volunteer who
+     only ever wants their own thread should not have to say so again. */
+  const [mine, setMine] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return recall(`${storeKey}:mine`) === "yes";
   });
+  const chooseMine = (next: boolean) => {
+    setMine(next);
+    remember(`${storeKey}:mine`, next ? "yes" : "no");
+  };
 
   const people = rosterOf(moments);
-  const shownPerson = hydrated && person && people.includes(person) ? person : null;
+  const shownPerson = hydrated && me && people.includes(me) ? me : null;
   const showMine = hydrated && mine;
 
   const ofPerson = shownPerson ? personalAgenda(moments, shownPerson) : [];
@@ -267,34 +349,24 @@ function TeamSchedule({ moments, day, storeKey }: TeamProps & { day: string; sto
   return (
     <>
       <div className="gd-seg gd-seg-two" role="tablist" aria-label="Whose schedule">
-        <button type="button" role="tab" aria-selected={!showMine} onClick={() => setMine(false)}>
+        <button type="button" role="tab" aria-selected={!showMine} onClick={() => chooseMine(false)}>
           Full team
         </button>
-        <button type="button" role="tab" aria-selected={showMine} onClick={() => setMine(true)}>
+        <button type="button" role="tab" aria-selected={showMine} onClick={() => chooseMine(true)}>
           Your schedule
         </button>
       </div>
 
       {showMine ? (
-        <div className="gd-people-pick">
-          <p className="gd-hint">Select your name to see only what you are part of.</p>
-          <div className="gd-people">
-            {people.map((name) => (
-              <button
-                key={name}
-                type="button"
-                aria-pressed={shownPerson === name}
-                onClick={() => {
-                  setPerson(name);
-                  remember(`${storeKey}:me`, name);
-                  setOpenId(null);
-                }}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <WhoAmI
+          people={people}
+          chosen={shownPerson}
+          hint="Select your name to see only what you are part of."
+          onChoose={(name) => {
+            onMe(name);
+            setOpenId(null);
+          }}
+        />
       ) : null}
 
       {showMine && !shownPerson ? <p className="gd-empty">Choose your name to see your schedule.</p> : null}
@@ -458,14 +530,26 @@ function DutyCheck({ done, title, onToggle }: { done: boolean; title: string; on
   );
 }
 
-function Duties({ moments, prep, statuses, route, day, storeKey }: TeamProps & { day: string; storeKey: string }) {
+function Duties({
+  moments,
+  prep,
+  statuses,
+  route,
+  day,
+  storeKey,
+  me,
+  onMe,
+}: TeamProps & { day: string; storeKey: string; me: string | null; onMe: (name: string) => void }) {
   const hydrated = useHydrated();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [mine, setMine] = useState(false);
-  const [person, setPerson] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return recall(`${storeKey}:me`);
+  const [mine, setMine] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return recall(`${storeKey}:mineduties`) === "yes";
   });
+  const chooseMine = (next: boolean) => {
+    setMine(next);
+    remember(`${storeKey}:mineduties`, next ? "yes" : "no");
+  };
   const { doneOf, toggle, failure } = useCompletion(route);
 
   /* The operational work, and only that: a job somebody does, with a box to
@@ -474,12 +558,11 @@ function Duties({ moments, prep, statuses, route, day, storeKey }: TeamProps & {
      schedule. */
   const duties = moments.filter((moment) => statuses[moment.id] && isOperations(moment));
   const people = rosterOf(duties);
-  const shownPerson = hydrated && person && people.includes(person) ? person : null;
+  const shownPerson = hydrated && me && people.includes(me) ? me : null;
   const showMine = hydrated && mine;
 
   const choose = (name: string) => {
-    setPerson(name);
-    remember(`${storeKey}:me`, name);
+    onMe(name);
     setOpenId(null);
   };
 
@@ -494,30 +577,21 @@ function Duties({ moments, prep, statuses, route, day, storeKey }: TeamProps & {
   return (
     <>
       <div className="gd-seg gd-seg-two" role="tablist" aria-label="Whose duties">
-        <button type="button" role="tab" aria-selected={!showMine} onClick={() => setMine(false)}>
+        <button type="button" role="tab" aria-selected={!showMine} onClick={() => chooseMine(false)}>
           All duties
         </button>
-        <button type="button" role="tab" aria-selected={showMine} onClick={() => setMine(true)}>
+        <button type="button" role="tab" aria-selected={showMine} onClick={() => chooseMine(true)}>
           Your duties
         </button>
       </div>
 
       {showMine ? (
-        <div className="gd-people-pick">
-          <p className="gd-hint">Select your name, then check off duties as you finish.</p>
-          <div className="gd-people">
-            {people.map((name) => (
-              <button
-                key={name}
-                type="button"
-                aria-pressed={shownPerson === name}
-                onClick={() => choose(name)}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <WhoAmI
+          people={people}
+          chosen={shownPerson}
+          hint="Select your name, then check off duties as you finish."
+          onChoose={choose}
+        />
       ) : null}
 
       {failure ? <p className="gd-failure" role="status">{failure}</p> : null}
