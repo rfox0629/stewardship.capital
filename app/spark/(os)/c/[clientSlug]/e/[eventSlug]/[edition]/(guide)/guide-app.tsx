@@ -202,10 +202,14 @@ export function GuideApp({
                     onOpen={(from) => {
                       /* A row that offers nothing but another tab takes you
                          to it. A sheet whose only content is one link is a
-                         step, not an answer. */
+                         step, not an answer.
+                         A summary does not count as content here: the row
+                         already prints it, so a sheet would open on a line
+                         somebody has just read, with the list they actually
+                         wanted a tab away. A menu or an unsettled detail is
+                         different, because neither is on the row. */
                       const opens = moment.guide?.opens ?? [];
-                      const nothingElse =
-                        !moment.guide?.menu?.length && !moment.guide?.summary && !moment.guide?.tbc;
+                      const nothingElse = !moment.guide?.menu?.length && !moment.guide?.tbc;
                       if (nothingElse && opens.length === 1 && (opens[0] === "activities" || opens[0] === "coffee")) {
                         setTab(opens[0] as Tab);
                         return;
