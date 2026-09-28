@@ -149,6 +149,20 @@ html:has(.tm) body {
   text-transform: uppercase;
 }
 
+/* The verse reference, and beside it the way in. */
+.tm-ref-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px clamp(22px, 2.6vw, 36px);
+  margin-top: clamp(26px, 3.2vw, 44px);
+}
+
+.tm-ref-row .tm-ref,
+.tm-ref-row .tm-cta {
+  margin-top: 0;
+}
+
 /* The picture runs to the right edge of the page and fades into it on the
    other three sides, so there is no frame and no seam. */
 .tm-art {
@@ -446,6 +460,10 @@ html:has(.tm) body {
   }
 
   .tm-ref {
+    margin-top: 24px;
+  }
+
+  .tm-ref-row {
     margin-top: 24px;
   }
 
