@@ -210,22 +210,6 @@ function Roles({ ops }: { ops: OpsDetail | null | undefined }) {
   );
 }
 
-/**
- * What the source could not settle, said once where the answer is needed.
- *
- * It reads inside an opened row rather than as a badge on every card: the
- * timeline should show the weekend, not a wall of warnings.
- */
-function Unresolved({ ops }: { ops: OpsDetail | null | undefined }) {
-  if (!ops?.confirm) return null;
-  return (
-    <p className="gd-unresolved">
-      <b>{ops.confirm === "time" ? "Time to confirm." : "Assignment to confirm."}</b>{" "}
-      {ops.notes ?? "The master calendar disagrees with itself here."}
-    </p>
-  );
-}
-
 const DETAIL_ROWS: Array<[keyof OpsDetail, string]> = [
   ["purpose", "What happens"],
   ["owner", "Lead"],
@@ -239,20 +223,16 @@ const DETAIL_ROWS: Array<[keyof OpsDetail, string]> = [
 
 function Details({ ops, skip = [] }: { ops: OpsDetail | null; skip?: Array<keyof OpsDetail> }) {
   const rows = DETAIL_ROWS.filter(([field]) => ops?.[field] && !skip.includes(field));
+  if (rows.length === 0) return null;
   return (
-    <>
-      <Unresolved ops={ops} />
-      {rows.length > 0 ? (
-        <dl className="gd-ops">
-          {rows.map(([field, label]) => (
-            <div key={field}>
-              <dt>{label}</dt>
-              <dd>{ops![field]}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-    </>
+    <dl className="gd-ops">
+      {rows.map(([field, label]) => (
+        <div key={field}>
+          <dt>{label}</dt>
+          <dd>{ops![field]}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -382,7 +362,7 @@ function RunOfShow({ moments, day }: TeamProps & { day: string }) {
         {agenda.map((moment) => {
           const ops = moment.ops;
           const expanded = openId === moment.id;
-          const more = Boolean(ops?.notes || ops?.confirm || ops?.location || ops?.emcee);
+          const more = Boolean(ops?.notes || ops?.location || ops?.emcee);
           return (
             <li key={moment.id} className="gd-ros-item">
               <div className="gd-ros-head gd-ros-static">

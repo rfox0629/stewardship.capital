@@ -368,11 +368,13 @@ test("the category decides the badge, and defaults to operations", () => {
   assert.equal(categoryOf(moment({})), "operations");
 });
 
-test("the confirm flag survives a round trip", () => {
+test("a confirm flag left in the data draws nothing", () => {
+  /* The warning banners are gone. A flag still sitting in an old ops payload
+     is read straight past rather than rendered, so no row can bring the wall
+     of "Assignment to confirm" back on its own. */
   const parsed = readOps({ purpose: "x", category: "program", confirm: "time" });
   assert.equal(parsed?.category, "program");
-  assert.equal(parsed?.confirm, "time");
-  assert.equal(readOps({ purpose: "x", confirm: "nonsense" })?.confirm, undefined);
+  assert.ok(parsed && !("confirm" in parsed));
 });
 
 test("two candidates for one job are both offered the row, as written", () => {
@@ -385,7 +387,7 @@ test("two candidates for one job are both offered the row, as written", () => {
   const sector = moment({
     id: "sector", day: "wed", starts: "6:30 pm", ends: "7:00 pm",
     title: "Sector Assignment",
-    ops: { category: "operations", owner: "Mike or Brooke", confirm: "assignment" },
+    ops: { category: "operations", owner: "Mike or Brooke" },
   });
   for (const name of ["Mike", "Brooke"]) {
     const mine = personalAgenda([sector], name);

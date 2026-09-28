@@ -1742,16 +1742,6 @@ button.gd-row-hit:active {
   transform: rotate(180deg);
 }
 
-.gd .gd-unresolved {
-  margin-bottom: 10px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #fbe7d8;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  color: #7a3a13;
-}
-
 .gd-done {
   font-size: 0.85rem;
   font-weight: 800;
