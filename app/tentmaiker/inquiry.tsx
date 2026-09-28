@@ -105,9 +105,9 @@ export function StartConversation() {
           <figure className="tm-verse">
             <blockquote id="tm-dialog-title">
               &ldquo;Because he practiced the same trade, he lived with them and worked, for by trade
-              they were tent makers.&rdquo;
+              they were tentmakers.&rdquo;
             </blockquote>
-            {/* The World English Bible: public domain, so it is quoted exactly. */}
+            {/* The World English Bible (public domain), with "tentmakers" as one word. */}
             <figcaption>Acts 18:3</figcaption>
           </figure>
 
