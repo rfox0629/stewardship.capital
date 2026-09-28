@@ -175,44 +175,39 @@ html:has(.tm) body {
 
 /* --------------------------------------------------------- the button */
 
-/* The way in, directly under the verse: the one thing on the page to press.
-   Outlined in the screen's light, filling white when it is chosen. */
+/* The way in, directly under the verse: a few quiet words and an arrow,
+   in the verse's own size and light. No outline, nothing competing with
+   the headline. The arrow moves toward the reader's click. */
 .tm-cta {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin-top: clamp(24px, 2.6vw, 34px);
-  padding: 15px 22px 15px 26px;
-  border: 1px solid rgba(156, 202, 255, 0.5);
-  border-radius: 999px;
-  background: rgba(4, 5, 6, 0.4);
-  color: var(--tm-white);
-  font: 600 0.975rem/1 var(--tm-font);
-  letter-spacing: 0.005em;
+  gap: 8px;
+  margin-top: clamp(18px, 2vw, 26px);
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: #aeb7c2;
+  font: 500 0.875rem/1 var(--tm-font);
+  letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 0 24px rgba(156, 202, 255, 0.12);
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  transition: color 160ms ease;
 }
 
 .tm-arrow {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: var(--tm-light);
-  transition: transform 180ms ease, color 180ms ease;
+  transition: transform 180ms ease;
 }
 
 .tm-cta:hover,
 .tm-cta:focus-visible {
-  border-color: var(--tm-white);
-  background: var(--tm-white);
-  color: var(--tm-black);
-  box-shadow: 0 0 32px rgba(156, 202, 255, 0.35);
+  color: var(--tm-white);
 }
 
 .tm-cta:hover .tm-arrow,
 .tm-cta:focus-visible .tm-arrow {
-  color: var(--tm-black);
-  transform: translateX(3px);
+  transform: translateX(4px);
 }
 
 .tm :focus-visible {
