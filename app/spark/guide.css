@@ -1110,6 +1110,42 @@ button.gd-row-hit:active {
   box-shadow: 0 1px 3px rgba(40, 36, 28, 0.12);
 }
 
+/* Blue for the programme, green for the operations, the way the spreadsheet
+   the team already reads is coloured. Faint: it is a segmented control, not
+   three buttons competing, and the white lift plus the shadow is still what
+   says which one you are on. The schedule is both readings at once, so it
+   takes neither colour. */
+.gd-seg button.gd-seg-program {
+  background: color-mix(in srgb, var(--gd-lake) 9%, transparent);
+  color: color-mix(in srgb, var(--gd-lake) 55%, var(--gd-ink-2));
+}
+
+.gd-seg button.gd-seg-ops {
+  background: color-mix(in srgb, var(--gd-forest) 11%, transparent);
+  color: color-mix(in srgb, var(--gd-forest) 55%, var(--gd-ink-2));
+}
+
+/* Selected keeps the white lift every tab has always had, so which one you
+   are on reads the same across all three; the colour moves into the word. */
+.gd-seg button.gd-seg-program[aria-selected="true"] {
+  background: var(--gd-paper);
+  color: color-mix(in srgb, var(--gd-lake) 78%, var(--gd-ink));
+}
+
+.gd-seg button.gd-seg-ops[aria-selected="true"] {
+  background: var(--gd-paper);
+  color: color-mix(in srgb, var(--gd-forest) 78%, var(--gd-ink));
+}
+
+/* Somewhere without color-mix keeps the control it always had. */
+@supports not (background: color-mix(in srgb, red 10%, transparent)) {
+  .gd-seg button.gd-seg-program,
+  .gd-seg button.gd-seg-ops {
+    background: none;
+    color: var(--gd-ink-2);
+  }
+}
+
 .gd-days-team {
   position: static;
   background: none;

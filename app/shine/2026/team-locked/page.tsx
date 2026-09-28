@@ -32,7 +32,7 @@ export default async function TeamLocked({ searchParams }: PageProps) {
       <div className="gd-gate-card">
         <h2 className="gd-gate-head">Welcome, SHINE Team</h2>
         <p className="gd-gate-lede">
-          Enter the team code to access the schedule, run of show, and volunteer duties.
+          Enter the team code to access the schedule, program, and operations.
         </p>
         <CodeForm next={safeNext(asked)} />
       </div>
