@@ -730,6 +730,8 @@ button.gd-row-hit:active {
   grid-row: 1 / span 3;
   width: 92px;
   height: 115px;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
 .gd-drink-name {
@@ -771,6 +773,8 @@ button.gd-row-hit:active {
 .gd-drinks-compact .gd-cup {
   width: 64px;
   height: 80px;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
 .gd-drinks-compact .gd-drink-name {
@@ -1008,6 +1012,8 @@ button.gd-row-hit:active {
   height: 188px;
   margin: 4px auto 0;
   display: block;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
 .gd-drink-detail .gd-menu {
@@ -1514,7 +1520,9 @@ button.gd-row-hit:active {
   .gd-drinks .gd-drink .gd-cup {
     width: 120px;
     height: 150px;
-  }
+    object-fit: contain;
+  object-position: center bottom;
+}
 
   .gd-sheet-wrap {
     align-items: center;
