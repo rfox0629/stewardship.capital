@@ -752,8 +752,9 @@ test("Spark access model, end to end against production schema", async (t) => {
          the same builds. */
       const card = [
         ["The Shine", "The most popular.", "Vanilla latte · Vanilla cold foam · Gold dust"],
-        ["Honeycomb", "Rich but approachable.", "Honey brown sugar latte · Salted honey cold foam"],
-        ["Northwoods", "Perfect for the cabin.", "Caramel latte · Whipped cream · Caramel drizzle"],
+        ["Honeycomb", "Sweet as honey, soft as cream.",
+         "Honey brown sugar latte · Whipped cream · Honey drizzle · Brown sugar"],
+        ["Northwoods", "Settle in. Sip slow.", "Caramel latte · Whipped cream · Caramel drizzle"],
       ];
 
       /* The page carries the menu as data and draws it when the tab is
@@ -767,10 +768,9 @@ test("Spark access model, end to end against production schema", async (t) => {
         assert.match(guest.body, new RegExp(feel), feel);
         assert.match(guest.body, new RegExp(line.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), line);
       }
-      /* The cold foams keep their name on a hot drink, deliberately. */
+      /* The Shine's cold foam keeps its name on a hot drink, deliberately. */
       assert.match(guest.body, /Vanilla cold foam/);
-      assert.match(guest.body, /Salted honey cold foam/);
-      /* Nothing iced, no sizes, no prices, no fourth drink. */
+
       /* What the menu must not say, asked of the menu itself rather than of
          the whole document: a page carries its framework's own markers, and
          the Friday lunch has sliced tomatoes in it. */
@@ -783,6 +783,11 @@ test("Spark access model, end to end against production schema", async (t) => {
       const menu = JSON.stringify(reference.guide?.coffee ?? []);
 
       assert.equal(JSON.parse(menu).length, 3, "three drinks, no more");
+
+      /* The Honeycomb wears whipped cream now, and nothing in the menu still
+         describes the topping it used to have. */
+      assert.match(menu, /Whipped cream, a drizzle of honey, and a sprinkle of brown sugar/);
+      assert.doesNotMatch(menu, /Salted honey|cinnamon/i, "no stale topping");
       for (const absent of [/\biced\b/i, /available cold/i, /\$[0-9]/,
                             /\bsmall\b/i, /\bmedium\b/i, /\blarge\b/i, /\bsize\b/i]) {
         assert.doesNotMatch(menu, absent, String(absent));

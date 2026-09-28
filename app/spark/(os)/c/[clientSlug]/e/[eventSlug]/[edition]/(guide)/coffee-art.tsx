@@ -92,8 +92,26 @@ export function CoffeeArt({ art, label }: { art: string; label: string }) {
       {/* rim */}
       <rect x="26" y="37" width="108" height="10" rx="5" fill="#fbfaf7" stroke="#e1dbcf" strokeWidth="1" />
 
-      {/* what sits on top */}
-      {kind === "northwoods" ? (
+      {/* What sits on top. Two of the three wear whipped cream, so the dome
+          is drawn once and the drizzle over it is the drink's own: caramel
+          for the Northwoods, honey and brown sugar for the Honeycomb. The
+          Shine keeps its flat cold foam, which is where the gold dust sits. */}
+      {kind === "shine" ? (
+        <g>
+          <ellipse cx="80" cy="40" rx="51" ry="9" fill={t.foamShade} />
+          <path d="M31 41 Q34 25 80 24 Q126 25 129 41 Q110 47 80 47 Q50 47 31 41 Z" fill={`url(#${id}-foam)`} />
+          <g>
+            {[
+              [56, 34, 1.6], [64, 30, 1.1], [72, 36, 1.4], [84, 29, 1.8], [92, 35, 1.2],
+              [100, 31, 1.5], [108, 37, 1.1], [76, 32, 0.9], [60, 38, 1.0], [96, 39, 0.9],
+            ].map(([x, y, r]) => (
+              <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill="#d4a53c" />
+            ))}
+            <path d="M88 16 L90 22 L96 24 L90 26 L88 32 L86 26 L80 24 L86 22 Z" fill="#e8bf55" />
+            <path d="M66 18 L67 21 L70 22 L67 23 L66 26 L65 23 L62 22 L65 21 Z" fill="#e8bf55" />
+          </g>
+        </g>
+      ) : (
         <g>
           <ellipse cx="80" cy="40" rx="50" ry="8" fill={t.foamShade} />
           <path d="M40 40 Q40 22 58 22 Q60 10 80 10 Q100 10 102 22 Q120 22 120 40 Z" fill={`url(#${id}-foam)`} />
@@ -102,36 +120,23 @@ export function CoffeeArt({ art, label }: { art: string; label: string }) {
           <path
             d="M46 34 L56 24 L62 32 L70 18 L78 28 L86 14 L92 26 L100 18 L106 30 L114 26"
             fill="none"
-            stroke="#b8742a"
+            stroke={kind === "honeycomb" ? "#d99a1e" : "#b8742a"}
             strokeWidth="2.4"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </g>
-      ) : (
-        <g>
-          <ellipse cx="80" cy="40" rx="51" ry="9" fill={t.foamShade} />
-          <path d="M31 41 Q34 25 80 24 Q126 25 129 41 Q110 47 80 47 Q50 47 31 41 Z" fill={`url(#${id}-foam)`} />
-          {kind === "shine" ? (
-            <g>
+          {/* A sprinkle of brown sugar, which is the last thing the barista
+              does and the first thing you see. */}
+          {kind === "honeycomb" ? (
+            <g fill="#8a5a12">
               {[
-                [56, 34, 1.6], [64, 30, 1.1], [72, 36, 1.4], [84, 29, 1.8], [92, 35, 1.2],
-                [100, 31, 1.5], [108, 37, 1.1], [76, 32, 0.9], [60, 38, 1.0], [96, 39, 0.9],
+                [54, 33, 1.2], [63, 27, 1.0], [71, 33, 1.1], [79, 25, 1.2], [87, 31, 1.0],
+                [95, 24, 1.1], [103, 31, 1.2], [111, 35, 1.0], [67, 21, 0.9], [92, 18, 0.9],
               ].map(([x, y, r]) => (
-                <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill="#d4a53c" />
+                <circle key={`sugar-${x}-${y}`} cx={x} cy={y} r={r} opacity="0.85" />
               ))}
-              <path d="M88 16 L90 22 L96 24 L90 26 L88 32 L86 26 L80 24 L86 22 Z" fill="#e8bf55" />
-              <path d="M66 18 L67 21 L70 22 L67 23 L66 26 L65 23 L62 22 L65 21 Z" fill="#e8bf55" />
             </g>
-          ) : (
-            <path
-              d="M44 36 Q54 28 62 36 T80 34 T98 36 T116 34"
-              fill="none"
-              stroke="#d99a1e"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-            />
-          )}
+          ) : null}
         </g>
       )}
     </svg>
