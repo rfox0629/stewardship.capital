@@ -787,64 +787,89 @@ button.gd-row-hit:active {
   font-weight: 600;
 }
 
-/* The hours, above the menu: what a guest checks before what they order.
-   Day on the left, every window on that day stacked on the right, so a
-   second window on the same day widens nothing and a narrow phone still
-   reads one line per window. */
+/* The hours, under the menu: what is being made, then when it is being
+   made. Built like the drink cards above it so the tab reads as one thing,
+   with each window as its own token rather than a right-aligned column that
+   goes ragged the moment a day has two of them. */
 
 .gd-hours {
-  margin-bottom: 22px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: var(--gd-raised);
+  margin-top: 18px;
+  padding: 16px 18px 6px;
+  border: 1px solid var(--gd-line);
+  border-radius: 18px;
+  background: var(--gd-paper);
 }
 
 .gd .gd-hours h3 {
-  font-size: 1rem;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.78rem;
   font-weight: 800;
-  margin-bottom: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gd-rust);
+  margin-bottom: 4px;
 }
 
 .gd-hours ul {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 8px;
 }
 
+/* A hairline between days, and none under the last, so the card ends on
+   the times rather than on a rule. */
 .gd-hours li {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 14px;
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gd-line-soft);
+}
+
+.gd-hours li:last-child {
+  border-bottom: 0;
+}
+
+.gd-hours-day {
   font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--gd-ink);
 }
 
 .gd-hours-when {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  text-align: right;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.gd-hours-when > span {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.gd-hours-slot {
+  display: inline-flex;
   align-items: baseline;
-  gap: 0 5px;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--gd-cream);
+  font-size: 0.95rem;
   font-weight: 700;
+  line-height: 1.2;
   color: var(--gd-forest);
   font-variant-numeric: tabular-nums;
 }
 
-.gd-hours-when i {
+.gd-hours-slot i {
   font-style: normal;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--gd-ink-2);
+}
+
+/* Once there is room, the day names line up in a column of their own and
+   the windows sit beside them instead of under them. */
+@media (min-width: 420px) {
+  .gd-hours li {
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+  }
 }
 
 /* --------------------------------------------------------------- sheets */

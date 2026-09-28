@@ -235,30 +235,6 @@ export function GuideApp({
               Three signature hot lattes made for this weekend. Tap one for a closer look.
             </p>
 
-            {coffeeDays.length > 0 ? (
-              <div className="gd-hours">
-                <h3>Coffee bar hours</h3>
-                <ul>
-                  {coffeeDays.map(([day, windows]) => (
-                    <li key={day}>
-                      <b>{DAY_LONG[day]}</b>
-                      <span className="gd-hours-when">
-                        {windows.map((window) => {
-                          const span = clockRange(window.starts, window.ends);
-                          return (
-                            <span key={`${window.starts}-${window.ends}`}>
-                              {span.value}
-                              {span.meridiem ? <i>{span.meridiem}</i> : null}
-                            </span>
-                          );
-                        })}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-
             <div className="gd-drinks">
               {coffee.map((drink) => (
                 <button
@@ -277,6 +253,30 @@ export function GuideApp({
                 </button>
               ))}
             </div>
+
+            {coffeeDays.length > 0 ? (
+              <div className="gd-hours">
+                <h3>Coffee bar hours</h3>
+                <ul>
+                  {coffeeDays.map(([day, windows]) => (
+                    <li key={day}>
+                      <b className="gd-hours-day">{DAY_LONG[day]}</b>
+                      <span className="gd-hours-when">
+                        {windows.map((window) => {
+                          const span = clockRange(window.starts, window.ends);
+                          return (
+                            <span className="gd-hours-slot" key={`${window.starts}-${window.ends}`}>
+                              {span.value}
+                              {span.meridiem ? <i>{span.meridiem}</i> : null}
+                            </span>
+                          );
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
