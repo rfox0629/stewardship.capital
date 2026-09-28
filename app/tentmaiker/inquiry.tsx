@@ -25,7 +25,7 @@ function Arrow() {
 }
 
 /**
- * "Click here", beneath the verse on the front page.
+ * "Let's build", beneath the verse on the front page.
  *
  * A native dialog, so focus, Escape and the backdrop behave the way the
  * platform does. It opens on the verse the name comes from, then asks who you
@@ -75,7 +75,7 @@ export function StartConversation() {
     <>
       <button type="button" className="tm-cta" aria-haspopup="dialog" onClick={open}>
         <Arrow />
-        Click here
+        Let&rsquo;s build
       </button>
 
       <dialog
