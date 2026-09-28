@@ -15,6 +15,7 @@ import {
   personalOverlaps,
   rosterOf,
   type Duty,
+  type GuestCopy,
   type GuideMoment,
   type OpsDetail,
 } from "@lib/spark/guide";
@@ -55,10 +56,15 @@ export type TeamProps = {
 
 type Tab = "schedule" | "ros" | "duties";
 
-const TABS: Array<[Tab, string]> = [
-  ["schedule", "Schedule"],
-  ["ros", "Run of show"],
-  ["duties", "Volunteer duties"],
+/**
+ * The three readings, named and coloured the way the team's own spreadsheet
+ * names and colours them: blue is the programme, green is the operations,
+ * and the schedule is both together, so it takes neither colour.
+ */
+const TABS: Array<[Tab, string, string]> = [
+  ["schedule", "Schedule", "gd-seg-all"],
+  ["ros", "Program", "gd-seg-program"],
+  ["duties", "Operations", "gd-seg-ops"],
 ];
 
 const noopSubscribe = () => () => {};
@@ -123,11 +129,12 @@ export function TeamPanel(props: TeamProps) {
       <h2 className="gd-pagehead">Team</h2>
 
       <div className="gd-seg gd-seg-three" role="tablist" aria-label="Team view">
-        {TABS.map(([value, label]) => (
+        {TABS.map(([value, label, tint]) => (
           <button
             key={value}
             type="button"
             role="tab"
+            className={tint}
             aria-selected={shownTab === value}
             onClick={() => chooseTab(value)}
           >
@@ -222,6 +229,39 @@ function Roles({ ops }: { ops: OpsDetail | null | undefined }) {
       {ops?.owner ? <span><b>Lead:</b> {ops.owner}</span> : null}
       {ops?.support ? <span><b>Team:</b> {ops.support}</span> : null}
     </span>
+  );
+}
+
+/**
+ * What is on the table, for the people putting it there.
+ *
+ * The same menu a guest reads, on the team's own row, because somebody
+ * setting a meal out needs the list more than anybody eating it does. It is
+ * the moment's own guest copy, so the two readings cannot drift apart.
+ */
+function Menu({ copy }: { copy: GuestCopy | null | undefined }) {
+  const menu = copy?.menu ?? [];
+  const dessert = copy?.dessert ?? [];
+  if (menu.length === 0 && dessert.length === 0) return null;
+  return (
+    <>
+      {menu.length > 0 ? (
+        <div className="gd-menu">
+          <h3>On the menu</h3>
+          <ul>
+            {menu.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </div>
+      ) : null}
+      {dessert.length > 0 ? (
+        <div className="gd-menu">
+          <h3>Dessert</h3>
+          <ul>
+            {dessert.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -395,6 +435,7 @@ function TeamSchedule({
               {expanded ? (
                 <div className="gd-ros-body">
                   <Details ops={moment.ops ?? null} />
+                  <Menu copy={moment.guide} />
                   {!moment.teamOnly && guestTitle(moment) !== moment.title ? (
                     <p className="gd-ros-guest">Guests see this as &ldquo;{guestTitle(moment)}&rdquo;.</p>
                   ) : null}
@@ -637,6 +678,7 @@ function Duties({
                 {expanded ? (
                   <div className="gd-ros-body">
                     <Details ops={moment.ops ?? null} skip={["owner", "support"]} />
+                    <Menu copy={moment.guide} />
                   </div>
                 ) : null}
               </li>
