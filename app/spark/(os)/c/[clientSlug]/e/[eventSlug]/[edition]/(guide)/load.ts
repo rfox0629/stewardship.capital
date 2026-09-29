@@ -9,6 +9,7 @@ import {
   readDrinks,
   readGuestCopy,
   readOps,
+  readRoster,
   type Duty,
   type Guide,
   type GuideMoment,
@@ -92,6 +93,8 @@ export type TeamReading = {
   statuses: Record<string, { taskId: string; status: string }>;
   /** Only planners edit the calendar or tick duties off. */
   canEdit: boolean;
+  /** People named on the engagement who lead nothing, for the name picker. */
+  roster: string[];
 };
 
 /**
@@ -160,7 +163,13 @@ const loadTeamByCode = async (
     order: typeof row.order === "number" ? row.order : 999,
   }));
 
-  return { moments, prep, statuses, canEdit: raw.canEdit === true };
+  return {
+    moments,
+    prep,
+    statuses,
+    canEdit: raw.canEdit === true,
+    roster: readRoster(raw.roster),
+  };
 };
 
 export const loadTeam = cache(
@@ -246,6 +255,9 @@ export const loadTeam = cache(
       prep,
       statuses,
       canEdit: context.staff || context.role === "planner",
+      roster: readRoster(
+        (context.engagement.reference as { guide?: { roster?: unknown } }).guide?.roster,
+      ),
     };
   },
 );

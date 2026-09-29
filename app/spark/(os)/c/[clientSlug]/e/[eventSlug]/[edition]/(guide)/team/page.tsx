@@ -45,6 +45,7 @@ export default async function TeamGuidePage({ params }: PageProps) {
         prep: team.prep,
         statuses: team.statuses,
         canEdit: team.canEdit,
+        roster: team.roster,
       }}
     />
   );

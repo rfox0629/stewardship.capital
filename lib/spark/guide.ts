@@ -468,12 +468,38 @@ export const leadsOf = (lead: string | null | undefined): string[] =>
     .map((part) => part.trim())
     .filter((part) => part.length > 0 && !FULL_TEAM.test(part) && !/^as needed$/i.test(part));
 
-/** Everyone the Lead column names anywhere, which is the roster to match on. */
-export const rosterOf = (moments: readonly GuideMoment[]): string[] => {
+/**
+ * Everyone who can choose their own schedule.
+ *
+ * The Lead column names people cleanly, so it is read as written. The team
+ * column does not: it says "Junior AV and coverage", "Catering Team" and
+ * "As assigned", and a roster parsed out of it would offer "coverage" as
+ * somebody to be. So a person who only ever appears on team lines is named
+ * once, on the engagement, and offered here when these rows actually mention
+ * them. Naming somebody who is on nothing offers nobody.
+ */
+export const rosterOf = (
+  moments: readonly GuideMoment[],
+  named: readonly string[] = [],
+): string[] => {
   const names = new Set<string>();
   for (const moment of moments) for (const name of leadsOf(moment.ops?.owner)) names.add(name);
+  for (const name of named) {
+    const known = [...names].some((lead) => lead.toLowerCase() === name.toLowerCase());
+    if (known) continue;
+    const onSomething = moments.some(
+      (moment) => mentions(moment.ops?.support, name) || mentions(moment.ops?.owner, name),
+    );
+    if (onSomething) names.add(name);
+  }
   return [...names].toSorted((a, b) => a.localeCompare(b));
 };
+
+/** The names an engagement has written down, and nothing that is not one. */
+export const readRoster = (raw: unknown): string[] =>
+  (Array.isArray(raw) ? raw : []).flatMap((item) =>
+    typeof item === "string" && item.trim() ? [item.trim()] : [],
+  );
 
 /** Whether a name appears in a free text cell, on a word boundary. */
 export const mentions = (text: string | null | undefined, name: string): boolean => {

@@ -16,6 +16,7 @@ import {
   readDrinks,
   readGuestCopy,
   readOps,
+  readRoster,
   categoryOf,
   clockRange,
   leadsOf,
@@ -307,6 +308,33 @@ test("the roster comes from the leads, who are written plainly", () => {
   assert.deepEqual(rosterOf(WEEKEND), [
     "Alice", "Brooke", "JonCarlos", "Junior", "Keta", "Sammy", "Suzanne", "Tito",
   ]);
+});
+
+test("somebody named on the engagement can be chosen, if these rows mention them", () => {
+  /* Scott and Emma are on team lines here and lead nothing, which is the
+     position Johnny was in: a schedule, and no way to ask for it. */
+  assert.equal(rosterOf(WEEKEND).includes("Scott"), false, "not offered unnamed");
+  assert.deepEqual(rosterOf(WEEKEND, ["Scott", "Emma"]), [
+    "Alice", "Brooke", "Emma", "JonCarlos", "Junior", "Keta", "Sammy", "Scott", "Suzanne", "Tito",
+  ]);
+
+  /* Once chosen, the schedule that was always theirs is there. */
+  assert.ok(personalAgenda(WEEKEND, "Scott").some((entry) => entry.moment.title === "Lunch cleanup"));
+});
+
+test("a written name offers nobody who is on nothing, and nobody twice", () => {
+  /* Naming a person does not put them on the weekend. */
+  assert.equal(rosterOf(WEEKEND, ["Oakley"]).includes("Oakley"), false);
+  /* A lead who is also written down is one person, however it is cased. */
+  assert.equal(rosterOf(WEEKEND, ["keta", "Keta"]).filter((name) => /keta/i.test(name)).length, 1);
+  /* The team column's own words are never offered, named or not. */
+  assert.equal(rosterOf(WEEKEND, []).includes("coverage"), false);
+});
+
+test("a roster is names, and whatever else was stored is dropped", () => {
+  assert.deepEqual(readRoster(["Johnny", " Axel ", "", 4, null, { name: "x" }]), ["Johnny", "Axel"]);
+  assert.deepEqual(readRoster("Johnny"), []);
+  assert.deepEqual(readRoster(undefined), []);
 });
 
 test("a compound lead is two people, and the wording is left alone", () => {
