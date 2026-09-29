@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   INQUIRY_FROM,
+  confirmationEmail,
+  greetingName,
   INQUIRY_TO,
   fingerprint,
   inquiryEmail,
@@ -88,12 +90,12 @@ test("lengths are bounded", () => {
   assert.equal(parseInquiry(form({ phone: "1".repeat(33) }), NOW).ok, false);
 });
 
-test("the email goes from Tent MAiKER to Ryan, and a reply goes to the visitor", () => {
+test("the email goes from TENTMAiKER to Ryan, and a reply goes to the visitor", () => {
   const parsed = parseInquiry(form({ name: "<b>Aquila</b> Tentmaker", message: "<script>alert(1)</script> need help" }), NOW);
   assert.ok(parsed.ok);
   if (!parsed.ok) return;
   const email = inquiryEmail(parsed.inquiry);
-  assert.equal(email.from, "Tent MAiKER <inquiries@tentmaiker.com>");
+  assert.equal(email.from, "TENTMAiKER <inquiries@tentmaiker.com>");
   assert.equal(INQUIRY_FROM, email.from);
   assert.deepEqual(email.to, ["ryan@usamissionaries.org"]);
   assert.equal(INQUIRY_TO, "ryan@usamissionaries.org");
@@ -123,6 +125,43 @@ test("the same words from the same person share a fingerprint", () => {
   const a = fingerprint({ email: "P@example.org", message: "Hello  there,\nfriend" });
   const b = fingerprint({ email: "p@example.org", message: "hello there, friend" });
   assert.equal(a, b);
+});
+
+/* ------------------------------------------------------- confirmation */
+
+test("the visitor gets a confirmation from TENTMAiKER, with the verse", () => {
+  const parsed = parseInquiry(form({}), NOW);
+  assert.ok(parsed.ok);
+  if (!parsed.ok) return;
+  const note = confirmationEmail(parsed.inquiry);
+  assert.equal(note.from, "TENTMAiKER <inquiries@tentmaiker.com>");
+  assert.deepEqual(note.to, ["priscilla@example.org"], "to the visitor, and no one else");
+  assert.equal("reply_to" in note, false, "Ryan's address is not handed to whoever fills in the form");
+  assert.match(note.html, /Thank you, Priscilla/);
+  assert.match(note.html, /tentmakers\./);
+  assert.match(note.html, /ACTS 18:3/);
+  assert.match(note.text, /Acts 18:3/);
+});
+
+test("the confirmation carries none of the visitor's own words", () => {
+  const parsed = parseInquiry(
+    form({ name: "https://evil.example now", message: "Visit https://evil.example to claim a prize" }),
+    NOW,
+  );
+  assert.ok(parsed.ok);
+  if (!parsed.ok) return;
+  const note = confirmationEmail(parsed.inquiry);
+  assert.doesNotMatch(note.html + note.text, /evil\.example|claim a prize/);
+  assert.match(note.html, /Thank you<span/, "an unusable name falls back to a plain thank you");
+});
+
+test("only a plain first name is used in the greeting", () => {
+  assert.equal(greetingName("Priscilla Tentmaker"), "Priscilla");
+  assert.equal(greetingName("  Zoë  O\u2019Hare "), "Zoë");
+  assert.equal(greetingName("Jean-Luc"), "Jean-Luc");
+  for (const name of ["<b>Aquila</b>", "http://x.example", "12345", "A".repeat(40), ""]) {
+    assert.equal(greetingName(name), null, name);
+  }
 });
 
 /* ------------------------------------------------------------ sending */

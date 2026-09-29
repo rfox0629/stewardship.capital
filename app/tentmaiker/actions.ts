@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { inquiryRules, withinLimits } from "@lib/limits";
 import { hashKey, clientAddress } from "@lib/throttle";
 import {
+  confirmationEmail,
   fingerprint,
   inquiryEmail,
   parseInquiry,
@@ -70,5 +71,17 @@ export async function sendInquiry(_previous: InquiryState, form: FormData): Prom
   }
 
   console.info("inquiry: accepted by Resend", result.id);
+
+  /* Then a note to the visitor. Best effort: their message has already
+     reached us, so a failure here is logged and never turns "sent" into an
+     error. It is covered by the same limits as the inquiry itself. */
+  const confirmation = await sendThroughResend(
+    confirmationEmail(inquiry),
+    process.env.RESEND_API_KEY,
+    await hashKey("inquiry:confirmation", same),
+  );
+  if (confirmation.ok) console.info("inquiry: confirmation accepted by Resend", confirmation.id);
+  else console.error("inquiry: confirmation not sent", confirmation.reason);
+
   return { status: "sent" };
 }

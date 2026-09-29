@@ -8,7 +8,7 @@
  * and Resend.
  */
 
-export const INQUIRY_FROM = "Tent MAiKER <inquiries@tentmaiker.com>";
+export const INQUIRY_FROM = "TENTMAiKER <inquiries@tentmaiker.com>";
 export const INQUIRY_TO = "ryan@usamissionaries.org";
 
 export const LIMITS = {
@@ -112,7 +112,7 @@ export const inquiryEmail = (inquiry: Inquiry) => ({
   from: INQUIRY_FROM,
   to: [INQUIRY_TO],
   reply_to: inquiry.email,
-  subject: `Tent MAiKER inquiry from ${inquiry.name}`,
+  subject: `TENTMAiKER inquiry from ${inquiry.name}`,
   text: [
     `Name: ${inquiry.name}`,
     `Phone: ${inquiry.phone || "not given"}`,
@@ -131,6 +131,83 @@ export const inquiryEmail = (inquiry: Inquiry) => ({
   ].join(""),
 });
 
+/* Acts 18:3, World English Bible (public domain), "tentmakers" as one word. */
+const VERSE =
+  "Because he practiced the same trade, he lived with them and worked, for by trade they were tentmakers.";
+
+/**
+ * The name to greet someone by, or nothing. The confirmation goes to whatever
+ * address was typed, so it carries none of the visitor's own words except a
+ * plain first name: anything else (a link, a sentence) and the greeting stays
+ * generic, so the form cannot be used to send someone else a message.
+ */
+export const greetingName = (name: string): string | null => {
+  const first = name.trim().split(/\s+/)[0] ?? "";
+  return /^[\p{L}][\p{L}'\u2019.-]{0,29}$/u.test(first) ? first : null;
+};
+
+/**
+ * The note the visitor receives once their inquiry has reached us. Built with
+ * tables and inline styles, the way email clients still need it, in the
+ * site's own night palette.
+ */
+export const confirmationEmail = (inquiry: Inquiry) => {
+  const first = greetingName(inquiry.name);
+  const greeting = first ? `Thank you, ${first}` : "Thank you";
+  const font = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+  return {
+    from: INQUIRY_FROM,
+    to: [inquiry.email],
+    subject: "Thanks for reaching out to TENTMAiKER",
+    text: [
+      `${greeting}.`,
+      "",
+      "We received your message and we're glad you reached out. We'll read it closely and be in touch soon.",
+      "",
+      `"${VERSE}"`,
+      "Acts 18:3",
+      "",
+      "TENTMAiKER",
+      "Making Tents. Funding Mission.",
+      "https://tentmaiker.com",
+    ].join("\n"),
+    html: `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Thanks for reaching out to TENTMAiKER</title>
+</head>
+<body style="margin:0;padding:0;background-color:#040506;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">We received your message and will be in touch soon.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#040506" style="background-color:#040506;">
+<tr><td align="center" style="padding:48px 16px 56px;">
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+<tr><td style="padding:0 4px 32px;font-family:${font};font-size:13px;font-weight:700;letter-spacing:4px;color:#ffffff;">TENTM<span style="color:#9ccaff;">Ai</span>KER</td></tr>
+<tr><td bgcolor="#0a0d11" style="background-color:#0a0d11;border:1px solid #1d242d;border-radius:16px;padding:44px 32px 40px;">
+<h1 style="margin:0;font-family:${font};font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-1px;color:#ffffff;">${escapeHtml(greeting)}<span style="color:#9ccaff;">.</span></h1>
+<p style="margin:20px 0 0;font-family:${font};font-size:16px;line-height:1.65;color:#c3cad3;">We received your message and we&rsquo;re glad you reached out. We&rsquo;ll read it closely and be in touch soon.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:36px;">
+<tr><td style="border-left:2px solid #9ccaff;padding:2px 0 2px 20px;">
+<p style="margin:0;font-family:${font};font-size:17px;line-height:1.6;color:#e4e8ed;">&ldquo;${VERSE}&rdquo;</p>
+<p style="margin:12px 0 0;font-family:${font};font-size:11px;font-weight:700;letter-spacing:3px;color:#9ccaff;">ACTS 18:3</p>
+</td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:28px 4px 0;font-family:${font};font-size:12px;line-height:1.7;color:#6f7883;">
+Making Tents. Funding Mission.&nbsp;&nbsp;&middot;&nbsp;&nbsp;<a href="https://tentmaiker.com" style="color:#9ccaff;text-decoration:none;">tentmaiker.com</a><br>
+You&rsquo;re receiving this because you wrote to us at tentmaiker.com.
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
+  };
+};
+
 export type SendResult = { ok: true; id: string } | { ok: false; reason: "unconfigured" | "rejected" | "network" };
 
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
@@ -140,7 +217,7 @@ type Fetch = (input: string, init: RequestInit) => Promise<Response>;
  * missing key, is not sent, and the visitor is told so rather than thanked.
  */
 export const sendThroughResend = async (
-  payload: ReturnType<typeof inquiryEmail>,
+  payload: { from: string; to: string[]; subject: string; text: string; html: string; reply_to?: string },
   apiKey: string | undefined,
   idempotencyKey: string,
   fetcher: Fetch = fetch,
