@@ -684,12 +684,23 @@ test("Spark access model, end to end against production schema", async (t) => {
       assert.equal(guest.status, 200);
 
       for (const line of ["Arrival", "Appetizers and Fellowship", "Worship and Vision",
-                          "Breakfast and Coffee", "Time with Shine", "Free Time and Activities",
+                          "Hot Tea and Coffee", "Time with Shine", "Free Time and Activities",
                           "Worship and Stories from the Field", "Celebration and Fun",
                           /* Sunday, because a guest still has to pack and there
                              is breakfast to take with them. */
                           "Breakfast To Go", "Packing and Departures"]) {
         assert.match(guest.body, new RegExp(line), `the card says ${line}`);
+      }
+
+      /* Coffee has its own half hour now, so breakfast is only breakfast,
+         and a meal no longer opens on an instruction to the kitchen. */
+      assert.doesNotMatch(guest.body, /Breakfast and Coffee/, "coffee left the breakfast title");
+      assert.doesNotMatch(guest.body, /Serve (breakfast|lunch|brisket)/, "no orders to the kitchen");
+
+      /* The team's names are the team's. The people written down for the
+         name picker reach a page that takes a code, and not this one. */
+      for (const name of ["Johnny", "Oakley", "Gunner", "Axel"]) {
+        assert.doesNotMatch(guest.body, new RegExp(`\\b${name}\\b`), `${name} is not on a guest's page`);
       }
 
       /* The working calendar's own rows, which a guest was never handed. */

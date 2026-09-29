@@ -51,6 +51,8 @@ export type TeamProps = {
   /** Completion, by the moment the duty came from. */
   statuses: Record<string, TeamStatus>;
   canEdit: boolean;
+  /** Named on the engagement: people on team lines who lead nothing. */
+  roster?: string[];
   storeKey?: string;
 };
 
@@ -359,6 +361,7 @@ function WhoAmI({
  */
 function TeamSchedule({
   moments,
+  roster,
   day,
   storeKey,
   me,
@@ -377,7 +380,7 @@ function TeamSchedule({
     remember(`${storeKey}:mine`, next ? "yes" : "no");
   };
 
-  const people = rosterOf(moments);
+  const people = rosterOf(moments, roster);
   const shownPerson = hydrated && me && people.includes(me) ? me : null;
   const showMine = hydrated && mine;
 
@@ -573,6 +576,7 @@ function DutyCheck({ done, title, onToggle }: { done: boolean; title: string; on
 
 function Duties({
   moments,
+  roster,
   prep,
   statuses,
   route,
@@ -598,7 +602,7 @@ function Duties({
      speaking slot, which belongs to the run of show and to the person's own
      schedule. */
   const duties = moments.filter((moment) => statuses[moment.id] && isOperations(moment));
-  const people = rosterOf(duties);
+  const people = rosterOf(duties, roster);
   const shownPerson = hydrated && me && people.includes(me) ? me : null;
   const showMine = hydrated && mine;
 
