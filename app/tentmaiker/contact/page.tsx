@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 
 import { pageHref } from "../addresses";
-import { InquiryForm } from "../inquiry";
+import { ContactBody } from "../inquiry";
 import { StarField } from "../star-field";
 
 const MARK = "TENTMAiKER";
@@ -29,7 +29,8 @@ export const metadata: Metadata = {
 
 /**
  * Where "Let's build" leads: one question, one line, and four fields, under
- * the same night sky as the front page.
+ * the same night sky as the front page. The body is a client component so
+ * that, once sent, the thank you can take the whole page.
  */
 export default async function ContactPage() {
   const home = await pageHref("/");
@@ -45,17 +46,7 @@ export default async function ContactPage() {
         </span>
       </a>
 
-      <div className="tm-contact-body">
-        <header className="tm-contact-intro">
-          <h1 id="tm-contact-title" className="tm-contact-title">
-            What are you building<span className="tm-dot">?</span>
-          </h1>
-          <p className="tm-contact-lede">Tell us where you could use a hand.</p>
-          <p className="tm-ref">Acts 18:3</p>
-        </header>
-
-        <InquiryForm home={home} />
-      </div>
+      <ContactBody home={home} />
     </main>
   );
 }

@@ -384,32 +384,46 @@ html:has(.tm) body {
   cursor: progress;
 }
 
-.tm-sent {
+/* Once sent, the thank you takes the page: the same large type as the
+   question it answers, then the verse the name comes from, set quietly
+   against a thread of the screen's light. */
+.tm-thanks {
   position: relative;
   z-index: 1;
+  max-width: 40rem;
+  margin-top: clamp(64px, 14vh, 150px);
 }
 
-.tm-sent h2 {
-  margin: 0;
-  font-size: clamp(1.8rem, 2.6vw, 2.4rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-}
-
-.tm-sent h2:focus {
+.tm-thanks h1:focus {
   outline: none;
 }
 
-.tm-sent p {
-  margin: 14px 0 0;
-  color: #c3cad3;
-  font-size: 1.05rem;
+.tm-thanks-verse {
+  margin: clamp(40px, 5vw, 60px) 0 0;
+  padding-left: clamp(18px, 2vw, 24px);
+  border-left: 2px solid rgba(156, 202, 255, 0.55);
+}
+
+.tm-thanks-verse blockquote {
+  margin: 0;
+  color: #dfe4ea;
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 400;
   line-height: 1.6;
+}
+
+.tm-thanks-verse figcaption {
+  margin-top: 14px;
+  color: var(--tm-light);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
 }
 
 .tm-back {
   display: inline-block;
-  margin-top: 24px;
+  margin-top: clamp(40px, 5vw, 56px);
   color: #aeb7c2;
   font-size: 0.9rem;
   text-decoration: underline;
@@ -475,6 +489,10 @@ html:has(.tm) body {
 
   .tm-contact-title {
     font-size: clamp(2.2rem, 10vw, 3rem);
+  }
+
+  .tm-thanks {
+    margin-top: 52px;
   }
 
   .tm-button {
