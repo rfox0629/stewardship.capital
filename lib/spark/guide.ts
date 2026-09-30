@@ -70,6 +70,21 @@ export type GuideMoment = {
   /** Team readings only. */
   teamOnly?: boolean;
   ops?: OpsDetail | null;
+  /** Scheduled activities inside this block, read off their own rows. */
+  activities?: ScheduledActivity[];
+};
+
+/**
+ * A scheduled activity, as a guest reads it: its name, its day and its two
+ * times. Nothing else. The row it comes from is the one the team runs, so
+ * its preparation, cleanup, people and notes stay on the team's side.
+ */
+export type ScheduledActivity = {
+  id: string;
+  day: string;
+  starts: string | null;
+  ends: string | null;
+  title: string;
 };
 
 export type Activity = { name: string; category: string; note?: string };
@@ -200,13 +215,13 @@ export const hasDetail = (moment: GuideMoment): boolean => {
   );
 };
 
-/** What a tap offers, spelled for the row: "Menu", "Activities", "Coffee menu". */
+/** What a tap offers, spelled for the row: "Menu", "Explore all activities", "Coffee menu". */
 export const detailCue = (moment: GuideMoment): string | null => {
   const copy = moment.guide;
   if (!copy) return null;
   if (copy.menu && copy.menu.length > 0) return "Menu";
   if (copy.opens?.includes("coffee")) return "Coffee menu";
-  if (copy.opens?.includes("activities")) return "Activities";
+  if (copy.opens?.includes("activities")) return "Explore all activities";
   return hasDetail(moment) ? "Details" : null;
 };
 
@@ -343,6 +358,34 @@ export const activityGroups = (activities: readonly Activity[]) => {
   return order.map((category) => ({ category, activities: groups.get(category)! }));
 };
 
+/**
+ * Every scheduled activity in the guide, by day, each day in time order.
+ *
+ * Read off the blocks that hold them, so the Activities tab and the schedule
+ * cannot disagree. An activity two blocks both name is listed once.
+ */
+export const scheduledActivities = (
+  moments: readonly Pick<GuideMoment, "activities">[],
+): Array<{ day: string; activities: ScheduledActivity[] }> => {
+  const seen = new Map<string, ScheduledActivity>();
+  for (const moment of moments) {
+    for (const activity of moment.activities ?? []) {
+      if (!seen.has(activity.id)) seen.set(activity.id, activity);
+    }
+  }
+  const all = [...seen.values()];
+  return GUEST_DAYS.map((day) => ({
+    day,
+    activities: all
+      .filter((activity) => activity.day === day)
+      .toSorted((a, b) => {
+        const ma = parseTimeLabel(a.starts) ?? 24 * 60;
+        const mb = parseTimeLabel(b.starts) ?? 24 * 60;
+        return ma !== mb ? ma - mb : a.title.localeCompare(b.title);
+      }),
+  })).filter((group) => group.activities.length > 0);
+};
+
 /* ------------------------------------------------------------- parsing */
 
 const text = (value: unknown): string | undefined =>
@@ -387,6 +430,19 @@ export const readOps = (raw: unknown): OpsDetail | null => {
   };
   return Object.values(detail).some(Boolean) ? detail : null;
 };
+
+/** Scheduled activities from the database: a name, a day and a start, or nothing. */
+export const readScheduledActivities = (raw: unknown): ScheduledActivity[] =>
+  (Array.isArray(raw) ? raw : []).flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const source = item as Record<string, unknown>;
+    const id = text(source.id);
+    const day = text(source.day);
+    const title = text(source.title);
+    const starts = text(source.starts);
+    if (!id || !day || !title || !starts) return [];
+    return [{ id, day, starts, ends: text(source.ends) ?? null, title }];
+  });
 
 export const readActivities = (raw: unknown): Activity[] =>
   (Array.isArray(raw) ? raw : []).flatMap((item) => {

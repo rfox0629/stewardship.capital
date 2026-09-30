@@ -10,6 +10,7 @@ import {
   readGuestCopy,
   readOps,
   readRoster,
+  readScheduledActivities,
   type Duty,
   type Guide,
   type GuideMoment,
@@ -64,6 +65,7 @@ export const loadGuide = cache(
       location: str(row.location),
       window: row.window === true,
       guide: readGuestCopy(row.guide),
+      activities: readScheduledActivities(row.activities),
     }));
 
     return {

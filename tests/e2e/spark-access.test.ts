@@ -711,6 +711,15 @@ test("Spark access model, end to end against production schema", async (t) => {
         assert.doesNotMatch(guest.body, new RegExp(row), `not on the card: ${row}`);
       }
 
+      /* What is scheduled inside free time is on the card by its guest name,
+         read off the team's own rows. The work around it is not. */
+      for (const name of ["Bingo of Wanyonyi", "Prayer Walk", "Cornhole Tournament"]) {
+        assert.match(guest.body, new RegExp(name), `free time names ${name}`);
+      }
+      for (const row of ["Bingo prep", "Bingo clean-up", "Setup cornhole", "explains the prayer walk"]) {
+        assert.doesNotMatch(guest.body, new RegExp(row), `team only: ${row}`);
+      }
+
       /* A meal still opens its menu, which is the one thing a guest taps. */
       assert.match(guest.body, /Egg and sausage bake/, "the Friday breakfast menu travels with it");
       assert.match(guest.body, /Menu/, "and the row says so");
