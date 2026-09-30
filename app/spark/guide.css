@@ -463,22 +463,8 @@ button.gd-row-hit:active {
   }
 }
 
-/* A block that lists its scheduled activities has no cue column: the way
-   on to the Activities tab is a link under the list, at every width. */
-.gd-row-block .gd-row-hit {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas:
-    "time"
-    "body";
-}
-
-@media (min-width: 560px) {
-  .gd-row-block .gd-row-hit {
-    grid-template-columns: 9.5rem minmax(0, 1fr);
-    grid-template-areas: "time body";
-  }
-}
-
+/* Scheduled activities: in the free time sheet and at the top of the
+   Activities tab, a name and its times. */
 .gd-sched {
   list-style: none;
   margin: 8px 0 0;
@@ -499,10 +485,6 @@ button.gd-row-hit:active {
   border: 1px solid var(--gd-line-soft);
   border-radius: 12px;
   background: var(--gd-cream);
-}
-
-.gd-sched-compact li {
-  background: var(--gd-paper);
 }
 
 .gd-sched-name {
@@ -531,34 +513,6 @@ button.gd-row-hit:active {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--gd-ink-2);
-}
-
-.gd-row-more {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 6px;
-  min-height: 44px;
-  margin-top: 2px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--gd-forest);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.gd-row-more svg {
-  width: 7px;
-  height: 11px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .gd-empty {

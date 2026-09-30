@@ -19,6 +19,7 @@ import {
   readRoster,
   readScheduledActivities,
   scheduledActivities,
+  hasDetail,
   categoryOf,
   clockRange,
   leadsOf,
@@ -104,9 +105,9 @@ test("a guest reads the guest title when the calendar's is written for the team"
   assert.equal(guestTitle(moment()), "Worship");
 });
 
-test("a meal says Menu, free time says Explore all activities, the coffee bar says Coffee menu", () => {
+test("a meal says Menu, free time says Activities, the coffee bar says Coffee menu", () => {
   assert.equal(detailCue(moment({ guide: { menu: ["Brisket"] } })), "Menu");
-  assert.equal(detailCue(moment({ guide: { opens: ["activities"] } })), "Explore all activities");
+  assert.equal(detailCue(moment({ guide: { opens: ["activities"] } })), "Activities");
   assert.equal(detailCue(moment({ guide: { opens: ["coffee", "activities"] } })), "Coffee menu");
   assert.equal(detailCue(moment({ guide: { summary: "Optional" } })), "Details");
   assert.equal(detailCue(moment()), null);
@@ -498,4 +499,14 @@ test("the Activities tab lists every scheduled activity by day, in time order, o
     { day: "sat", activities: [walk, cornhole] },
   ]);
   assert.deepEqual(scheduledActivities([moment()]), []);
+});
+
+test("a block with scheduled activities opens like a menu, under Activities", () => {
+  const walk = { id: "w", day: "sat", starts: "1:00 pm", ends: "2:00 pm", title: "Prayer Walk" };
+  const free = moment({ guide: { kind: "free", opens: ["activities"] }, activities: [walk] });
+  assert.equal(hasDetail(free), true);
+  assert.equal(detailCue(free), "Activities");
+  /* A line that borrows no guest copy is not offered as a tap at all. */
+  assert.equal(hasDetail(moment({ guide: null, activities: [walk] })), false,
+    "a line with no guest copy stays plain");
 });
