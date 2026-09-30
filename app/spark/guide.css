@@ -542,30 +542,51 @@ button.gd-row-hit:active {
   max-width: 52ch;
 }
 
-/* Scheduled Activities comes first on the Activities tab, one card a day,
-   and the property's own list follows under its usual heading. */
+/* Scheduled Activities comes first on the Activities tab, all of it in one
+   compact card, so the property's own heading still shows on a phone's
+   first screen. */
 .gd-scheduled {
-  display: grid;
-  gap: 12px;
-}
-
-.gd-scheduled-day {
-  padding: 14px 16px 16px;
+  margin-top: 14px;
+  padding: 2px 16px;
   border: 1px solid var(--gd-line);
   border-radius: 18px;
   background: var(--gd-paper);
 }
 
+.gd-scheduled-day {
+  padding: 12px 0;
+}
+
+.gd-scheduled-day + .gd-scheduled-day {
+  border-top: 1px solid var(--gd-line-soft);
+}
+
 .gd .gd-scheduled-day h3 {
-  font-family: var(--ev-body), system-ui, sans-serif;
-  font-size: 0.98rem;
+  font-family: var(--ev-sub), system-ui, sans-serif;
+  font-size: 0.74rem;
   font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   line-height: 1.3;
-  color: var(--gd-ink);
+  color: var(--gd-ink-2);
+}
+
+/* On the tab, a line each rather than a card each: the name, then its
+   times at the right. */
+.gd-sched-dense {
+  margin-top: 4px;
+  gap: 0;
+}
+
+.gd-sched-dense li {
+  padding: 6px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
 
 .gd .gd-pagehead-next {
-  margin-top: 36px;
+  margin-top: 28px;
 }
 
 .gd-link {

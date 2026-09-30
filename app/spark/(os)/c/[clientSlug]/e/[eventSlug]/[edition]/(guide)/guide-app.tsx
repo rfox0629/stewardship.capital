@@ -233,10 +233,10 @@ export function GuideApp({
           <section className="gd-shell gd-page" aria-label="Activities">
             {scheduled.length > 0 ? (
               <>
+                {/* Kept short on purpose: one card, a line per activity, so
+                    the property list's own heading is still on the first
+                    screen of a phone. */}
                 <h2 className="gd-pagehead">Scheduled Activities</h2>
-                <p className="gd-lede">
-                  Planned for free time. Join in, or enjoy the property instead.
-                </p>
                 <div className="gd-scheduled">
                   {scheduled.map((group) => {
                     const date = dayDate(startsOn, group.day);
@@ -248,7 +248,7 @@ export function GuideApp({
                             ? `, ${date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}`
                             : ""}
                         </h3>
-                        <ScheduledList activities={group.activities} />
+                        <ScheduledList activities={group.activities} dense />
                       </section>
                     );
                   })}
@@ -544,12 +544,12 @@ function DrinkDetail({ drink }: { drink: Drink | null }) {
 /* ---------------------------------------------------------- activities */
 
 /** Scheduled activities in time order: a name, then when. */
-function ScheduledList({ activities }: { activities: ScheduledActivity[] }) {
+function ScheduledList({ activities, dense = false }: { activities: ScheduledActivity[]; dense?: boolean }) {
   const ordered = activities.toSorted(
     (a, b) => (parseTimeLabel(a.starts) ?? 24 * 60) - (parseTimeLabel(b.starts) ?? 24 * 60),
   );
   return (
-    <ul className="gd-sched" aria-label="Scheduled activities">
+    <ul className={`gd-sched ${dense ? "gd-sched-dense" : ""}`} aria-label="Scheduled activities">
       {ordered.map((activity) => {
         const span = clockRange(activity.starts, activity.ends);
         return (
