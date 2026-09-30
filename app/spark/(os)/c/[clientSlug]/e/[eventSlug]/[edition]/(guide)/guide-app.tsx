@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-import { dayDate } from "@lib/spark/days";
+import { dayDate, parseTimeLabel } from "@lib/spark/days";
 import {
   DAY_LONG,
   DAY_SHORT,
@@ -15,10 +15,12 @@ import {
   detailCue,
   guestTitle,
   hasDetail,
+  scheduledActivities,
   type Activity,
   type CoffeeHour,
   type Drink,
   type GuideMoment,
+  type ScheduledActivity,
 } from "@lib/spark/guide";
 
 import { CoffeeArt } from "./coffee-art";
@@ -138,6 +140,7 @@ export function GuideApp({
 
   const agenda = dayAgenda(moments, shownDay);
   const coffeeDays = coffeeHoursByDay(coffeeHours);
+  const scheduled = scheduledActivities(moments);
 
   return (
     <div className="gd-app">
@@ -226,7 +229,31 @@ export function GuideApp({
 
         {shownTab === "activities" ? (
           <section className="gd-shell gd-page" aria-label="Activities">
-            <h2 className="gd-pagehead">Around the property</h2>
+            {scheduled.length > 0 ? (
+              <>
+                <h2 className="gd-pagehead">Scheduled Activities</h2>
+                <p className="gd-lede">
+                  Planned for free time. Join in, or enjoy the property instead.
+                </p>
+                <div className="gd-scheduled">
+                  {scheduled.map((group) => {
+                    const date = dayDate(startsOn, group.day);
+                    return (
+                      <section key={group.day} className="gd-scheduled-day" aria-label={DAY_LONG[group.day]}>
+                        <h3>
+                          {DAY_LONG[group.day]}
+                          {date
+                            ? `, ${date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}`
+                            : ""}
+                        </h3>
+                        <ScheduledList activities={group.activities} />
+                      </section>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+            <h2 className={`gd-pagehead ${scheduled.length > 0 ? "gd-pagehead-next" : ""}`}>Around the property</h2>
             <p className="gd-lede">
               What the property offers, for free time and quiet moments.
             </p>
@@ -350,6 +377,37 @@ function AgendaRow({
       ) : null}
     </>
   );
+
+  /* A block with scheduled activities lists them on the row itself, so a
+     guest sees what is on and when without tapping. A list cannot sit inside
+     a button, so the way on to the Activities tab is its own link under it. */
+  const scheduled = moment.activities ?? [];
+  if (scheduled.length > 0) {
+    return (
+      <li className={`gd-row gd-kind-${kind} gd-row-block ${moment.window ? "gd-row-window" : ""}`}>
+        <div className="gd-row-hit">
+          <span className="gd-row-time">
+            <b>{window.value}</b>
+            {window.meridiem ? <i>{window.meridiem}</i> : null}
+          </span>
+          <div className="gd-row-body">
+            <span className="gd-row-title">{guestTitle(moment)}</span>
+            {moment.window && moment.ends ? (
+              <span className="gd-row-until">Until {clock(moment.ends)}</span>
+            ) : null}
+            {sub ? <span className="gd-row-sub">{sub}</span> : null}
+            <ScheduledList activities={scheduled} compact />
+            {hasDetail(moment) ? (
+              <button type="button" className="gd-row-more" onClick={(event) => onOpen(event.currentTarget)}>
+                {cue ?? "Details"}
+                <svg viewBox="0 0 8 12" aria-hidden="true"><path d="M1.5 1l5 5-5 5" /></svg>
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li className={`gd-row gd-kind-${kind} ${moment.window ? "gd-row-window" : ""}`}>
@@ -476,7 +534,7 @@ function MomentDetail({
           <h3>Things to do</h3>
           <ActivityList activities={activities} compact />
           <button type="button" className="gd-link" onClick={() => onTab("activities")}>
-            Open Activities
+            Explore all activities
           </button>
         </div>
       ) : null}
@@ -502,6 +560,29 @@ function DrinkDetail({ drink }: { drink: Drink | null }) {
 }
 
 /* ---------------------------------------------------------- activities */
+
+/** Scheduled activities in time order: a name, then when. */
+function ScheduledList({ activities, compact = false }: { activities: ScheduledActivity[]; compact?: boolean }) {
+  const ordered = activities.toSorted(
+    (a, b) => (parseTimeLabel(a.starts) ?? 24 * 60) - (parseTimeLabel(b.starts) ?? 24 * 60),
+  );
+  return (
+    <ul className={`gd-sched ${compact ? "gd-sched-compact" : ""}`} aria-label="Scheduled activities">
+      {ordered.map((activity) => {
+        const span = clockRange(activity.starts, activity.ends);
+        return (
+          <li key={activity.id}>
+            <span className="gd-sched-name">{activity.title}</span>
+            <span className="gd-sched-when">
+              {span.value}
+              {span.meridiem ? <i>{span.meridiem}</i> : null}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 function ActivityList({ activities, compact = false }: { activities: Activity[]; compact?: boolean }) {
   const groups = activityGroups(activities);

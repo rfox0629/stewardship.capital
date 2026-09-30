@@ -17,6 +17,8 @@ import {
   readGuestCopy,
   readOps,
   readRoster,
+  readScheduledActivities,
+  scheduledActivities,
   categoryOf,
   clockRange,
   leadsOf,
@@ -102,9 +104,9 @@ test("a guest reads the guest title when the calendar's is written for the team"
   assert.equal(guestTitle(moment()), "Worship");
 });
 
-test("a meal says Menu, free time says Activities, the coffee bar says Coffee menu", () => {
+test("a meal says Menu, free time says Explore all activities, the coffee bar says Coffee menu", () => {
   assert.equal(detailCue(moment({ guide: { menu: ["Brisket"] } })), "Menu");
-  assert.equal(detailCue(moment({ guide: { opens: ["activities"] } })), "Activities");
+  assert.equal(detailCue(moment({ guide: { opens: ["activities"] } })), "Explore all activities");
   assert.equal(detailCue(moment({ guide: { opens: ["coffee", "activities"] } })), "Coffee menu");
   assert.equal(detailCue(moment({ guide: { summary: "Optional" } })), "Details");
   assert.equal(detailCue(moment()), null);
@@ -463,4 +465,37 @@ test("a window reads as one line, and says the meridiem once where it can", () =
   assert.deepEqual(clockRange("4:00 pm", null), { value: "4:00", meridiem: "PM" });
   assert.deepEqual(clockRange("6:00 pm", ""), { value: "6:00", meridiem: "PM" });
   assert.deepEqual(clockRange(null, "9:00 am"), { value: "", meridiem: null });
+});
+
+/* ------------------------------------------------- scheduled activities */
+
+test("scheduled activities keep a name, a day and times, and nothing else", () => {
+  const read = readScheduledActivities([
+    { id: "b", day: "fri", starts: "2:00 pm", ends: "4:00 pm", title: "Bingo", owner: "Ryan", notes: "Prep at 1" },
+    { id: "x", day: "sat", title: "No start" },
+    { id: "w", day: "sat", starts: "1:00 pm", title: "Prayer Walk" },
+    "nonsense",
+  ]);
+  assert.deepEqual(read, [
+    { id: "b", day: "fri", starts: "2:00 pm", ends: "4:00 pm", title: "Bingo" },
+    { id: "w", day: "sat", starts: "1:00 pm", ends: null, title: "Prayer Walk" },
+  ]);
+  assert.deepEqual(readScheduledActivities(null), []);
+});
+
+test("the Activities tab lists every scheduled activity by day, in time order, once", () => {
+  const bingo = { id: "b", day: "fri", starts: "2:00 pm", ends: "4:00 pm", title: "Bingo of Wanyonyi's favorite things" };
+  const walk = { id: "w", day: "sat", starts: "1:00 pm", ends: "2:00 pm", title: "Prayer Walk" };
+  const cornhole = { id: "c", day: "sat", starts: "2:00 pm", ends: "4:00 pm", title: "Cornhole Tournament" };
+  const groups = scheduledActivities([
+    moment({ id: "sat-free", day: "sat", activities: [cornhole, walk] }),
+    moment({ id: "fri-free", day: "fri", activities: [bingo] }),
+    moment({ id: "again", day: "sat", activities: [walk] }),
+    moment({ id: "lunch", day: "sat" }),
+  ]);
+  assert.deepEqual(groups, [
+    { day: "fri", activities: [bingo] },
+    { day: "sat", activities: [walk, cornhole] },
+  ]);
+  assert.deepEqual(scheduledActivities([moment()]), []);
 });
