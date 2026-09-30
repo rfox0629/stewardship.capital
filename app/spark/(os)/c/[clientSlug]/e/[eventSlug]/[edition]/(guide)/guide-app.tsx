@@ -209,10 +209,12 @@ export function GuideApp({
                          A summary does not count as content here: the row
                          already prints it, so a sheet would open on a line
                          somebody has just read, with the list they actually
-                         wanted a tab away. A menu or an unsettled detail is
-                         different, because neither is on the row. */
+                         wanted a tab away. A menu, an unsettled detail or a
+                         list of scheduled activities is different, because
+                         none of them is on the row. */
                       const opens = moment.guide?.opens ?? [];
-                      const nothingElse = !moment.guide?.menu?.length && !moment.guide?.tbc;
+                      const nothingElse = !moment.guide?.menu?.length && !moment.guide?.tbc
+                        && !moment.activities?.length;
                       if (nothingElse && opens.length === 1 && (opens[0] === "activities" || opens[0] === "coffee")) {
                         setTab(opens[0] as Tab);
                         return;
@@ -378,37 +380,6 @@ function AgendaRow({
     </>
   );
 
-  /* A block with scheduled activities lists them on the row itself, so a
-     guest sees what is on and when without tapping. A list cannot sit inside
-     a button, so the way on to the Activities tab is its own link under it. */
-  const scheduled = moment.activities ?? [];
-  if (scheduled.length > 0) {
-    return (
-      <li className={`gd-row gd-kind-${kind} gd-row-block ${moment.window ? "gd-row-window" : ""}`}>
-        <div className="gd-row-hit">
-          <span className="gd-row-time">
-            <b>{window.value}</b>
-            {window.meridiem ? <i>{window.meridiem}</i> : null}
-          </span>
-          <div className="gd-row-body">
-            <span className="gd-row-title">{guestTitle(moment)}</span>
-            {moment.window && moment.ends ? (
-              <span className="gd-row-until">Until {clock(moment.ends)}</span>
-            ) : null}
-            {sub ? <span className="gd-row-sub">{sub}</span> : null}
-            <ScheduledList activities={scheduled} compact />
-            {hasDetail(moment) ? (
-              <button type="button" className="gd-row-more" onClick={(event) => onOpen(event.currentTarget)}>
-                {cue ?? "Details"}
-                <svg viewBox="0 0 8 12" aria-hidden="true"><path d="M1.5 1l5 5-5 5" /></svg>
-              </button>
-            ) : null}
-          </div>
-        </div>
-      </li>
-    );
-  }
-
   return (
     <li className={`gd-row gd-kind-${kind} ${moment.window ? "gd-row-window" : ""}`}>
       {hasDetail(moment) ? (
@@ -529,7 +500,18 @@ function MomentDetail({
         </div>
       ) : null}
 
-      {copy?.opens?.includes("activities") && activities.length > 0 ? (
+      {/* What is scheduled in this block, with times, and the way on to
+          everything else there is to do. The property list is a tap away on
+          the Activities tab rather than repeated under it. */}
+      {moment.activities && moment.activities.length > 0 ? (
+        <div className="gd-detail-section">
+          <h3>Scheduled activities</h3>
+          <ScheduledList activities={moment.activities} />
+          <button type="button" className="gd-link" onClick={() => onTab("activities")}>
+            Explore all activities
+          </button>
+        </div>
+      ) : copy?.opens?.includes("activities") && activities.length > 0 ? (
         <div className="gd-detail-section">
           <h3>Things to do</h3>
           <ActivityList activities={activities} compact />
@@ -562,12 +544,12 @@ function DrinkDetail({ drink }: { drink: Drink | null }) {
 /* ---------------------------------------------------------- activities */
 
 /** Scheduled activities in time order: a name, then when. */
-function ScheduledList({ activities, compact = false }: { activities: ScheduledActivity[]; compact?: boolean }) {
+function ScheduledList({ activities }: { activities: ScheduledActivity[] }) {
   const ordered = activities.toSorted(
     (a, b) => (parseTimeLabel(a.starts) ?? 24 * 60) - (parseTimeLabel(b.starts) ?? 24 * 60),
   );
   return (
-    <ul className={`gd-sched ${compact ? "gd-sched-compact" : ""}`} aria-label="Scheduled activities">
+    <ul className="gd-sched" aria-label="Scheduled activities">
       {ordered.map((activity) => {
         const span = clockRange(activity.starts, activity.ends);
         return (

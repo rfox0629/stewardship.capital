@@ -207,7 +207,8 @@ export const hasDetail = (moment: GuideMoment): boolean => {
   const copy = moment.guide;
   if (!copy) return false;
   return Boolean(
-    (copy.menu && copy.menu.length > 0) ||
+    (moment.activities && moment.activities.length > 0) ||
+      (copy.menu && copy.menu.length > 0) ||
       (copy.opens && copy.opens.length > 0) ||
       copy.summary ||
       copy.tbc ||
@@ -215,13 +216,14 @@ export const hasDetail = (moment: GuideMoment): boolean => {
   );
 };
 
-/** What a tap offers, spelled for the row: "Menu", "Explore all activities", "Coffee menu". */
+/** What a tap offers, spelled for the row: "Menu", "Activities", "Coffee menu". */
 export const detailCue = (moment: GuideMoment): string | null => {
   const copy = moment.guide;
   if (!copy) return null;
   if (copy.menu && copy.menu.length > 0) return "Menu";
   if (copy.opens?.includes("coffee")) return "Coffee menu";
-  if (copy.opens?.includes("activities")) return "Explore all activities";
+  if (moment.activities && moment.activities.length > 0) return "Activities";
+  if (copy.opens?.includes("activities")) return "Activities";
   return hasDetail(moment) ? "Details" : null;
 };
 
