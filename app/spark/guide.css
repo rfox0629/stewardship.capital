@@ -1750,7 +1750,7 @@ button.gd-row-hit:active {
 
 .gd-duty-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 12px;
   padding: 12px 14px;
@@ -1768,6 +1768,32 @@ button.gd-row-hit:active {
   cursor: pointer;
   padding: 0;
   min-height: 44px;
+}
+
+/* An operations card opens like a drop down: the details on the left, the
+   arrow on the right, centred on them and turning when the card is open. */
+.gd-duty button.gd-duty-body {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.gd-duty-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gd-duty-body .gd-ros-chev {
+  grid-area: auto;
+  flex: none;
+  margin-top: 0;
+}
+
+.gd-duty-body[aria-expanded="true"] .gd-ros-chev {
+  transform: rotate(180deg);
 }
 
 .gd-duty .gd-ros-owner {

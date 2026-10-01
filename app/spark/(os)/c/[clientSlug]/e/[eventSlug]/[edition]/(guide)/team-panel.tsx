@@ -664,12 +664,16 @@ function Duties({
                     aria-expanded={expanded}
                     onClick={() => setOpenId(expanded ? null : moment.id)}
                   >
-                    <b className="gd-duty-title">{moment.title}</b>
-                    <span className="gd-duty-when">{span(moment)}</span>
-                    <Roles ops={moment.ops} />
-                    {done ? <span className="gd-done">Completed</span> : null}
+                    {/* The arrow is part of what opens the card, so it turns
+                        with it and a tap on it does what it says. */}
+                    <span className="gd-duty-text">
+                      <b className="gd-duty-title">{moment.title}</b>
+                      <span className="gd-duty-when">{span(moment)}</span>
+                      <Roles ops={moment.ops} />
+                      {done ? <span className="gd-done">Completed</span> : null}
+                    </span>
+                    <Chevron />
                   </button>
-                  <Chevron />
                 </div>
 
                 {against.length > 0 ? (
