@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { platformEngagementPath } from "@lib/platform/engagement-href";
+import { hashShareToken, randomShareToken, sharePath } from "@lib/platform/proposal-shares";
+import { proposalFor } from "@lib/platform/proposals";
 import { resolveAccess } from "@lib/spark/access";
 import { hashInvitationToken, randomInvitationToken } from "@lib/spark/tokens";
 import { isSparkRole } from "@lib/spark/types";
@@ -280,5 +282,75 @@ export async function createEngagementNote(formData: FormData): Promise<Outcome>
   if (SLUG.test(organizationSlug) && SLUG.test(engagementSlug)) {
     revalidatePath(platformEngagementPath(organizationSlug, engagementSlug));
   }
+  return { ok: true };
+}
+
+/* ----------------------------------------------------------- proposals */
+
+export type ShareOutcome =
+  | { ok: true; link: string; label: string; expires: string }
+  | { ok: false; message?: string };
+
+/**
+ * A share link for a proposal: who it is for, and how long it works.
+ *
+ * The raw token exists in this request and in the link shown once. The
+ * database keeps its hash. The link opens the proposal for whoever holds it,
+ * which is why it is issued by name and for a bounded time, and why revoking
+ * it is one click away on the same card.
+ */
+export async function createProposalShare(formData: FormData): Promise<ShareOutcome> {
+  const supabase = await staffSession();
+  if (!supabase) return { ok: false };
+
+  const organizationId = String(formData.get("organizationId") ?? "");
+  const organizationSlug = String(formData.get("organizationSlug") ?? "");
+  const proposalSlug = String(formData.get("proposalSlug") ?? "");
+  const label = String(formData.get("label") ?? "").trim().slice(0, 120);
+  const days = Math.min(Math.max(Number(formData.get("days") ?? 30) || 30, 1), 90);
+
+  if (!organizationId || !label || !proposalFor(organizationSlug, proposalSlug)) {
+    return { ok: false, message: "Who the link is for, and a proposal that exists." };
+  }
+
+  const token = randomShareToken();
+  const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from("proposal_shares")
+    .insert({
+      organization_id: organizationId,
+      proposal_slug: proposalSlug,
+      label,
+      token_hash: await hashShareToken(token),
+      expires_at: expiresAt.toISOString(),
+    })
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidatePath(PLATFORM, "layout");
+  return {
+    ok: true,
+    link: sharePath(token),
+    label,
+    expires: expiresAt.toISOString().slice(0, 10),
+  };
+}
+
+export async function revokeProposalShare(shareId: string): Promise<Outcome> {
+  const supabase = await staffSession();
+  if (!supabase) return { ok: false };
+
+  const { data, error } = await supabase
+    .from("proposal_shares")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", shareId)
+    .is("revoked_at", null)
+    .select("id");
+
+  if (error || (data?.length ?? 0) === 0) return { ok: false };
+
+  revalidatePath(PLATFORM, "layout");
   return { ok: true };
 }

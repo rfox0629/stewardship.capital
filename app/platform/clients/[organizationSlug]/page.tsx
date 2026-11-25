@@ -3,12 +3,19 @@ import { notFound, redirect } from "next/navigation";
 import "@app/styles/site.css";
 import "../../platform.css";
 
+import Link from "next/link";
+
 import { engagementHref, productLabel } from "@lib/platform/engagement-href";
 import { clientThemeFor } from "@lib/platform/client-themes";
+import { proposalsFor } from "@lib/platform/proposals";
 import { resolveAccess } from "@lib/spark/access";
+import { PRODUCT_ORIGIN } from "@lib/spark/hosts";
 import { PLATFORM_HOME, SPARK_ENTRY } from "@lib/spark/paths";
 import { createClient } from "@lib/supabase/server";
 import { ClientWorkspace, type ClientProject } from "../../_components/client-workspace";
+import { liveShares, type ShareRow } from "@lib/platform/proposal-shares";
+import { ProposalShareControls } from "../../_components/proposal-share-controls";
+import { proposalPath } from "./proposals/[proposalSlug]/path";
 import {
   ManageAccess,
   pendingInvitations,
@@ -88,6 +95,18 @@ export default async function ClientPage({ params }: PageProps) {
   const engagementRows = (engagements ?? []) as EngagementRow[];
   const invitationRows = (invitations ?? []) as InvitationRow[];
 
+  /* Proposals are content in code; who they have been shared with is data. */
+  const proposals = proposalsFor(organization.slug);
+  const { data: shares } =
+    proposals.length > 0
+      ? await supabase
+          .from("proposal_shares")
+          .select("id, proposal_slug, label, expires_at, revoked_at, opened_count, last_opened_at")
+          .eq("organization_id", organization.id)
+          .order("created_at", { ascending: false })
+      : { data: [] };
+  const shareRows = liveShares((shares ?? []) as Array<ShareRow & { proposal_slug: string }>);
+
   /* Roster and trail per engagement, through the staff scoped windows. */
   const details = new Map<string, { roster: RosterRow[]; trail: TrailRow[] }>();
   await Promise.all(
@@ -143,6 +162,46 @@ export default async function ClientPage({ params }: PageProps) {
     <ClientWorkspace
       client={{ slug: organization.slug, name: organization.name }}
       projects={projects}
-    />
+    >
+      {proposals.length > 0 ? (
+        <section className="cw-section" aria-labelledby="cw-proposals-heading">
+          <h2 id="cw-proposals-heading" className="cw-heading">
+            Proposals
+          </h2>
+          <ul className="cw-projects">
+            {proposals.map((proposal) => (
+              <li key={proposal.slug} className="cw-project">
+                <div className="cw-project-head">
+                  <div className="cw-project-name">
+                    <h3>{proposal.title}</h3>
+                    <p className="cw-project-meta">
+                      {proposal.subtitle} Presented by {proposal.presenter.name}.
+                    </p>
+                  </div>
+                  <Link className="cw-open" href={proposalPath(organization.slug, proposal.slug)}>
+                    Open proposal <span aria-hidden="true">&rarr;</span>
+                  </Link>
+                </div>
+                <details className="cw-manage">
+                  <summary>
+                    <span className="cw-manage-caret" aria-hidden="true" />
+                    Share
+                  </summary>
+                  <div className="cw-manage-body">
+                    <ProposalShareControls
+                      organizationId={organization.id}
+                      organizationSlug={organization.slug}
+                      proposalSlug={proposal.slug}
+                      origin={PRODUCT_ORIGIN}
+                      shares={shareRows.filter((row) => row.proposal_slug === proposal.slug)}
+                    />
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </ClientWorkspace>
   );
 }
