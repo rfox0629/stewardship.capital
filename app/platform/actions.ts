@@ -52,7 +52,7 @@ export async function createOrganization(formData: FormData): Promise<Outcome> {
     return { ok: false, message: "That did not save. The slug may already be taken." };
   }
 
-  revalidatePath(PLATFORM);
+  revalidatePath(PLATFORM, "layout");
   return { ok: true };
 }
 
@@ -96,7 +96,7 @@ export async function createEngagement(formData: FormData): Promise<Outcome> {
     };
   }
 
-  revalidatePath(PLATFORM);
+  revalidatePath(PLATFORM, "layout");
   return { ok: true };
 }
 
@@ -132,7 +132,7 @@ export async function setMemberRole(
 
   if (error || (data?.length ?? 0) === 0) return { ok: false };
 
-  revalidatePath(PLATFORM);
+  revalidatePath(PLATFORM, "layout");
   return { ok: true };
 }
 
@@ -162,7 +162,7 @@ export async function removeMember(
 
   if (error || (data?.length ?? 0) === 0) return { ok: false };
 
-  revalidatePath(PLATFORM);
+  revalidatePath(PLATFORM, "layout");
   return { ok: true };
 }
 
@@ -203,7 +203,7 @@ export async function createInvitation(formData: FormData): Promise<InvitationOu
 
   if (error || (data?.length ?? 0) === 0) return { ok: false };
 
-  revalidatePath(PLATFORM);
+  revalidatePath(PLATFORM, "layout");
   return {
     ok: true,
     link: `/spark/i/${token}`,
@@ -225,7 +225,7 @@ export async function revokeInvitation(invitationId: string): Promise<Outcome> {
 
   if (error || (data?.length ?? 0) === 0) return { ok: false };
 
-  revalidatePath(PLATFORM);
+  revalidatePath(PLATFORM, "layout");
   return { ok: true };
 }
 
@@ -248,7 +248,7 @@ export async function grantStaff(formData: FormData): Promise<Outcome> {
     };
   }
 
-  revalidatePath(PLATFORM);
+  revalidatePath(PLATFORM, "layout");
   return { ok: true };
 }
 

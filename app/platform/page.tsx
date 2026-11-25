@@ -9,86 +9,33 @@ import { MultiplierField } from "@app/(www)/_components/multiplier-field";
 import { SiteNav } from "@app/(www)/_components/site-nav";
 import { Wordmark } from "@app/(www)/_components/wordmark";
 import { SparkEntry } from "@spark/_components/spark-entry";
-import { engagementHref, productLabel } from "@lib/platform/engagement-href";
+import { platformClientPath } from "@lib/platform/engagement-href";
 import { resolveAccess } from "@lib/spark/access";
 import { OTP_EMAIL_COOKIE } from "@lib/spark/cookies";
 import { maskEmail } from "@lib/spark/mask";
 import { SPARK_ENTRY } from "@lib/spark/paths";
 import { createClient } from "@lib/supabase/server";
-import {
-  EngagementForm,
-  InvitationForm,
-  MemberControls,
-  OrganizationForm,
-  RevokeInvitationButton,
-  StaffForm,
-} from "./platform-controls";
+import { PlatformBar } from "./_components/platform-bar";
+import { EngagementForm, OrganizationForm, StaffForm } from "./platform-controls";
 
 export const metadata = { title: { absolute: "Platform | Stewardship.Capital" } };
 export const dynamic = "force-dynamic";
 
 /**
- * The Stewardship.Capital operating surface: every client, every engagement,
- * who can reach each one, and the door for the next person in.
+ * The Stewardship.Capital platform home: the directory of clients.
+ *
+ * One row per client, each opening that client's own page, where their
+ * projects and who can reach them live. Making a client, making an
+ * engagement, and extending the staff grant are the rare things, so they sit
+ * folded under Platform settings rather than between the rows.
  *
  * Explicit platform staff only. Signed out, this page is the door itself: the
  * same email and code sign in Spark uses, on the same identity, so there is
  * one set of credentials and one place they are decided. Signed in without
  * the grant, the route guard has already sent the person to Spark's front
  * door, and this page checks again before it renders a single row. Every row
- * below then comes through RLS or a definer function that makes the same
- * check a third time.
+ * below then comes through RLS, which makes the same check a third time.
  */
-
-type EngagementRow = {
-  id: string;
-  name: string;
-  slug: string;
-  series_slug: string | null;
-  edition_label: string | null;
-  product_key: string | null;
-  status: string;
-  starts_on: string | null;
-  location: string | null;
-  organization_id: string;
-};
-
-type RosterRow = { user_id: string; email: string; role: string; since: string };
-type TrailRow = {
-  at: string;
-  action: string;
-  subject_email: string | null;
-  actor_email: string | null;
-  from_role: string | null;
-  to_role: string | null;
-};
-type InvitationRow = {
-  id: string;
-  email: string;
-  role: string;
-  expires_at: string;
-  accepted_at: string | null;
-  revoked_at: string | null;
-  engagement_id: string;
-};
-
-const shortDate = (value: string | null) =>
-  value
-    ? new Date(value).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "UTC",
-      })
-    : null;
-
-const trailLine = (event: TrailRow) => {
-  const who = event.subject_email ?? "someone";
-  const by = event.actor_email ? ` by ${event.actor_email}` : "";
-  if (event.action === "added") return `${who} added as ${event.to_role}${by}`;
-  if (event.action === "removed") return `${who} removed (was ${event.from_role})${by}`;
-  return `${who} changed from ${event.from_role} to ${event.to_role}${by}`;
-};
 
 /**
  * The door, for anyone not signed in. The same two steps as Spark's front
@@ -134,220 +81,76 @@ export default async function PlatformPage() {
   if (!supabase || !access) return <PlatformDoor />;
   if (!access.staff) redirect(SPARK_ENTRY);
 
-  const [{ data: organizations }, { data: engagements }, { data: invitations }] =
-    await Promise.all([
-      supabase.from("organizations").select("id, slug, name").order("name"),
-      supabase
-        .from("engagements")
-        .select("id, name, slug, series_slug, edition_label, product_key, status, starts_on, location, organization_id")
-        .order("starts_on", { ascending: false }),
-      supabase
-        .from("invitations")
-        .select("id, email, role, expires_at, accepted_at, revoked_at, engagement_id")
-        .order("created_at", { ascending: false }),
-    ]);
-
-  const engagementRows = (engagements ?? []) as EngagementRow[];
-
-  /* Roster and trail per engagement, through the staff scoped windows. */
-  const details = new Map<string, { roster: RosterRow[]; trail: TrailRow[] }>();
-  await Promise.all(
-    engagementRows.map(async (engagement) => {
-      const [{ data: roster }, { data: trail }] = await Promise.all([
-        supabase.rpc("engagement_roster", { target: engagement.id }),
-        supabase.rpc("membership_trail", { target: engagement.id, take: 6 }),
-      ]);
-      details.set(engagement.id, {
-        roster: (roster ?? []) as RosterRow[],
-        trail: (trail ?? []) as TrailRow[],
-      });
-    }),
-  );
-
-  const pendingFor = (engagementId: string) =>
-    ((invitations ?? []) as InvitationRow[]).filter(
-      (invitation) =>
-        invitation.engagement_id === engagementId &&
-        !invitation.accepted_at &&
-        !invitation.revoked_at &&
-        new Date(invitation.expires_at).getTime() > Date.now(),
-    );
+  const { data: organizations } = await supabase
+    .from("organizations")
+    .select("id, slug, name")
+    .order("name");
+  const clients = organizations ?? [];
 
   return (
     <div className="pf">
-      <SiteNav />
-      <div className="pf-shell">
-        <header className="pf-head">
-          <div>
-            <h1 className="pf-title">Platform</h1>
-            <p className="pf-lede">
-              Every client and engagement, who can reach each one, and the
-              door for the next person in. Access changes take effect on the
-              person&apos;s next request.
-            </p>
+      <PlatformBar />
+      <main className="pf-shell">
+        <h1 className="pf-title">Clients</h1>
+
+        {clients.length === 0 ? (
+          <p className="pf-quiet pf-empty">
+            No clients yet. The first one is made under Platform settings.
+          </p>
+        ) : (
+          <ul className="pf-directory" aria-label="Clients">
+            {clients.map((client) => (
+              <li key={client.id}>
+                <Link className="pf-client" href={platformClientPath(client.slug)}>
+                  <span className="pf-client-name">{client.name}</span>
+                  <span className="pf-client-action">
+                    View client <span aria-hidden="true">&rarr;</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <details className="pf-settings">
+          <summary>
+            <span className="pf-settings-caret" aria-hidden="true" />
+            Platform settings
+          </summary>
+
+          <div className="pf-settings-body">
+            <section className="pf-section" aria-label="New client">
+              <div className="pf-section-head">
+                <h2 className="pf-section-title">New client</h2>
+              </div>
+              <OrganizationForm />
+            </section>
+
+            <section className="pf-section" aria-label="New engagement">
+              <div className="pf-section-head">
+                <h2 className="pf-section-title">New engagement</h2>
+                <span className="pf-note">Under an existing client</span>
+              </div>
+              <EngagementForm
+                organizations={clients.map((client) => ({
+                  id: client.id,
+                  name: client.name,
+                }))}
+              />
+            </section>
+
+            <section className="pf-section" aria-label="Platform staff">
+              <div className="pf-section-head">
+                <h2 className="pf-section-title">Platform staff</h2>
+                <span className="pf-note">
+                  The only grant that crosses clients. Extend it rarely.
+                </span>
+              </div>
+              <StaffForm />
+            </section>
           </div>
-          <form action="/spark/signout" method="post">
-            <input type="hidden" name="next" value="/platform" />
-            <button className="pf-text-action" type="submit">
-              Sign out
-            </button>
-          </form>
-        </header>
-
-        <section className="pf-section" aria-label="Clients and engagements">
-          <div className="pf-section-head">
-            <h2 className="pf-section-title">Clients</h2>
-            <span className="pf-note">
-              {(organizations ?? []).length} on the platform
-            </span>
-          </div>
-
-          {(organizations ?? []).map((organization) => (
-            <div key={organization.id} className="pf-org">
-              <p className="pf-org-name">
-                {organization.name}
-                <span className="pf-org-slug">/{organization.slug}</span>
-              </p>
-
-              {engagementRows
-                .filter((engagement) => engagement.organization_id === organization.id)
-                .map((engagement) => {
-                  const detail = details.get(engagement.id);
-                  const pending = pendingFor(engagement.id);
-                  /* Spark engagements open Spark. Everything else opens the
-                     Stewardship.Capital engagement page. */
-                  const home = engagementHref({
-                    organizationSlug: organization.slug,
-                    engagementSlug: engagement.slug,
-                    seriesSlug: engagement.series_slug,
-                    editionLabel: engagement.edition_label,
-                    productKey: engagement.product_key,
-                  });
-                  const product = productLabel(engagement.product_key);
-
-                  return (
-                    <details key={engagement.id} className="pf-engagement">
-                      <summary>
-                        <span className="pf-eng-name">{engagement.name}</span>
-                        <span className="pf-eng-meta">
-                          {engagement.status}
-                          {product ? ` · ${product}` : ""}
-                          {engagement.starts_on
-                            ? ` · ${shortDate(engagement.starts_on)}`
-                            : ""}
-                          {engagement.location ? ` · ${engagement.location}` : ""}
-                          {" · "}
-                          {detail?.roster.length ?? 0} member
-                          {(detail?.roster.length ?? 0) === 1 ? "" : "s"}
-                        </span>
-                        <Link className="pf-eng-open" href={home}>
-                          Open workspace
-                        </Link>
-                      </summary>
-
-                      <div className="pf-eng-body">
-                        <p className="pf-sub">Members</p>
-                        {detail && detail.roster.length > 0 ? (
-                          <ul className="pf-rows">
-                            {detail.roster.map((member) => (
-                              <li key={member.user_id}>
-                                <span className="pf-grow">{member.email}</span>
-                                <MemberControls
-                                  engagementId={engagement.id}
-                                  userId={member.user_id}
-                                  role={member.role}
-                                  email={member.email}
-                                />
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="pf-quiet">
-                            Nobody yet. The first invitation below changes that.
-                          </p>
-                        )}
-
-                        {pending.length > 0 ? (
-                          <>
-                            <p className="pf-sub">Pending invitations</p>
-                            <ul className="pf-rows">
-                              {pending.map((invitation) => (
-                                <li key={invitation.id}>
-                                  <span className="pf-grow">
-                                    {invitation.email}
-                                    <span className="pf-quiet">
-                                      {" "}
-                                      as {invitation.role}, until{" "}
-                                      {shortDate(invitation.expires_at)}
-                                    </span>
-                                  </span>
-                                  <RevokeInvitationButton
-                                    invitationId={invitation.id}
-                                  />
-                                </li>
-                              ))}
-                            </ul>
-                          </>
-                        ) : null}
-
-                        <p className="pf-sub">Invite someone</p>
-                        <InvitationForm engagementId={engagement.id} />
-
-                        {detail && detail.trail.length > 0 ? (
-                          <>
-                            <p className="pf-sub">Recent access changes</p>
-                            <ul className="pf-rows">
-                              {detail.trail.map((event, index) => (
-                                <li key={index}>
-                                  <span className="pf-grow pf-quiet">
-                                    {trailLine(event)}
-                                  </span>
-                                  <span className="pf-quiet">
-                                    {shortDate(event.at)}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </>
-                        ) : null}
-                      </div>
-                    </details>
-                  );
-                })}
-            </div>
-          ))}
-        </section>
-
-        <section className="pf-section" aria-label="New client">
-          <div className="pf-section-head">
-            <h2 className="pf-section-title">New client</h2>
-          </div>
-          <OrganizationForm />
-        </section>
-
-        <section className="pf-section" aria-label="New engagement">
-          <div className="pf-section-head">
-            <h2 className="pf-section-title">New engagement</h2>
-            <span className="pf-note">Under an existing client</span>
-          </div>
-          <EngagementForm
-            organizations={(organizations ?? []).map((organization) => ({
-              id: organization.id,
-              name: organization.name,
-            }))}
-          />
-        </section>
-
-        <section className="pf-section" aria-label="Platform staff">
-          <div className="pf-section-head">
-            <h2 className="pf-section-title">Platform staff</h2>
-            <span className="pf-note">
-              The only grant that crosses clients. Extend it rarely.
-            </span>
-          </div>
-          <StaffForm />
-        </section>
-      </div>
+        </details>
+      </main>
     </div>
   );
 }
