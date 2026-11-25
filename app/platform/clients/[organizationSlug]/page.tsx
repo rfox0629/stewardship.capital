@@ -46,7 +46,16 @@ type EngagementRow = {
 
 export async function generateMetadata({ params }: PageProps) {
   const { organizationSlug } = await params;
-  return { title: clientThemeFor(organizationSlug).displayName ?? organizationSlug };
+  const themed = clientThemeFor(organizationSlug).displayName;
+  if (themed) return { title: themed };
+
+  /* The client's own name, through the same RLS the page reads under. A
+     stranger gets the slug, which the address already told them. */
+  const supabase = await createClient().catch(() => null);
+  const { data } = supabase
+    ? await supabase.from("organizations").select("name").eq("slug", organizationSlug).maybeSingle()
+    : { data: null };
+  return { title: data?.name ?? organizationSlug };
 }
 
 export default async function ClientPage({ params }: PageProps) {
