@@ -434,17 +434,35 @@ test("Spark access model, end to end against production schema", async (t) => {
 
     /* ------------------------------------- engagements that run on nothing */
 
-    await t.test("the platform home opens each engagement where it lives", async () => {
+    await t.test("the platform home lists each client, and a client's page opens each engagement where it lives", async () => {
       const jar = await adopt(w.staff.email);
       const home = await visit(jar, PLATFORM);
       assert.equal(home.status, 200);
+      /* The home is a directory: one row per client, opening that client's
+         own page, and no engagement link of its own. */
+      assert.match(home.body, new RegExp(`href="/platform/clients/${A_SLUG}"`));
+      assert.match(home.body, new RegExp(`href="/platform/clients/${B_SLUG}"`));
+      assert.doesNotMatch(home.body, new RegExp(`href="${A_HOME}"`), "not the implementation path");
+
       /* A product engagement opens the product, which lives on its own
          domain now, so the link is a whole URL. */
-      assert.match(home.body, new RegExp(`href="https://tentmaiker.com/c/${A_SLUG}/e/check/2026"`));
-      assert.doesNotMatch(home.body, new RegExp(`href="${A_HOME}"`), "not the implementation path");
+      const alpha = await visit(jar, `/platform/clients/${A_SLUG}`);
+      assert.equal(alpha.status, 200);
+      assert.match(alpha.body, new RegExp(`href="https://tentmaiker.com/c/${A_SLUG}/e/check/2026"`));
+      assert.doesNotMatch(alpha.body, new RegExp(`href="${A_HOME}"`), "not the implementation path");
+
       /* Engagements on no product open the Stewardship.Capital page. */
-      assert.match(home.body, new RegExp(`href="${B_PAGE}"`));
-      assert.doesNotMatch(home.body, new RegExp(`href="${B_HOME}"`));
+      const beta = await visit(jar, `/platform/clients/${B_SLUG}`);
+      assert.equal(beta.status, 200);
+      assert.match(beta.body, new RegExp(`href="${B_PAGE}"`));
+      assert.doesNotMatch(beta.body, new RegExp(`href="${B_HOME}"`));
+
+      /* A client's page is staff only, like the home: signed out is the door,
+         and a member of the client's own engagement is refused. */
+      assert.equal((await visit(newJar(), `/platform/clients/${A_SLUG}`)).location, PLATFORM);
+      const asClient = await visit(await adopt(w.client.email), `/platform/clients/${A_SLUG}`);
+      assert.equal(asClient.status, 307);
+      assert.equal(asClient.location, ENTRY);
     });
 
     await t.test("the engagement page is the overview and the notes, staff only", async () => {
