@@ -37,6 +37,8 @@ type ClientWorkspaceProps = {
   projects: ClientProject[];
   /** Overrides the registry, for a page that already resolved the theme. */
   theme?: ClientTheme;
+  /** Further sections after Projects, in the same frame: proposals, later more. */
+  children?: ReactNode;
 };
 
 const fontClasses: Record<ClientTheme["fonts"], string> = {
@@ -46,7 +48,7 @@ const fontClasses: Record<ClientTheme["fonts"], string> = {
 
 const isExternal = (href: string) => /^https?:\/\//.test(href);
 
-export function ClientWorkspace({ client, projects, theme }: ClientWorkspaceProps) {
+export function ClientWorkspace({ client, projects, theme, children }: ClientWorkspaceProps) {
   const resolved = theme ?? clientThemeFor(client.slug);
   const style = clientThemeVariables(resolved) as CSSProperties;
   const title = resolved.displayName ?? client.name;
@@ -116,6 +118,8 @@ export function ClientWorkspace({ client, projects, theme }: ClientWorkspaceProp
               </ul>
             )}
           </section>
+
+          {children}
         </main>
       </div>
     </div>

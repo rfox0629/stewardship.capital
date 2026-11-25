@@ -26,6 +26,8 @@ whole reason revocation is immediate.
 | `/spark/signout` | anyone |
 | `/platform` | explicit platform staff only. Stewardship.Capital's own home, signed out it is the same email and code door |
 | `/platform/clients/<org>` | explicit platform staff only. The client's own page: their projects, each opening where it lives, with that project's roster and invitations behind Manage access. Wears the client's theme from `lib/platform/client-themes.ts` |
+| `/platform/clients/<org>/proposals/<slug>` | explicit platform staff only. A proposal presented by TentMAiKER, as content in `lib/platform/proposals.ts`; its demo runs on fixture data in code |
+| `/p/<token>` | anyone holding a live share link. Opens one proposal and nothing else; issued by staff from the client's page, to a named person for a bounded time, hash only in `proposal_shares`, revocable. Not an identity and grants no membership |
 | `/platform/clients/<org>/<engagement>` | explicit platform staff only. The Stewardship.Capital engagement page for an engagement with no `product_key`; a Spark engagement redirects to its Spark workspace |
 | `/spark/platform` | redirects to `/platform` |
 | `/spark/c/<client>/…` | current members of that engagement, and staff |
