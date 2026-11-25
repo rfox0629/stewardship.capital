@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash, randomBytes } from "node:crypto";
 import test from "node:test";
 
 import {
@@ -1007,8 +1008,41 @@ test("Spark access model, end to end against production schema", async (t) => {
 
       assert.equal(await open("not-the-code", `${RUN}-wrong`), null, "a wrong code opens nothing");
 
-      const token = await open(CODE_HASH, `${RUN}-right`);
-      assert.ok(token && token.length >= 32, "the right code returns a session");
+      /* The session ends with the weekend, so what the right code does
+         depends on the calendar. While the weekend is live it mints a
+         session. Afterwards it is refused outright, and the guard is
+         exercised with a session row written for this run instead, so the
+         rest of this test does not retire with the weekend. */
+      const { data: windowEnd } = await admin.rpc("event_session_window", {
+        p_client: "shine", p_series: "founders-weekend", p_edition: "2026",
+      });
+      assert.ok(typeof windowEnd === "string", "the weekend has an end");
+      const live = new Date(windowEnd as string).getTime() > Date.now();
+
+      const { data: owner } = await admin.from("organizations")
+        .select("id").eq("slug", "shine").single();
+      const { data: real } = await admin.from("engagements")
+        .select("id").eq("organization_id", owner!.id)
+        .eq("series_slug", "founders-weekend").eq("edition_label", "2026").single();
+
+      let token: string | null;
+      let tokenHash: string;
+      if (live) {
+        token = await open(CODE_HASH, `${RUN}-right`);
+        assert.ok(token && token.length >= 32, "the right code returns a session");
+        tokenHash = createHash("sha256").update(token!).digest("hex");
+      } else {
+        assert.equal(await open(CODE_HASH, `${RUN}-right`), null,
+          "after the weekend, even the right code opens nothing");
+        token = `${RUN}${randomBytes(24).toString("hex")}`;
+        tokenHash = createHash("sha256").update(token).digest("hex");
+        const { error } = await admin.from("event_sessions").insert({
+          token_hash: tokenHash,
+          engagement_id: real!.id,
+          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        });
+        assert.equal(error, null, error?.message);
+      }
 
       try {
         const jar = newJar();
@@ -1052,15 +1086,9 @@ test("Spark access model, end to end against production schema", async (t) => {
         const entry = await visit(jar, ENTRY);
         assert.doesNotMatch(entry.body, /Run of show/);
       } finally {
-        /* By the client that owns it. A copy of SHINE made for a check
-           elsewhere shares its series and edition, so those two do not
-           identify the engagement on their own. */
-        const { data: owner } = await admin.from("organizations")
-          .select("id").eq("slug", "shine").single();
-        const { data: real } = await admin.from("engagements")
-          .select("id").eq("organization_id", owner!.id)
-          .eq("series_slug", "founders-weekend").eq("edition_label", "2026").single();
-        await admin.from("event_sessions").delete().eq("engagement_id", real!.id);
+        /* Only what this run made: its own session, by hash, and its own
+           attempts. A team member's live session is never this test's to end. */
+        await admin.from("event_sessions").delete().eq("token_hash", tokenHash);
         await admin.from("event_code_attempts").delete().like("client_hash", `${RUN}%`);
       }
     });
