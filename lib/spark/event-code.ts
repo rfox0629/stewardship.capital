@@ -19,10 +19,17 @@ export const EVENT_COOKIE = "shine_team";
 export const EVENT_COOKIE_PATH = "/shine/2026";
 
 /**
- * Sunday is the fourth; the session ends at the close of the fifth, Central
- * time, which is 05:00 UTC on the sixth.
+ * When the cookie should lapse: with the session, which the database ends
+ * with the weekend (event_session_window). If that answer is missing or
+ * malformed the cookie lasts a week, the same fallback the database uses
+ * for an engagement with no end date, and the database still has the final
+ * word on every request.
  */
-export const EVENT_EXPIRES = new Date("2026-10-06T05:00:00Z");
+export const sessionCookieExpiry = (windowEnd: unknown, now = Date.now()): Date => {
+  const parsed = typeof windowEnd === "string" ? new Date(windowEnd) : null;
+  if (parsed && !Number.isNaN(parsed.getTime()) && parsed.getTime() > now) return parsed;
+  return new Date(now + 7 * 24 * 60 * 60 * 1000);
+};
 
 export const sha256 = (value: string): string =>
   createHash("sha256").update(value).digest("hex");

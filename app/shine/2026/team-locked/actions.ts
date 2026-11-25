@@ -6,9 +6,9 @@ import {
   callerHash,
   EVENT_COOKIE,
   EVENT_COOKIE_PATH,
-  EVENT_EXPIRES,
   normaliseCode,
   safeNext,
+  sessionCookieExpiry,
   sha256,
 } from "@lib/spark/event-code";
 import { createClient } from "@lib/supabase/server";
@@ -60,13 +60,21 @@ export async function enterTeamCode(
     return { ok: false, message: "That code did not work. Check with your team lead." };
   }
 
+  /* The cookie lapses when the session does, which the database ties to the
+     weekend itself. The session, not the cookie, is what the guard checks. */
+  const { data: windowEnd } = await supabase.rpc("event_session_window", {
+    p_client: SHINE_2026.clientSlug,
+    p_series: SHINE_2026.eventSlug,
+    p_edition: SHINE_2026.edition,
+  });
+
   const store = await cookies();
   store.set(EVENT_COOKIE, data, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: EVENT_COOKIE_PATH,
-    expires: EVENT_EXPIRES,
+    expires: sessionCookieExpiry(windowEnd),
   });
 
   return { ok: true, next };
