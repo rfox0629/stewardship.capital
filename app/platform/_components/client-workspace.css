@@ -1,0 +1,286 @@
+/*
+ * A client's page on the platform.
+ *
+ * Every colour and face here is a `--cw-*` variable set by the layout from
+ * the client's theme, with the platform's own look as the fallback. Nothing
+ * reads `--sp-*` or `--ev-*`: this is Stewardship.Capital's page about a
+ * client, not the product and not an event.
+ */
+
+.cw {
+  --cw-font-display: var(--font-display), system-ui, sans-serif;
+  --cw-font-body: var(--font-display), system-ui, sans-serif;
+  --cw-display-weight: 600;
+  --cw-display-tracking: -0.02em;
+  --cw-title-size: clamp(2.2rem, 6vw, 3.4rem);
+
+  min-height: 100svh;
+  background: var(--cw-bg, #0a0b0d);
+  color: var(--cw-ink, #fafafa);
+  font-family: var(--cw-font-body);
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 72px;
+}
+
+/* SHINE: League Gothic is tall and narrow, so it is set larger and tighter
+   than a regular face would be, in capitals as the site sets it. */
+.cw-fonts-shine {
+  --cw-font-display: var(--font-shine-display), "League Gothic", Impact, sans-serif;
+  --cw-font-body: var(--font-shine-body), "Futura PT", Futura, "Century Gothic", sans-serif;
+  --cw-display-weight: 400;
+  --cw-display-tracking: 0.01em;
+  --cw-title-size: clamp(3rem, 9vw, 5.2rem);
+}
+
+.cw :where(h1, h2, h3, p, ul, ol) {
+  margin: 0;
+}
+
+.cw :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cw :focus-visible {
+  outline: 2px solid var(--cw-ink);
+  outline-offset: 3px;
+}
+
+.cw-shell {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4.5vw, 44px);
+}
+
+/* ------------------------------------------------------------------ top */
+
+.cw-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: clamp(18px, 3vw, 28px) 0;
+  font-size: 0.94rem;
+}
+
+.cw-back,
+.cw-site {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 1px;
+}
+
+.cw-back:hover,
+.cw-site:hover {
+  color: var(--cw-muted);
+}
+
+/* ---------------------------------------------------------------- title */
+
+.cw-title {
+  font-family: var(--cw-font-display);
+  font-weight: var(--cw-display-weight);
+  font-size: var(--cw-title-size);
+  letter-spacing: var(--cw-display-tracking);
+  text-transform: var(--cw-display-transform, none);
+  line-height: 0.95;
+  margin-top: clamp(16px, 3vw, 28px);
+  overflow-wrap: anywhere;
+}
+
+.cw-section {
+  margin-top: clamp(28px, 5vw, 44px);
+}
+
+.cw-heading {
+  font-family: var(--cw-font-display);
+  font-weight: var(--cw-display-weight);
+  font-size: 1.55rem;
+  letter-spacing: var(--cw-display-tracking);
+  text-transform: var(--cw-display-transform, none);
+  margin-bottom: 14px;
+}
+
+.cw-fonts-shine .cw-heading {
+  font-size: 2.1rem;
+}
+
+.cw-empty {
+  color: var(--cw-muted);
+}
+
+/* ------------------------------------------------------------- projects */
+
+.cw-projects {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.cw-project {
+  background: var(--cw-card);
+  border: 1px solid var(--cw-line);
+  border-radius: 6px;
+  padding: 18px 18px 6px;
+}
+
+.cw-project-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding-bottom: 14px;
+}
+
+.cw-project-name h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.cw-project-meta {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  color: var(--cw-muted);
+}
+
+.cw-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cw-accent);
+  color: var(--cw-on-accent);
+  font-weight: 600;
+  font-size: 0.98rem;
+  padding: 10px 16px;
+  border-radius: 5px;
+  white-space: nowrap;
+  transition: filter 160ms ease;
+}
+
+.cw-open:hover {
+  filter: brightness(0.94);
+}
+
+/* --------------------------------------------------------------- manage */
+
+.cw-manage {
+  border-top: 1px solid var(--cw-line);
+}
+
+.cw-manage > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  font-size: 0.94rem;
+  font-weight: 500;
+}
+
+.cw-manage > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cw-manage-caret {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid currentColor;
+  transition: transform 160ms ease;
+}
+
+.cw-manage[open] .cw-manage-caret {
+  transform: rotate(180deg);
+}
+
+.cw-manage-body {
+  padding: 0 0 14px;
+}
+
+/* The access controls are the platform's, written for its dark ground.
+   Inside a client's page they take the client's ink and lines instead, so
+   the one form on the page does not look pasted in from somewhere else. */
+
+.cw .pf-sub {
+  color: var(--cw-muted);
+  margin-top: 18px;
+}
+
+.cw .pf-rows > li {
+  border-bottom-color: var(--cw-line);
+  color: var(--cw-ink);
+}
+
+.cw .pf-quiet,
+.cw .pf-message {
+  color: var(--cw-muted);
+}
+
+.cw .pf-field label {
+  color: var(--cw-muted);
+}
+
+.cw .pf-field input,
+.cw .pf-field select,
+.cw .pf-inline-select {
+  color: var(--cw-ink);
+  background: var(--cw-bg);
+  border-color: var(--cw-line);
+  color-scheme: light;
+}
+
+.cw .pf-field input:focus,
+.cw .pf-field select:focus {
+  outline-color: var(--cw-ink);
+}
+
+.cw .pf-submit {
+  color: var(--cw-on-accent);
+  background: var(--cw-accent);
+}
+
+.cw .pf-submit:hover {
+  background: var(--cw-accent);
+  filter: brightness(0.94);
+}
+
+.cw .pf-text-action {
+  color: var(--cw-muted);
+}
+
+.cw .pf-text-action:hover {
+  color: var(--cw-ink);
+}
+
+.cw .pf-link-once {
+  border-color: var(--cw-ink);
+  background: transparent;
+}
+
+.cw .pf-link-once code {
+  color: var(--cw-ink);
+}
+
+/* ---------------------------------------------------------------- small */
+
+@media (max-width: 560px) {
+  .cw-project-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cw-open {
+    width: 100%;
+    justify-content: center;
+  }
+}

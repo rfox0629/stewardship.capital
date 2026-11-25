@@ -24,6 +24,10 @@ export type EngagementRef = {
   productKey: string | null;
 };
 
+/** A client's own page on the platform: their projects, and who reaches each. */
+export const platformClientPath = (organizationSlug: string) =>
+  `/platform/clients/${organizationSlug}`;
+
 export const platformEngagementPath = (
   organizationSlug: string,
   engagementSlug: string,

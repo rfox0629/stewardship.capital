@@ -5,7 +5,11 @@ import "@app/styles/site.css";
 import "../../../platform.css";
 
 import { SiteNav } from "@app/(www)/_components/site-nav";
-import { engagementHref, SPARK_PRODUCT } from "@lib/platform/engagement-href";
+import {
+  engagementHref,
+  platformClientPath,
+  SPARK_PRODUCT,
+} from "@lib/platform/engagement-href";
 import { resolveAccess } from "@lib/spark/access";
 import { PLATFORM_HOME, SPARK_ENTRY } from "@lib/spark/paths";
 import { createClient } from "@lib/supabase/server";
@@ -94,8 +98,8 @@ export default async function EngagementPage({ params }: PageProps) {
       <div className="pf-shell">
         <header className="pf-head">
           <div>
-            <Link className="pf-back" href={PLATFORM_HOME}>
-              Platform
+            <Link className="pf-back" href={platformClientPath(organization.slug)}>
+              {organization.name}
             </Link>
             <p className="pf-eyebrow">{organization.name}</p>
             <h1 className="pf-title">{engagement.name}</h1>

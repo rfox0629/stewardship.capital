@@ -1,4 +1,11 @@
-import { Archivo, Fraunces, Inter, Public_Sans } from "next/font/google";
+import {
+  Archivo,
+  Fraunces,
+  Inter,
+  Jost,
+  League_Gothic,
+  Public_Sans,
+} from "next/font/google";
 import localFont from "next/font/local";
 
 /**
@@ -16,6 +23,16 @@ import localFont from "next/font/local";
  *                 in the theme allowlist.
  *   Aileron       subheads. CC0, self hosted from the Fontsource files.
  *   Public Sans   paragraphs and operational UI. SIL OFL.
+ *
+ * The client faces dress a client's own page on the platform, and are only
+ * referenced through lib/platform/client-themes.ts:
+ *
+ *   League Gothic SHINE's headings: the same open face shineintheworld.org
+ *                 serves through Adobe Fonts. SIL OFL, so it ships here.
+ *   Jost          holds SHINE's body slot. The site sets Futura PT, which is
+ *                 Adobe licensed and cannot be bundled; Jost is the nearest
+ *                 open geometric, and the swap to a licensed kit is one edit
+ *                 here and nothing in the theme.
  */
 export const display = Archivo({
   subsets: ["latin"],
@@ -63,4 +80,16 @@ export const eventSub = localFont({
   ],
   display: "swap",
   variable: "--font-event-sub",
+});
+
+export const shineDisplay = League_Gothic({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-shine-display",
+});
+
+export const shineBody = Jost({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-shine-body",
 });
